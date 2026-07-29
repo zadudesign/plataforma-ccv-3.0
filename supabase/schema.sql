@@ -1,0 +1,330 @@
+-- ============================================================================
+-- PLATAFORMA CCV 3.0 — ESQUEMA DDL COMPLETO DE BASE DE DATOS (SUPABASE / POSTGRESQL)
+-- Centro de Educación Virtual (CCV) - Universidad
+-- ============================================================================
+
+-- Habilitar extensión UUID
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ----------------------------------------------------------------------------
+-- 1. FASE 1: CAPA DE CONTROL, SEGURIDAD Y JERARQUÍA (CORE RBAC & RLS)
+-- ----------------------------------------------------------------------------
+
+-- Tabla de Áreas Jerárquicas
+CREATE TABLE IF NOT EXISTS public.areas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL UNIQUE,
+    nivel INT NOT NULL CHECK (nivel BETWEEN 1 AND 6),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+COMMENT ON COLUMN public.areas.nivel IS 'Jerarquía descendente: 6=ADMIN, 5=CMU, 4=DEPARTAMENTO, 3=FACULTAD, 2=PROGRAMA, 1=CURSO';
+
+-- Tabla de Roles por Área
+CREATE TABLE IF NOT EXISTS public.roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL UNIQUE,
+    area_id UUID REFERENCES public.areas(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de Definición de Permisos (CRUD + Admin)
+CREATE TABLE IF NOT EXISTS public.permisos_def (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clave TEXT NOT NULL UNIQUE, -- ej: 'registro:crear', 'registro:editar', 'usuario:gestionar'
+    descripcion TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla Puente Roles - Permisos
+CREATE TABLE IF NOT EXISTS public.roles_permisos (
+    rol_id UUID REFERENCES public.roles(id) ON DELETE CASCADE,
+    permiso_id UUID REFERENCES public.permisos_def(id) ON DELETE CASCADE,
+    PRIMARY KEY (rol_id, permiso_id)
+);
+
+-- Tabla de Perfiles de Usuarios (Enlazada con auth.users de Supabase)
+CREATE TABLE IF NOT EXISTS public.usuarios (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    nombre_completo TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    rol_id UUID REFERENCES public.roles(id) ON DELETE SET NULL,
+    firma_digital TEXT, -- SVG o Base64 para validación de entregables
+    avatar_url TEXT,
+    telefono TEXT,
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------------------
+-- 2. FASE 2: ESTRUCTURA ACADÉMICA E INSTITUCIONAL (ENTIDADES BASE)
+-- ----------------------------------------------------------------------------
+
+-- Tabla de Facultades
+CREATE TABLE IF NOT EXISTS public.facultades (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL,
+    decano_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de Programas Académicos
+CREATE TABLE IF NOT EXISTS public.programas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL,
+    facultad_id UUID REFERENCES public.facultades(id) ON DELETE CASCADE,
+    coordinador_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de Proyectos Especiales CCV
+CREATE TABLE IF NOT EXISTS public.proyectos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL,
+    descripcion TEXT,
+    area_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
+    estado TEXT DEFAULT 'En Proceso', -- 'Planificación', 'En Proceso', 'Completado', 'Pausado'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de Cursos Virtuales
+CREATE TABLE IF NOT EXISTS public.cursos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL,
+    codigo TEXT NOT NULL UNIQUE,
+    programa_id UUID REFERENCES public.programas(id) ON DELETE CASCADE,
+    periodo TEXT NOT NULL, -- Ej: '2026-1', '2026-2'
+    docente_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    evaluador_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    estado TEXT NOT NULL DEFAULT 'En Diseño' CHECK (estado IN ('En Diseño', 'En Producción', 'En Revisión', 'Aprobado CCV', 'Publicado LMS')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------------------
+-- 3. FASE 3: MÓDULO DE GESTIÓN DE TAREAS Y COLABORACIÓN
+-- ----------------------------------------------------------------------------
+
+-- Tabla de Tareas CCV
+CREATE TABLE IF NOT EXISTS public.tareas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    titulo TEXT NOT NULL,
+    descripcion TEXT,
+    proyecto_id UUID REFERENCES public.proyectos(id) ON DELETE CASCADE,
+    curso_id UUID REFERENCES public.cursos(id) ON DELETE CASCADE,
+    area_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
+    responsable_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    rol_destino UUID REFERENCES public.roles(id) ON DELETE SET NULL,
+    orden_tarea INT DEFAULT 0,
+    estado TEXT NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'En Proceso', 'En Revisión', 'Completado')),
+    tipo_tarea TEXT NOT NULL CHECK (tipo_tarea IN ('Curso Virtual', 'Proyecto Especial')),
+    fecha_vencimiento DATE,
+    fecha_completada DATE,
+    tiempo_estimado NUMERIC(6, 2) DEFAULT 0.00,
+    tiempo_invertido NUMERIC(6, 2) DEFAULT 0.00,
+    tarifa_tarea NUMERIC(10, 2) DEFAULT 0.00,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT check_curso_o_proyecto CHECK (
+        (curso_id IS NOT NULL AND proyecto_id IS NULL) OR 
+        (proyecto_id IS NOT NULL AND curso_id IS NULL) OR
+        (curso_id IS NULL AND proyecto_id IS NULL)
+    )
+);
+
+-- Tabla de Comentarios de Tareas
+CREATE TABLE IF NOT EXISTS public.tarea_comentarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tarea_id UUID NOT NULL REFERENCES public.tareas(id) ON DELETE CASCADE,
+    usuario_id UUID NOT NULL REFERENCES public.usuarios(id) ON DELETE CASCADE,
+    comentario TEXT NOT NULL,
+    adjunto_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------------------
+-- 4. TRIGGERS Y FUNCIONES RPC AUTOMÁTICAS
+-- ----------------------------------------------------------------------------
+
+-- Función RPC para consultar los permisos clave del usuario en sesión
+CREATE OR REPLACE FUNCTION public.get_mis_permisos()
+RETURNS TABLE (permiso_clave TEXT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT p.clave
+    FROM public.usuarios u
+    JOIN public.roles_permisos rp ON u.rol_id = rp.rol_id
+    JOIN public.permisos_def p ON rp.permiso_id = p.id
+    WHERE u.id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Función para manejar nuevos registros en auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.usuarios (id, nombre_completo, email, rol_id)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'nombre_completo', NEW.email),
+        NEW.email,
+        (SELECT id FROM public.roles WHERE nombre = 'Docente' LIMIT 1)
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET nombre_completo = EXCLUDED.nombre_completo,
+        email = EXCLUDED.email;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger cuando se registra un usuario en Supabase Auth
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Trigger para marcar fecha_completada automáticamente al cambiar estado a 'Completado'
+CREATE OR REPLACE FUNCTION public.handle_tarea_completada()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.estado = 'Completado' AND OLD.estado != 'Completado' THEN
+        NEW.fecha_completada := CURRENT_DATE;
+    ELSIF NEW.estado != 'Completado' THEN
+        NEW.fecha_completada := NULL;
+    END IF;
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_tarea_completada ON public.tareas;
+CREATE TRIGGER trg_tarea_completada
+    BEFORE UPDATE ON public.tareas
+    FOR EACH ROW EXECUTE FUNCTION public.handle_tarea_completada();
+
+-- ----------------------------------------------------------------------------
+-- 5. POLÍTICAS DE SEGURIDAD RLS (ROW LEVEL SECURITY)
+-- ----------------------------------------------------------------------------
+
+ALTER TABLE public.areas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.permisos_def ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.roles_permisos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.facultades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.programas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proyectos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cursos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tareas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tarea_comentarios ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de lectura pública/autenticada
+CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.areas FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.permisos_def FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles_permisos FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura de perfiles a usuarios autenticados" ON public.usuarios FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir actualización de perfil propio o admin" ON public.usuarios FOR UPDATE TO authenticated USING (
+    auth.uid() = id OR EXISTS (
+        SELECT 1 FROM public.usuarios u
+        JOIN public.roles r ON u.rol_id = r.id
+        JOIN public.areas a ON r.area_id = a.id
+        WHERE u.id = auth.uid() AND a.nivel = 6
+    )
+);
+
+CREATE POLICY "Gestión total de usuarios exclusiva para Administrador" ON public.usuarios FOR ALL TO authenticated USING (
+    EXISTS (
+        SELECT 1 FROM public.usuarios u
+        JOIN public.roles r ON u.rol_id = r.id
+        JOIN public.areas a ON r.area_id = a.id
+        WHERE u.id = auth.uid() AND a.nivel = 6
+    )
+);
+
+CREATE POLICY "Permitir lectura de facultades a usuarios autenticados" ON public.facultades FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura de programas a usuarios autenticados" ON public.programas FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura de proyectos a usuarios autenticados" ON public.proyectos FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura de cursos a usuarios autenticados" ON public.cursos FOR SELECT TO authenticated USING (true);
+
+-- Política RLS Descendente de Tareas según Nivel de Área (Cada rol controla su área y áreas dependientes)
+CREATE POLICY "Visibilidad descendente de tareas por jerarquía de área" ON public.tareas FOR SELECT TO authenticated USING (
+    EXISTS (
+        SELECT 1 FROM public.usuarios u
+        JOIN public.roles r ON u.rol_id = r.id
+        JOIN public.areas a ON r.area_id = a.id
+        JOIN public.areas ta ON tareas.area_id = ta.id
+        WHERE u.id = auth.uid()
+        AND (
+            a.nivel >= 5 OR -- ADMIN (6) y CMU/Jefe/Diseño/Multimedia/Soporte (5) ven todo
+            u.id = tareas.responsable_id OR -- O es el usuario asignado
+            a.nivel >= ta.nivel -- O el área del usuario es superior o igual al área de la tarea
+        )
+    )
+);
+
+CREATE POLICY "Permitir modificación de tareas según jerarquía o responsabilidad" ON public.tareas FOR ALL TO authenticated USING (
+    EXISTS (
+        SELECT 1 FROM public.usuarios u
+        JOIN public.roles r ON u.rol_id = r.id
+        JOIN public.areas a ON r.area_id = a.id
+        JOIN public.areas ta ON tareas.area_id = ta.id
+        WHERE u.id = auth.uid()
+        AND (
+            a.nivel >= 5 OR 
+            u.id = tareas.responsable_id OR
+            a.nivel >= ta.nivel
+        )
+    )
+);
+
+CREATE POLICY "Lectura de comentarios por usuarios autenticados" ON public.tarea_comentarios FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Creación de comentarios por usuario autenticado" ON public.tarea_comentarios FOR INSERT TO authenticated WITH CHECK (auth.uid() = usuario_id);
+
+-- ----------------------------------------------------------------------------
+-- 6. SEMILLA DE DATOS INICIALES (SEED DATA)
+-- ----------------------------------------------------------------------------
+
+-- Insertar Áreas Jerárquicas
+INSERT INTO public.areas (nombre, nivel) VALUES
+('ADMIN', 6),
+('CMU', 5),
+('DEPARTAMENTO', 4),
+('FACULTAD', 3),
+('PROGRAMA', 2),
+('CURSO', 1)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Insertar los 9 Roles de la Plataforma
+INSERT INTO public.roles (nombre, area_id) VALUES
+('Administrador', (SELECT id FROM public.areas WHERE nombre = 'ADMIN')),
+('Jefe', (SELECT id FROM public.areas WHERE nombre = 'CMU')),
+('Diseño', (SELECT id FROM public.areas WHERE nombre = 'CMU')),
+('Multimedia', (SELECT id FROM public.areas WHERE nombre = 'CMU')),
+('Soporte', (SELECT id FROM public.areas WHERE nombre = 'CMU')),
+('Decano', (SELECT id FROM public.areas WHERE nombre = 'FACULTAD')),
+('Coordinador', (SELECT id FROM public.areas WHERE nombre = 'PROGRAMA')),
+('Docente', (SELECT id FROM public.areas WHERE nombre = 'CURSO')),
+('Par Evaluador', (SELECT id FROM public.areas WHERE nombre = 'CURSO'))
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Insertar Permisos Clave
+INSERT INTO public.permisos_def (clave, descripcion) VALUES
+('registro:crear', 'Permite crear nuevos registros académicos o tareas'),
+('registro:editar', 'Permite editar información de cursos y tareas'),
+('registro:ver', 'Permite visualizar contenidos según nivel de área'),
+('registro:eliminar', 'Permite eliminar registros del sistema'),
+('tarea:aprobar', 'Permite aprobar y cambiar estado de tareas a Completado'),
+('usuario:gestionar', 'Gestión total de usuarios y asignación de roles (Solo Admin)')
+ON CONFLICT (clave) DO NOTHING;
+
+-- Asignación de Permisos por Rol
+-- Administrador: Todos los permisos
+INSERT INTO public.roles_permisos (rol_id, permiso_id)
+SELECT (SELECT id FROM public.roles WHERE nombre = 'Administrador'), id FROM public.permisos_def
+ON CONFLICT DO NOTHING;
+
+-- Jefe CCV: Todos excepto gestión de usuarios admin
+INSERT INTO public.roles_permisos (rol_id, permiso_id)
+SELECT (SELECT id FROM public.roles WHERE nombre = 'Jefe'), id FROM public.permisos_def WHERE clave != 'usuario:gestionar'
+ON CONFLICT DO NOTHING;
