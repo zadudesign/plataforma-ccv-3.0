@@ -47,8 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [permisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
   const [rolesPermisosMap, setRolesPermisosMap] = useState<Record<string, string[]>>(ROLES_PERMISOS_MAP);
   
-  // Default logged in user: Administrador Principal (u-admin)
-  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(INITIAL_USUARIOS[0]);
+  // Default logged in user: null (mostrando la pantalla de Login por defecto)
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
   const [isDevSimulatorOpen, setIsDevSimulatorOpen] = useState(false);
 
   // Escuchar sesión de Supabase Auth si está conectada

@@ -5,8 +5,15 @@
 @tailwind utilities;
 
 :root {
-  --bg-main: #F4F3EE;
-  --text-main: #1C1E1D;
+  --bg-main: #F1F5F9;
+  --text-main: #0D1827;
+  --color-primary: #2D4C7C;
+  --color-primary-hover: #243D63;
+  --color-secondary: #8FA0BE;
+  --color-secondary-hover: #7A8BA8;
+  --color-accent: #F6A800;
+  --color-accent-hover: #DF9800;
+  --color-muted: #CCCCCC;
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -30,47 +37,58 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D5D2C3;
+  background: #8FA0BE;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #A5C5B3;
+  background: #2D4C7C;
 }
 
-/* Card Styling inspired by diseño base.png */
+/* Card Styling */
 .ccv-card {
   background-color: #FFFFFF;
   border-radius: 1.75rem;
-  border: 1px solid rgba(226, 224, 216, 0.6);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.03), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 10px 30px -10px rgba(13, 24, 39, 0.04), 0 4px 12px -2px rgba(13, 24, 39, 0.02);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .ccv-card:hover {
-  box-shadow: 0 14px 35px -10px rgba(0, 0, 0, 0.06), 0 6px 16px -2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 14px 35px -10px rgba(13, 24, 39, 0.08), 0 6px 16px -2px rgba(13, 24, 39, 0.04);
 }
 
 .ccv-pill-sidebar {
   background-color: #FFFFFF;
   border-radius: 2.25rem;
-  border: 1px solid rgba(226, 224, 216, 0.7);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #CBD5E1;
+  box-shadow: 0 20px 40px -15px rgba(13, 24, 39, 0.07);
 }
 
 /* Badge Styles */
 .badge-green {
-  background-color: #E8F0EC;
-  color: #2D5A3F;
+  background-color: #F0F4F9;
+  color: #2D4C7C;
   border-radius: 9999px;
   padding: 0.25rem 0.625rem;
   font-weight: 600;
   font-size: 0.75rem;
+  border: 1px solid #DDE5F0;
+}
+
+.badge-amber {
+  background-color: #FEF9E6;
+  color: #DF9800;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border: 1px solid #FDF0C3;
 }
 
 .badge-red {
-  background-color: #FDEAEA;
-  color: #C53030;
+  background-color: #FEF2F2;
+  color: #DC2626;
   border-radius: 9999px;
   padding: 0.25rem 0.625rem;
   font-weight: 600;

@@ -74,13 +74,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
 
       {/* Bottom Actions & User Profile */}
       <div className="flex flex-col items-center space-y-4">
-        <button 
-          onClick={() => setIsDevSimulatorOpen(true)}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-coral-600 bg-coral-50 hover:bg-coral-100 transition-colors shadow-xs"
-          title="Simulador de Roles (Dev)"
-        >
-          <Sparkles className="w-5 h-5" />
-        </button>
+        {isAdmin() && (
+          <button 
+            onClick={() => setIsDevSimulatorOpen(true)}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-coral-600 bg-coral-50 hover:bg-coral-100 transition-colors shadow-xs"
+            title="Simulador de Roles (Solo Administrador)"
+          >
+            <Sparkles className="w-5 h-5" />
+          </button>
+        )}
 
         <button 
           onClick={logout}
