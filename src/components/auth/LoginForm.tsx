@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -15,6 +16,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +83,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1.5">
-              Contraseña
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-charcoal-700 uppercase tracking-wider">
+                Contraseña
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordOpen(true)}
+                className="text-[11px] font-bold text-sage-700 hover:text-sage-900 hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-3.5" />
               <input
@@ -119,6 +130,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           </p>
         </div>
       </div>
+
+      {isForgotPasswordOpen && (
+        <ForgotPasswordModal onClose={() => setIsForgotPasswordOpen(false)} />
+      )}
     </div>
   );
 };

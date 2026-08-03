@@ -28,11 +28,17 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Greeting Title */}
       <div>
         <h1 className="text-3xl font-extrabold text-charcoal-900 tracking-tight">
-          ¡Hola, {usuarioActual.nombre_completo.split(' ')[0]}!
+          ¡Hola, {usuarioActual.nombre_completo}!
         </h1>
-        <p className="text-sm font-medium text-charcoal-500 mt-1">
-          Explora la producción, diseño instruccional y proyectos de Educación Continua.
-        </p>
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sage-100 text-sage-900 text-xs font-extrabold border border-sage-200/80 shadow-2xs">
+            <Shield className="w-3.5 h-3.5 text-sage-600" />
+            Rol: {usuarioActual.rol_nombre || 'Docente'} ({usuarioActual.area_nombre || 'CURSO'})
+          </span>
+          <span className="text-xs font-medium text-charcoal-500 hidden sm:inline">
+            • Sistema de Gestión de Cursos Virtuales & Control RBAC
+          </span>
+        </div>
       </div>
 
       {/* Right Controls Bar */}

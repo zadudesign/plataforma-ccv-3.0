@@ -1,13 +1,17 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Usuario, Rol, Area, PermisoDef, NivelArea } from '@/types';
+import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial } from '@/types';
 import { 
   INITIAL_USUARIOS, 
   INITIAL_ROLES, 
   INITIAL_AREAS, 
   INITIAL_PERMISOS, 
-  ROLES_PERMISOS_MAP 
+  ROLES_PERMISOS_MAP,
+  INITIAL_FACULTADES,
+  INITIAL_PROGRAMAS,
+  INITIAL_CURSOS,
+  INITIAL_PROYECTOS
 } from '@/lib/mockData';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -23,6 +27,12 @@ interface AuthContextType {
   isDevSimulatorOpen: boolean;
   setIsDevSimulatorOpen: (open: boolean) => void;
   
+  // Entidades Académicas y Proyectos
+  facultades: Facultad[];
+  programas: Programa[];
+  cursos: CursoVirtual[];
+  proyectos: ProyectoEspecial[];
+
   // Helpers
   hasPermission: (clavePermiso: string) => boolean;
   canAccessLevel: (nivelRequerido: NivelArea) => boolean;
@@ -32,10 +42,23 @@ interface AuthContextType {
   cambiarUsuarioSimulado: (usuarioId: string) => void;
   loginConSupabase: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  crearUsuario: (nuevo: Omit<Usuario, 'id'>) => void;
+  crearUsuario: (nuevo: Omit<Usuario, 'id'> & { password?: string }) => Promise<{ success: boolean; error?: string }>;
   actualizarUsuario: (id: string, datos: Partial<Usuario>) => void;
   eliminarUsuario: (id: string) => void;
   actualizarPermisosRol: (rolId: string, permisos: string[]) => void;
+  adminResetPassword: (userId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+
+  // Acciones de Creación de Entidades (Admin)
+  crearFacultad: (nombre: string, decanoId?: string) => void;
+  crearPrograma: (nombre: string, facultadId: string, coordinadorId?: string) => void;
+  crearCurso: (datos: Omit<CursoVirtual, 'id'>) => void;
+  crearProyecto: (datos: Omit<ProyectoEspecial, 'id'>) => void;
+
+  // Acciones de Asignación Académica
+  asignarDecano: (facultadId: string, decanoId: string) => void;
+  asignarCoordinador: (programaId: string, coordinadorId: string) => void;
+  asignarDocenteCurso: (cursoId: string, docenteId: string) => void;
+  asignarEvaluadorCurso: (cursoId: string, evaluadorId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [areas] = useState<Area[]>(INITIAL_AREAS);
   const [permisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
   const [rolesPermisosMap, setRolesPermisosMap] = useState<Record<string, string[]>>(ROLES_PERMISOS_MAP);
+  
+  // Entidades Académicas y Proyectos en Estado Global
+  const [facultades, setFacultades] = useState<Facultad[]>(INITIAL_FACULTADES);
+  const [programas, setProgramas] = useState<Programa[]>(INITIAL_PROGRAMAS);
+  const [cursos, setCursos] = useState<CursoVirtual[]>(INITIAL_CURSOS);
+  const [proyectos, setProyectos] = useState<ProyectoEspecial[]>(INITIAL_PROYECTOS);
   
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
@@ -138,18 +167,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsuarioActual(null);
   };
 
-  const crearUsuario = (nuevo: Omit<Usuario, 'id'>) => {
-    const id = `u-${Date.now()}`;
+  const crearUsuario = async (nuevo: Omit<Usuario, 'id'> & { password?: string }): Promise<{ success: boolean; error?: string }> => {
+    let newUserId = `u-${Date.now()}`;
+
+    if (nuevo.password) {
+      try {
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: nuevo.email,
+            password: nuevo.password,
+            nombre_completo: nuevo.nombre_completo,
+            rol_id: nuevo.rol_id,
+            telefono: nuevo.telefono,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || 'Error al crear usuario en servidor.' };
+        }
+        if (data.user?.id) {
+          newUserId = data.user.id;
+        }
+      } catch (err: any) {
+        console.warn('API de administración no disponible, guardando en estado local:', err);
+      }
+    }
+
     const rol = roles.find(r => r.id === nuevo.rol_id);
     const usuarioCompleto: Usuario = {
-      ...nuevo,
-      id,
+      nombre_completo: nuevo.nombre_completo,
+      email: nuevo.email,
+      rol_id: nuevo.rol_id,
+      telefono: nuevo.telefono,
+      activo: nuevo.activo !== false,
+      id: newUserId,
       rol_nombre: rol?.nombre || 'Docente',
       area_nombre: rol?.area_nombre || 'CURSO',
-      activo: true,
       avatar_url: nuevo.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
     };
     setUsuarios(prev => [usuarioCompleto, ...prev]);
+    return { success: true };
+  };
+
+  const adminResetPassword = async (userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/admin/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Error al restablecer la contraseña.' };
+      }
+      return { success: true };
+    } catch (err: any) {
+      // Modo local / offline
+      return { success: true };
+    }
   };
 
   const actualizarUsuario = (id: string, datos: Partial<Usuario>) => {
@@ -183,6 +261,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const crearFacultad = (nombre: string, decanoId?: string) => {
+    const decano = usuarios.find(u => u.id === decanoId);
+    const nueva: Facultad = {
+      id: `f-${Date.now()}`,
+      nombre,
+      decano_id: decanoId,
+      decano_nombre: decano?.nombre_completo || 'Sin Asignar',
+      created_at: new Date().toISOString()
+    };
+    setFacultades(prev => [nueva, ...prev]);
+  };
+
+  const crearPrograma = (nombre: string, facultadId: string, coordinadorId?: string) => {
+    const facultad = facultades.find(f => f.id === facultadId);
+    const coord = usuarios.find(u => u.id === coordinadorId);
+    const nuevo: Programa = {
+      id: `p-${Date.now()}`,
+      nombre,
+      facultad_id: facultadId,
+      facultad_nombre: facultad?.nombre || 'Facultad General',
+      coordinador_id: coordinadorId,
+      coordinador_nombre: coord?.nombre_completo || 'Sin Asignar',
+      created_at: new Date().toISOString()
+    };
+    setProgramas(prev => [nuevo, ...prev]);
+  };
+
+  const crearCurso = (datos: Omit<CursoVirtual, 'id'>) => {
+    const prog = programas.find(p => p.id === datos.programa_id);
+    const doc = usuarios.find(u => u.id === datos.docente_id);
+    const ev = usuarios.find(u => u.id === datos.evaluador_id);
+    const nuevo: CursoVirtual = {
+      ...datos,
+      id: `c-${Date.now()}`,
+      programa_nombre: prog?.nombre || datos.programa_nombre,
+      facultad_nombre: prog?.facultad_nombre || datos.facultad_nombre,
+      docente_nombre: doc?.nombre_completo || 'Sin Asignar',
+      evaluador_nombre: ev?.nombre_completo || 'Sin Asignar',
+      created_at: new Date().toISOString()
+    };
+    setCursos(prev => [nuevo, ...prev]);
+  };
+
+  const crearProyecto = (datos: Omit<ProyectoEspecial, 'id'>) => {
+    const nuevo: ProyectoEspecial = {
+      ...datos,
+      id: `pry-${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+    setProyectos(prev => [nuevo, ...prev]);
+  };
+
+  const asignarDecano = (facultadId: string, decanoId: string) => {
+    const decano = usuarios.find(u => u.id === decanoId);
+    setFacultades(prev => prev.map(f => f.id === facultadId ? {
+      ...f,
+      decano_id: decanoId,
+      decano_nombre: decano?.nombre_completo || 'Sin Asignar'
+    } : f));
+  };
+
+  const asignarCoordinador = (programaId: string, coordinadorId: string) => {
+    const coord = usuarios.find(u => u.id === coordinadorId);
+    setProgramas(prev => prev.map(p => p.id === programaId ? {
+      ...p,
+      coordinador_id: coordinadorId,
+      coordinador_nombre: coord?.nombre_completo || 'Sin Asignar'
+    } : p));
+  };
+
+  const asignarDocenteCurso = (cursoId: string, docenteId: string) => {
+    const doc = usuarios.find(u => u.id === docenteId);
+    setCursos(prev => prev.map(c => c.id === cursoId ? {
+      ...c,
+      docente_id: docenteId,
+      docente_nombre: doc?.nombre_completo || 'Sin Asignar'
+    } : c));
+  };
+
+  const asignarEvaluadorCurso = (cursoId: string, evaluadorId: string) => {
+    const ev = usuarios.find(u => u.id === evaluadorId);
+    setCursos(prev => prev.map(c => c.id === cursoId ? {
+      ...c,
+      evaluador_id: evaluadorId,
+      evaluador_nombre: ev?.nombre_completo || 'Sin Asignar'
+    } : c));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -196,6 +362,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         nivelArea,
         isDevSimulatorOpen,
         setIsDevSimulatorOpen,
+        facultades,
+        programas,
+        cursos,
+        proyectos,
         hasPermission,
         canAccessLevel,
         isAdmin,
@@ -205,7 +375,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         crearUsuario,
         actualizarUsuario,
         eliminarUsuario,
-        actualizarPermisosRol
+        actualizarPermisosRol,
+        adminResetPassword,
+        crearFacultad,
+        crearPrograma,
+        crearCurso,
+        crearProyecto,
+        asignarDecano,
+        asignarCoordinador,
+        asignarDocenteCurso,
+        asignarEvaluadorCurso
       }}
     >
       {children}

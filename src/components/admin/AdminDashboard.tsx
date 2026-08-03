@@ -6,6 +6,7 @@ import {
   Users, 
   Layers, 
   Key, 
+  KeyRound,
   Plus, 
   Edit, 
   Trash2, 
@@ -23,6 +24,8 @@ import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { UserFormModal } from './UserFormModal';
 import { RolePermissionsModal } from './RolePermissionsModal';
+import { AdminResetPasswordModal } from './AdminResetPasswordModal';
+import { CreateEntityModal, TipoEntidad } from './CreateEntityModal';
 import { INITIAL_CURSOS } from '@/lib/mockData';
 
 interface AdminDashboardProps {
@@ -51,21 +54,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     actualizarUsuario,
     eliminarUsuario,
     actualizarPermisosRol,
-    setIsDevSimulatorOpen
+    adminResetPassword,
+    setIsDevSimulatorOpen,
+    facultades,
+    programas,
+    cursos,
+    proyectos,
+    crearFacultad,
+    crearPrograma,
+    crearCurso,
+    crearProyecto,
+    asignarDecano,
+    asignarCoordinador,
+    asignarDocenteCurso,
+    asignarEvaluadorCurso
   } = useAuth();
 
   const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones'>('usuarios');
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   
-  // Asignaciones local state
-  const [facultades, setFacultades] = useState<Facultad[]>(initialFacultades);
-  const [programas, setProgramas] = useState<Programa[]>(initialProgramas);
-  const [cursos, setCursos] = useState<CursoVirtual[]>(INITIAL_CURSOS);
-
   // Modals state
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [usuarioEditar, setUsuarioEditar] = useState<Usuario | null>(null);
+  const [usuarioResetPassword, setUsuarioResetPassword] = useState<Usuario | null>(null);
   const [rolPermisosEditar, setRolPermisosEditar] = useState<Rol | null>(null);
+  const [createEntityType, setCreateEntityType] = useState<TipoEntidad | null>(null);
 
   // Filter users by search box
   const usuariosFiltrados = usuarios.filter(u =>
@@ -77,39 +90,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Handlers for assignments
   const handleAssignDecano = (facultadId: string, decanoId: string) => {
-    const decano = usuarios.find(u => u.id === decanoId);
-    setFacultades(prev => prev.map(f => f.id === facultadId ? {
-      ...f,
-      decano_id: decanoId,
-      decano_nombre: decano?.nombre_completo || 'Sin Asignar'
-    } : f));
+    asignarDecano(facultadId, decanoId);
   };
 
   const handleAssignCoordinador = (programaId: string, coordinadorId: string) => {
-    const coord = usuarios.find(u => u.id === coordinadorId);
-    setProgramas(prev => prev.map(p => p.id === programaId ? {
-      ...p,
-      coordinador_id: coordinadorId,
-      coordinador_nombre: coord?.nombre_completo || 'Sin Asignar'
-    } : p));
+    asignarCoordinador(programaId, coordinadorId);
   };
 
   const handleAssignCursoDocente = (cursoId: string, docenteId: string) => {
-    const doc = usuarios.find(u => u.id === docenteId);
-    setCursos(prev => prev.map(c => c.id === cursoId ? {
-      ...c,
-      docente_id: docenteId,
-      docente_nombre: doc?.nombre_completo || 'Sin Asignar'
-    } : c));
+    asignarDocenteCurso(cursoId, docenteId);
   };
 
   const handleAssignCursoEvaluador = (cursoId: string, evaluadorId: string) => {
-    const ev = usuarios.find(u => u.id === evaluadorId);
-    setCursos(prev => prev.map(c => c.id === cursoId ? {
-      ...c,
-      evaluador_id: evaluadorId,
-      evaluador_nombre: ev?.nombre_completo || 'Sin Asignar'
-    } : c));
+    asignarEvaluadorCurso(cursoId, evaluadorId);
   };
 
   const handleOpenCreateUser = () => {
@@ -289,6 +282,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </td>
                       <td className="py-3 px-4 text-right space-x-1">
                         <button
+                          onClick={() => setUsuarioResetPassword(usr)}
+                          className="p-1.5 text-charcoal-500 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-all"
+                          title="Restablecer Contraseña"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleOpenEditUser(usr)}
                           className="p-1.5 text-charcoal-500 hover:text-sage-600 hover:bg-cream-100 rounded-full transition-all"
                           title="Editar Perfil"
@@ -317,9 +317,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="space-y-6">
           {/* Section 1: Facultades & Decanos */}
           <div className="ccv-card p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-sage-600" />
-              <h3 className="text-base font-extrabold text-charcoal-900">1. Asignación de Decanos por Facultad</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-sage-600" />
+                <h3 className="text-base font-extrabold text-charcoal-900">1. Asignación y Registro de Facultades</h3>
+              </div>
+              <button
+                onClick={() => setCreateEntityType('facultad')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Facultad
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {facultades.map(fac => (
@@ -352,9 +360,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Section 2: Programas & Coordinadores */}
           <div className="ccv-card p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-sage-600" />
-              <h3 className="text-base font-extrabold text-charcoal-900">2. Asignación de Coordinadores por Programa</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-sage-600" />
+                <h3 className="text-base font-extrabold text-charcoal-900">2. Asignación y Registro de Programas Académicos</h3>
+              </div>
+              <button
+                onClick={() => setCreateEntityType('programa')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Programa
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {programas.map(prog => (
@@ -387,9 +403,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Section 3: Cursos Virtuales (Docente & Par Evaluador) */}
           <div className="ccv-card p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-sage-600" />
-              <h3 className="text-base font-extrabold text-charcoal-900">3. Asignación de Docente & Par Evaluador por Curso</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-sage-600" />
+                <h3 className="text-base font-extrabold text-charcoal-900">3. Asignación y Creación de Cursos Virtuales</h3>
+              </div>
+              <button
+                onClick={() => setCreateEntityType('curso')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Curso
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {cursos.map(cur => (
@@ -431,6 +455,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </select>
                     </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 4: Proyectos Especiales CCV */}
+          <div className="ccv-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-sage-600" />
+                <h3 className="text-base font-extrabold text-charcoal-900">4. Registro de Proyectos Especiales CCV</h3>
+              </div>
+              <button
+                onClick={() => setCreateEntityType('proyecto')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Proyecto
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {proyectos.map(pry => (
+                <div key={pry.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-extrabold text-charcoal-900 text-sm">{pry.nombre}</h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
+                      {pry.estado}
+                    </span>
+                  </div>
+                  <p className="text-xs text-charcoal-600">{pry.descripcion}</p>
                 </div>
               ))}
             </div>
@@ -541,6 +594,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           permisosActuales={rolesPermisosMap[rolPermisosEditar.id] || []}
           onClose={() => setRolPermisosEditar(null)}
           onSave={actualizarPermisosRol}
+        />
+      )}
+
+      {usuarioResetPassword && (
+        <AdminResetPasswordModal
+          usuario={usuarioResetPassword}
+          onClose={() => setUsuarioResetPassword(null)}
+          onResetPassword={adminResetPassword}
+        />
+      )}
+
+      {createEntityType && (
+        <CreateEntityModal
+          tipo={createEntityType}
+          facultades={facultades}
+          programas={programas}
+          areas={areas}
+          usuarios={usuarios}
+          onClose={() => setCreateEntityType(null)}
+          onCrearFacultad={crearFacultad}
+          onCrearPrograma={crearPrograma}
+          onCrearCurso={crearCurso}
+          onCrearProyecto={crearProyecto}
         />
       )}
     </div>

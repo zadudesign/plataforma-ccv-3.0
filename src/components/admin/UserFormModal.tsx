@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, UserPlus, Edit, ShieldCheck, Mail, Phone, Lock, CheckCircle2 } from 'lucide-react';
+import { X, UserPlus, Edit, ShieldCheck, Mail, Phone, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Usuario, Rol } from '@/types';
 
 interface UserFormModalProps {
   usuarioEditar?: Usuario | null;
   roles: Rol[];
   onClose: () => void;
-  onSave: (usuario: Omit<Usuario, 'id'> | Partial<Usuario>) => void;
+  onSave: (usuario: (Omit<Usuario, 'id'> & { password?: string }) | Partial<Usuario>) => void;
 }
 
 export const UserFormModal: React.FC<UserFormModalProps> = ({
@@ -22,10 +22,31 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   const [rolId, setRolId] = useState(usuarioEditar?.rol_id || roles[0]?.id || '');
   const [telefono, setTelefono] = useState(usuarioEditar?.telefono || '');
   const [activo, setActivo] = useState(usuarioEditar?.activo !== false);
+  
+  // Campos de contraseña para la creación inicial
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombreCompleto || !email || !rolId) return;
+
+    if (!usuarioEditar) {
+      if (!password) {
+        setErrorMsg('Debes asignar una contraseña al nuevo usuario.');
+        return;
+      }
+      if (password.length < 6) {
+        setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMsg('Las contraseñas ingresadas no coinciden.');
+        return;
+      }
+    }
 
     onSave({
       nombre_completo: nombreCompleto,
@@ -33,6 +54,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
       rol_id: rolId,
       telefono,
       activo,
+      ...(usuarioEditar ? {} : { password }),
     });
     onClose();
   };
@@ -64,6 +86,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {errorMsg && (
+            <div className="p-3 rounded-2xl bg-coral-50 border border-coral-200 text-coral-700 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-coral-600" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
               Nombre Completo *
@@ -94,6 +123,51 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               />
             </div>
           </div>
+
+          {!usuarioEditar && (
+            <>
+              <div>
+                <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+                  Contraseña Inicial *
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-charcoal-400 absolute left-3 top-3" />
+                  <input
+                    type={mostrarPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full pl-9 pr-10 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-mono font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPassword(!mostrarPassword)}
+                    className="absolute right-3 top-3 text-charcoal-400 hover:text-charcoal-800"
+                  >
+                    {mostrarPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+                  Confirmar Contraseña *
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-charcoal-400 absolute left-3 top-3" />
+                  <input
+                    type={mostrarPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Repite la contraseña"
+                    className="w-full pl-9 pr-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-mono font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">

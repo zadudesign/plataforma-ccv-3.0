@@ -33,7 +33,11 @@ export default function Home() {
     nivelArea, 
     isAdmin, 
     isDevSimulatorOpen, 
-    setIsDevSimulatorOpen 
+    setIsDevSimulatorOpen,
+    facultades,
+    programas,
+    cursos,
+    proyectos
   } = useAuth();
 
   const [vistaActual, setVistaActual] = useState<VistaNavegacion>('dashboard');
@@ -135,8 +139,8 @@ export default function Home() {
           <DashboardOverview
             tareas={tareasFiltradas}
             usuarioActual={usuarioActual}
-            cursos={INITIAL_CURSOS}
-            proyectos={INITIAL_PROYECTOS}
+            cursos={cursos}
+            proyectos={proyectos}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
           />
@@ -144,10 +148,10 @@ export default function Home() {
 
         {vistaActual === 'academic' && (
           <AcademicTree
-            facultades={INITIAL_FACULTADES}
-            programas={INITIAL_PROGRAMAS}
-            cursos={INITIAL_CURSOS}
-            proyectos={INITIAL_PROYECTOS}
+            facultades={facultades}
+            programas={programas}
+            cursos={cursos}
+            proyectos={proyectos}
             tareas={tareasFiltradas}
             busqueda={busqueda}
             onSelectCurso={handleSelectCurso}
@@ -177,8 +181,8 @@ export default function Home() {
               areas={INITIAL_AREAS}
               roles={INITIAL_ROLES}
               usuarios={INITIAL_USUARIOS}
-              facultades={INITIAL_FACULTADES}
-              programas={INITIAL_PROGRAMAS}
+              facultades={facultades}
+              programas={programas}
             />
           ) : (
             <div className="ccv-card p-12 text-center space-y-4 max-w-lg mx-auto my-12 animate-fadeIn">
@@ -214,8 +218,8 @@ export default function Home() {
         {isCreateTaskOpen && (
           <CreateTaskModal
             areas={INITIAL_AREAS}
-            cursos={INITIAL_CURSOS}
-            proyectos={INITIAL_PROYECTOS}
+            cursos={cursos}
+            proyectos={proyectos}
             usuarios={INITIAL_USUARIOS}
             onClose={() => setIsCreateTaskOpen(false)}
             onCreateTask={handleCreateTask}
