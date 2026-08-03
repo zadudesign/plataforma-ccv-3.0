@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { WelcomeBanner } from '@/components/layout/WelcomeBanner';
 import { DashboardOverview } from '@/components/dashboard/DashboardOverview';
 import { AcademicTree } from '@/components/academic/AcademicTree';
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
@@ -30,6 +31,7 @@ import { ShieldAlert } from 'lucide-react';
 export default function Home() {
   const { 
     usuarioActual, 
+    usuarios,
     nivelArea, 
     isAdmin, 
     isDevSimulatorOpen, 
@@ -97,9 +99,11 @@ export default function Home() {
     setVistaActual('kanban');
   };
 
-  // Regla de Visibilidad Descendente RLS según Jerarquía de Área del Usuario Autenticado
-  // Nivel 6 (ADMIN) & Nivel 5 (CMU): Ven el 100% de tareas y proyectos.
-  // Nivel 4 (DEPARTAMENTO), Nivel 3 (FACULTAD), Nivel 2 (PROGRAMA), Nivel 1 (CURSO): Ven sus tareas asignadas o correspondientes a su nivel.
+  // ---------------------------------------------------------------------------
+  // REGLAS DE SEGURIDAD Y VISIBILIDAD DESCENDENTE (RLS POR NIVEL Y ROL)
+  // ---------------------------------------------------------------------------
+
+  // 1. Tareas Visibles por Rol y Nivel Jerárquico (Nivel 6 ADMIN & 5 CMU ven 100%)
   const tareasVisiblesPorRol = tareas.filter(t => {
     if (nivelArea >= 5) return true; // ADMIN (6) y CMU (5) ven todo
     if (t.responsable_id === usuarioActual.id) return true; // Asignado a este usuario
@@ -120,6 +124,44 @@ export default function Home() {
     t.proyecto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  // 2. Cursos Visibles por Rol (Docente/Evaluador ven solo sus cursos asignados)
+  const cursosVisiblesPorRol = cursos.filter(c => {
+    if (nivelArea >= 5) return true; // ADMIN / CMU ven todo
+    // Decano: Cursos de su facultad
+    const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
+    if (decanoFacultad && c.facultad_nombre === decanoFacultad.nombre) return true;
+    // Coordinador: Cursos de su programa
+    const coordPrograma = programas.find(p => p.coordinador_id === usuarioActual.id);
+    if (coordPrograma && c.programa_id === coordPrograma.id) return true;
+    // Docente o Par Evaluador
+    if (c.docente_id === usuarioActual.id || c.evaluador_id === usuarioActual.id) return true;
+    // O si tiene tareas visibles en ese curso
+    if (tareasVisiblesPorRol.some(t => t.curso_id === c.id)) return true;
+
+    return false;
+  });
+
+  // 3. Proyectos Visibles por Rol
+  const proyectosVisiblesPorRol = proyectos.filter(p => {
+    if (nivelArea >= 5) return true;
+    return tareasVisiblesPorRol.some(t => t.proyecto_id === p.id);
+  });
+
+  // 4. Programas Visibles por Rol
+  const programasVisiblesPorRol = programas.filter(p => {
+    if (nivelArea >= 5) return true;
+    const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
+    if (decanoFacultad && p.facultad_id === decanoFacultad.id) return true;
+    if (p.coordinador_id === usuarioActual.id) return true;
+    return cursosVisiblesPorRol.some(c => c.programa_id === p.id);
+  });
+
+  // 5. Comentarios Visibles por Rol
+  const comentariosVisiblesPorRol = comentarios.filter(com => {
+    if (nivelArea >= 5) return true;
+    return tareasVisiblesPorRol.some(t => t.id === com.tarea_id);
+  });
+
   return (
     <div className="min-h-screen bg-cream-100 flex font-sans relative">
       {/* Floating Left Pill Sidebar */}
@@ -127,6 +169,9 @@ export default function Home() {
 
       {/* Main App Container */}
       <main className="flex-1 ml-28 mr-6 my-6 min-w-0">
+        {/* Top Hero Blue Banner */}
+        <WelcomeBanner usuarioActual={usuarioActual} />
+
         <Header
           usuarioActual={usuarioActual}
           onOpenCreateTask={() => setIsCreateTaskOpen(true)}
@@ -138,9 +183,12 @@ export default function Home() {
         {vistaActual === 'dashboard' && (
           <DashboardOverview
             tareas={tareasFiltradas}
+            comentarios={comentariosVisiblesPorRol}
             usuarioActual={usuarioActual}
-            cursos={cursos}
-            proyectos={proyectos}
+            usuarios={usuarios}
+            programas={programasVisiblesPorRol}
+            cursos={cursosVisiblesPorRol}
+            proyectos={proyectosVisiblesPorRol}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
           />
