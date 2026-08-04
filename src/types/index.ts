@@ -79,7 +79,15 @@ export interface CursoVirtual {
 }
 
 export type EstadoTarea = 'Pendiente' | 'En Proceso' | 'En Revisión' | 'Completado';
-export type TipoTarea = 'Curso Virtual' | 'Proyecto Especial';
+export type TipoTarea = 'Curso Virtual' | 'Proyecto';
+export type CategoriaTareaProyecto = 'Diseño' | 'Multimedia' | 'Soporte' | 'Transmisión';
+
+export interface ConfiguracionTarifa {
+  id?: string;
+  categoria: CategoriaTareaProyecto;
+  tarifa_hora: number;
+  descripcion?: string;
+}
 
 export interface TareaCCV {
   id: string;
@@ -98,11 +106,13 @@ export interface TareaCCV {
   orden_tarea: number;
   estado: EstadoTarea;
   tipo_tarea: TipoTarea;
+  categoria_proyecto?: CategoriaTareaProyecto;
   fecha_vencimiento: string;
   fecha_completada?: string;
   tiempo_estimado: number; // en horas
   tiempo_invertido: number; // en horas
-  tarifa_tarea: number; // valor monetario
+  tarifa_hora?: number; // valor por hora asignado
+  tarifa_tarea?: number; // valor monetario total (tiempo_estimado * tarifa_hora)
   created_at?: string;
 }
 

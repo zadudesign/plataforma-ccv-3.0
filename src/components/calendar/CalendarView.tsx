@@ -17,9 +17,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
   const [mesActual, setMesActual] = useState('Julio 2026');
 
-  // Days of July 2026 calendar matrix (July 2026 starts on Wednesday)
+  // Days of July 2026 calendar matrix (July 2026 starts on Wednesday, column 3 when week starts on Sunday)
   const diasMes = Array.from({ length: 31 }, (_, i) => i + 1);
-  const offsetInicial = 2; // Wednesday offset
+  const offsetInicial = 3; // Sunday-start offset for Wednesday July 1st
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -54,15 +54,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
       {/* Calendar Grid */}
       <div className="ccv-card p-6">
-        {/* Days of week header */}
+        {/* Days of week header (Starting on Sunday) */}
         <div className="grid grid-cols-7 gap-2 text-center text-xs font-extrabold text-charcoal-500 uppercase tracking-wider pb-3 border-b border-stone-200">
+          <div className="text-coral-600">Dom</div>
           <div>Lun</div>
           <div>Mar</div>
           <div>Mié</div>
           <div>Jue</div>
           <div>Vie</div>
           <div>Sáb</div>
-          <div>Dom</div>
         </div>
 
         {/* Calendar Days */}

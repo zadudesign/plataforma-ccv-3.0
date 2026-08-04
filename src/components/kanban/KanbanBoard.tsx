@@ -88,16 +88,25 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       >
                         {/* Type & Tariff Badge */}
                         <div className="flex items-center justify-between mb-2">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            tarea.tipo_tarea === 'Curso Virtual' 
-                              ? 'bg-sage-50 text-sage-700 border border-sage-200' 
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}>
-                            {tarea.tipo_tarea}
-                          </span>
-                          <span className="text-xs font-extrabold text-sage-700">
-                            ${tarea.tarifa_tarea}
-                          </span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              tarea.tipo_tarea === 'Curso Virtual' 
+                                ? 'bg-sage-50 text-sage-700 border border-sage-200' 
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {tarea.tipo_tarea}
+                            </span>
+                            {tarea.categoria_proyecto && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
+                                {tarea.categoria_proyecto}
+                              </span>
+                            )}
+                          </div>
+                          {tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined && (
+                            <span className="text-xs font-extrabold text-sage-700" title={tarea.tarifa_hora ? `$${tarea.tarifa_hora.toLocaleString('es-CO')} COP/h × ${tarea.tiempo_estimado}h` : undefined}>
+                              ${tarea.tarifa_tarea.toLocaleString('es-CO')} COP
+                            </span>
+                          )}
                         </div>
 
                         {/* Title */}

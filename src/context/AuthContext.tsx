@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial } from '@/types';
+import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto } from '@/types';
 import { 
   INITIAL_USUARIOS, 
   INITIAL_ROLES, 
@@ -11,7 +11,8 @@ import {
   INITIAL_FACULTADES,
   INITIAL_PROGRAMAS,
   INITIAL_CURSOS,
-  INITIAL_PROYECTOS
+  INITIAL_PROYECTOS,
+  INITIAL_TARIFAS_PROYECTO
 } from '@/lib/mockData';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -32,6 +33,7 @@ interface AuthContextType {
   programas: Programa[];
   cursos: CursoVirtual[];
   proyectos: ProyectoEspecial[];
+  tarifasProyecto: ConfiguracionTarifa[];
 
   // Helpers
   hasPermission: (clavePermiso: string) => boolean;
@@ -39,6 +41,7 @@ interface AuthContextType {
   isAdmin: () => boolean;
   
   // Acciones
+  actualizarTarifaProyecto: (categoria: CategoriaTareaProyecto, nuevaTarifa: number) => void;
   cambiarUsuarioSimulado: (usuarioId: string) => void;
   loginConSupabase: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -75,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [programas, setProgramas] = useState<Programa[]>(INITIAL_PROGRAMAS);
   const [cursos, setCursos] = useState<CursoVirtual[]>(INITIAL_CURSOS);
   const [proyectos, setProyectos] = useState<ProyectoEspecial[]>(INITIAL_PROYECTOS);
+  const [tarifasProyecto, setTarifasProyecto] = useState<ConfiguracionTarifa[]>(INITIAL_TARIFAS_PROYECTO);
   
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
@@ -349,6 +353,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } : c));
   };
 
+  const actualizarTarifaProyecto = (categoria: CategoriaTareaProyecto, nuevaTarifa: number) => {
+    setTarifasProyecto(prev => prev.map(t => t.categoria === categoria ? { ...t, tarifa_hora: nuevaTarifa } : t));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -366,9 +374,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         programas,
         cursos,
         proyectos,
+        tarifasProyecto,
         hasPermission,
         canAccessLevel,
         isAdmin,
+        actualizarTarifaProyecto,
         cambiarUsuarioSimulado,
         loginConSupabase,
         logout,

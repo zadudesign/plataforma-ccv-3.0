@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { X, Plus, Calendar, DollarSign, Clock, Layers, BookOpen, FolderKanban } from 'lucide-react';
-import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea } from '@/types';
+import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea, CategoriaTareaProyecto } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 interface CreateTaskModalProps {
   areas: Area[];
@@ -21,22 +22,28 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onClose,
   onCreateTask,
 }) => {
+  const { tarifasProyecto } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipoTarea, setTipoTarea] = useState<TipoTarea>('Curso Virtual');
-  const [areaId, setAreaId] = useState(areas[1]?.id || 'a-5');
+  const [categoriaProyecto, setCategoriaProyecto] = useState<CategoriaTareaProyecto>('Diseño');
   const [cursoId, setCursoId] = useState(cursos[0]?.id || 'c-1');
   const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || 'pry-1');
   const [responsableId, setResponsableId] = useState(usuarios[0]?.id || 'u-1');
   const [fechaVencimiento, setFechaVencimiento] = useState('2026-08-15');
   const [tiempoEstimado, setTiempoEstimado] = useState(20);
-  const [tarifaTarea, setTarifaTarea] = useState(450);
+
+  const resp = usuarios.find(u => u.id === responsableId);
+  const respArea = areas.find(a => a.nombre === resp?.area_nombre) || areas.find(a => a.id === 'a-5') || areas[0];
+
+  const tarifaConfig = tarifasProyecto.find(t => t.categoria === categoriaProyecto);
+  const tarifaHoraActual = tarifaConfig ? tarifaConfig.tarifa_hora : 35000;
+  const costoTotalCalculado = tipoTarea === 'Proyecto' ? Number(tiempoEstimado) * tarifaHoraActual : undefined;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) return;
 
-    const resp = usuarios.find(u => u.id === responsableId);
     const cursoObj = cursos.find(c => c.id === cursoId);
     const proyObj = proyectos.find(p => p.id === proyectoId);
 
@@ -44,12 +51,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       titulo,
       descripcion,
       tipo_tarea: tipoTarea,
-      area_id: areaId,
-      area_nombre: areas.find(a => a.id === areaId)?.nombre || 'CMU',
+      categoria_proyecto: tipoTarea === 'Proyecto' ? categoriaProyecto : undefined,
+      area_id: respArea?.id || 'a-5',
+      area_nombre: respArea?.nombre || resp?.area_nombre || 'CMU',
       curso_id: tipoTarea === 'Curso Virtual' ? cursoId : undefined,
       curso_nombre: tipoTarea === 'Curso Virtual' ? cursoObj?.nombre : undefined,
-      proyecto_id: tipoTarea === 'Proyecto Especial' ? proyectoId : undefined,
-      proyecto_nombre: tipoTarea === 'Proyecto Especial' ? proyObj?.nombre : undefined,
+      proyecto_id: tipoTarea === 'Proyecto' ? proyectoId : undefined,
+      proyecto_nombre: tipoTarea === 'Proyecto' ? proyObj?.nombre : undefined,
       responsable_id: responsableId,
       responsable_nombre: resp?.nombre_completo || 'Usuario',
       responsable_avatar: resp?.avatar_url,
@@ -58,7 +66,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       fecha_vencimiento: fechaVencimiento,
       tiempo_estimado: Number(tiempoEstimado),
       tiempo_invertido: 0,
-      tarifa_tarea: Number(tarifaTarea),
+      tarifa_hora: tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined,
+      tarifa_tarea: costoTotalCalculado,
     });
 
     onClose();
@@ -73,7 +82,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <h3 className="text-xl font-extrabold text-charcoal-900 flex items-center gap-2">
               <Plus className="w-5 h-5 text-sage-600" /> Nueva Tarea de Producción CCV
             </h3>
-            <p className="text-xs text-charcoal-500 mt-0.5">Formulario dinámico con filtrado jerárquico por área y curso.</p>
+            <p className="text-xs text-charcoal-500 mt-0.5">Asignación de entregables pedagógicos y proyectos CCV con vinculación automática de área.</p>
           </div>
           <button
             onClick={onClose}
@@ -101,14 +110,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
             <button
               type="button"
-              onClick={() => setTipoTarea('Proyecto Especial')}
+              onClick={() => setTipoTarea('Proyecto')}
               className={`p-3 rounded-2xl border flex items-center gap-2 font-bold transition-all ${
-                tipoTarea === 'Proyecto Especial'
+                tipoTarea === 'Proyecto'
                   ? 'bg-sage-600 text-white border-sage-600 shadow-sm'
                   : 'bg-cream-50 text-charcoal-700 border-stone-200 hover:bg-cream-100'
               }`}
             >
-              <FolderKanban className="w-4 h-4" /> Proyecto Especial
+              <FolderKanban className="w-4 h-4" /> Proyecto
             </button>
           </div>
 
@@ -152,51 +161,62 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               </select>
             </div>
           ) : (
-            <div>
-              <label className="block font-bold text-charcoal-800 mb-1">Proyecto Especial Asignado</label>
-              <select
-                value={proyectoId}
-                onChange={(e) => setProyectoId(e.target.value)}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
-              >
-                {proyectos.map(p => (
-                  <option key={p.id} value={p.id}>{p.nombre}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-bold text-charcoal-800 mb-1">Proyecto Asignado</label>
+                <select
+                  value={proyectoId}
+                  onChange={(e) => setProyectoId(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium"
+                >
+                  {proyectos.map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-charcoal-800 mb-1">Tipo de Tarea / Especialidad</label>
+                <select
+                  value={categoriaProyecto}
+                  onChange={(e) => setCategoriaProyecto(e.target.value as CategoriaTareaProyecto)}
+                  className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold bg-sage-50/50"
+                >
+                  {tarifasProyecto.map(t => (
+                    <option key={t.categoria} value={t.categoria}>
+                      {t.categoria} (${t.tarifa_hora.toLocaleString('es-CO')} COP/h)
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
-          {/* Responsable & Area */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-charcoal-800 mb-1">Responsable Asignado</label>
-              <select
-                value={responsableId}
-                onChange={(e) => setResponsableId(e.target.value)}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
-              >
-                {usuarios.map(u => (
-                  <option key={u.id} value={u.id}>{u.nombre_completo} ({u.rol_nombre})</option>
-                ))}
-              </select>
+          {/* Responsable Asignado */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-bold text-charcoal-800">Responsable Asignado</label>
+              {respArea && (
+                <span className="text-[10px] font-extrabold text-sage-800 bg-sage-50 border border-sage-200 px-2.5 py-0.5 rounded-full">
+                  Área: {respArea.nombre} (Nivel {respArea.nivel})
+                </span>
+              )}
             </div>
-
-            <div>
-              <label className="block font-bold text-charcoal-800 mb-1">Área Organizacional</label>
-              <select
-                value={areaId}
-                onChange={(e) => setAreaId(e.target.value)}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
-              >
-                {areas.map(a => (
-                  <option key={a.id} value={a.id}>{a.nombre} (Nivel {a.nivel})</option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={responsableId}
+              onChange={(e) => setResponsableId(e.target.value)}
+              className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium"
+            >
+              {usuarios.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.nombre_completo} — {u.rol_nombre || 'Usuario'} ({u.area_nombre || 'CMU'})
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Date, Hours, Tariff */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Date & Hours */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-bold text-charcoal-800 mb-1">Fecha Vencimiento</label>
               <input
@@ -211,23 +231,34 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               <label className="block font-bold text-charcoal-800 mb-1">Horas Estimadas</label>
               <input
                 type="number"
+                min="1"
                 value={tiempoEstimado}
                 onChange={(e) => setTiempoEstimado(Number(e.target.value))}
                 className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
               />
             </div>
-
-            <div>
-              <label className="block font-bold text-charcoal-800 mb-1">Tarifa Honorarios ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={tarifaTarea}
-                onChange={(e) => setTarifaTarea(Number(e.target.value))}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
-              />
-            </div>
           </div>
+
+          {/* Calculated Cost Card for Projects */}
+          {tipoTarea === 'Proyecto' && (
+            <div className="p-4 bg-sage-50/70 rounded-2xl border border-sage-200/80 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-sage-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="font-extrabold text-charcoal-900 text-xs">Costo Estimado de Proyecto ({categoriaProyecto})</h5>
+                  <p className="text-[11px] text-charcoal-600">
+                    Tarifa Oficial: <span className="font-bold text-sage-800">${tarifaHoraActual.toLocaleString('es-CO')} COP/h</span> × {tiempoEstimado} horas
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-charcoal-500 block uppercase">Total Tarea (COP)</span>
+                <span className="text-base font-black text-sage-700">${costoTotalCalculado?.toLocaleString('es-CO')} COP</span>
+              </div>
+            </div>
+          )}
 
           {/* Submit Action */}
           <div className="pt-4 flex justify-end gap-3">

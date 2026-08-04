@@ -89,7 +89,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           </div>
 
           {/* Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className={`grid grid-cols-1 ${tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
             <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
               <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
                 <User className="w-4 h-4 text-sage-600" /> Responsable
@@ -106,12 +106,19 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </p>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
-              <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
-                <DollarSign className="w-4 h-4 text-sage-600" /> Tarifa Financiera
+            {tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined && (
+              <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
+                <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
+                  <DollarSign className="w-4 h-4 text-sage-600" /> Costo Financiero (COP)
+                </div>
+                <p className="text-sm font-extrabold text-sage-700">${tarea.tarifa_tarea.toLocaleString('es-CO')} COP</p>
+                {tarea.tarifa_hora && (
+                  <p className="text-[10px] text-charcoal-500 font-medium mt-0.5">
+                    {tarea.categoria_proyecto || 'Proyecto'}: ${tarea.tarifa_hora.toLocaleString('es-CO')} COP/h × {tarea.tiempo_estimado}h
+                  </p>
+                )}
               </div>
-              <p className="text-sm font-extrabold text-sage-700">${tarea.tarifa_tarea}</p>
-            </div>
+            )}
           </div>
 
           {/* Digital Signature & Deliverable Validation Section */}

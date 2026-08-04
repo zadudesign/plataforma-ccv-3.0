@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Bell, MessageSquare, Plus, Shield, Sparkles } from 'lucide-react';
+import { Search, Bell, Plus, Shield, Sparkles } from 'lucide-react';
 import { Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -61,21 +61,13 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-coral-500 ring-2 ring-white" />
         </button>
 
-        {/* Chat Button */}
-        <button 
-          className="w-10 h-10 rounded-full bg-white border border-stone-200 flex items-center justify-center text-charcoal-800 hover:bg-cream-100 transition-colors shadow-sm"
-          title="Mensajes y Soporte"
-        >
-          <MessageSquare className="w-4 h-4" />
-        </button>
-
         {/* Create Task Action Button */}
         <button
           onClick={onOpenCreateTask}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Nueva Tarea CCV</span>
+          <span>Nueva Tarea</span>
         </button>
       </div>
     </header>

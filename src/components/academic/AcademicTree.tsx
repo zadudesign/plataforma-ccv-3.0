@@ -88,11 +88,11 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
         </div>
       </div>
 
-      {/* Proyectos Especiales Section */}
+      {/* Proyectos Section */}
       <div className="ccv-card p-6">
         <h3 className="text-lg font-bold text-charcoal-900 flex items-center gap-2 mb-4">
           <FolderKanban className="w-5 h-5 text-amber-600" />
-          Proyectos Especiales de Educación Continua ({proyectos.length})
+          Proyectos ({proyectos.length})
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {proyectos.map((proy) => (

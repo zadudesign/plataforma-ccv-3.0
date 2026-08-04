@@ -18,9 +18,10 @@ import {
   GraduationCap,
   BookOpen,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  DollarSign
 } from 'lucide-react';
-import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { UserFormModal } from './UserFormModal';
 import { RolePermissionsModal } from './RolePermissionsModal';
@@ -67,10 +68,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     asignarDecano,
     asignarCoordinador,
     asignarDocenteCurso,
-    asignarEvaluadorCurso
+    asignarEvaluadorCurso,
+    tarifasProyecto,
+    actualizarTarifaProyecto
   } = useAuth();
 
-  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones'>('usuarios');
+  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas'>('usuarios');
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   
   // Modals state
@@ -176,6 +179,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }`}
           >
             Áreas Jerárquicas
+          </button>
+          <button
+            onClick={() => setPestana('tarifas')}
+            className={`px-4 py-2 rounded-full transition-all ${
+              pestana === 'tarifas' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
+            }`}
+          >
+            Tarifas por Categoría
           </button>
         </div>
       </div>
@@ -460,12 +471,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          {/* Section 4: Proyectos Especiales CCV */}
+          {/* Section 4: Proyectos CCV */}
           <div className="ccv-card p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-sage-600" />
-                <h3 className="text-base font-extrabold text-charcoal-900">4. Registro de Proyectos Especiales CCV</h3>
+                <h3 className="text-base font-extrabold text-charcoal-900">4. Registro de Proyectos CCV</h3>
               </div>
               <button
                 onClick={() => setCreateEntityType('proyecto')}
@@ -571,6 +582,67 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
                 <span className="badge-green font-mono">Jerarquía Nivel {area.nivel}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Hourly Rate Configuration Tab */}
+      {pestana === 'tarifas' && (
+        <div className="ccv-card p-6 space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-charcoal-900 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-sage-600" />
+              Configuración de Tarifas por Hora (Proyectos)
+            </h3>
+            <p className="text-xs text-charcoal-500 mt-1">
+              Establece la tarifa monetaria por hora para cada especialidad de tarea de proyectos. El valor total de cada tarea se calculará automáticamente multiplicando la tarifa por las horas estimadas.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {tarifasProyecto.map((t) => (
+              <div key={t.categoria} className="p-5 bg-cream-50/60 rounded-2xl border border-stone-200 flex flex-col justify-between space-y-4 hover:border-sage-300 transition-all shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 uppercase tracking-wider">
+                      Especialidad de Tarea
+                    </span>
+                    <h4 className="text-lg font-black text-charcoal-900 mt-1">{t.categoria}</h4>
+                    <p className="text-xs text-charcoal-600 mt-1 leading-relaxed">{t.descripcion}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-2xl bg-white border border-stone-200 flex items-center justify-center text-sage-700 font-extrabold text-sm shadow-xs">
+                    $/h
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-stone-200/80 flex items-center justify-between gap-4">
+                  <div className="flex-1 max-w-[220px]">
+                    <label className="block text-[11px] font-bold text-charcoal-700 mb-1">Tarifa por Hora (COP $)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs text-charcoal-400 font-bold">$</span>
+                      <input
+                        type="number"
+                        step="1000"
+                        min="0"
+                        defaultValue={t.tarifa_hora}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (!isNaN(val) && val >= 0) {
+                            actualizarTarifaProyecto(t.categoria as CategoriaTareaProyecto, val);
+                          }
+                        }}
+                        className="w-full pl-7 pr-3 py-2 bg-white rounded-xl border border-stone-300 text-xs font-black text-charcoal-900 focus:ring-2 focus:ring-sage-500 focus:outline-none shadow-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-charcoal-500 block uppercase">Ejemplo 10 Horas</span>
+                    <span className="text-sm font-black text-sage-700">${(t.tarifa_hora * 10).toLocaleString('es-CO')} COP</span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

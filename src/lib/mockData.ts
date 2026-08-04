@@ -1,4 +1,11 @@
-import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa } from '@/types';
+
+export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
+  { id: 'tar-1', categoria: 'Diseño', tarifa_hora: 35000, descripcion: 'Tarifa por hora (COP) para diseño gráfico, instruccional y diagramación' },
+  { id: 'tar-2', categoria: 'Multimedia', tarifa_hora: 45000, descripcion: 'Tarifa por hora (COP) para edición audiovisual, producción de video y animaciones H5P' },
+  { id: 'tar-3', categoria: 'Soporte', tarifa_hora: 25000, descripcion: 'Tarifa por hora (COP) para soporte técnico, empaquetado SCORM y asistencia en plataformas' },
+  { id: 'tar-4', categoria: 'Transmisión', tarifa_hora: 50000, descripcion: 'Tarifa por hora (COP) para producción de streaming, masterización en vivo y webinars' },
+];
 
 export const INITIAL_AREAS: Area[] = [
   { id: 'a-6', nombre: 'ADMIN', nivel: 6 },
@@ -227,7 +234,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     fecha_vencimiento: '2026-07-28',
     tiempo_estimado: 24,
     tiempo_invertido: 18,
-    tarifa_tarea: 682.50,
   },
   {
     id: 't-102',
@@ -246,7 +252,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     fecha_vencimiento: '2026-08-05',
     tiempo_estimado: 16,
     tiempo_invertido: 4,
-    tarifa_tarea: 350.40,
   },
   {
     id: 't-103',
@@ -265,7 +270,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     fecha_vencimiento: '2026-07-25',
     tiempo_estimado: 12,
     tiempo_invertido: 10,
-    tarifa_tarea: 540.50,
   },
   {
     id: 't-104',
@@ -285,7 +289,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     fecha_completada: '2026-07-14',
     tiempo_estimado: 30,
     tiempo_invertido: 28,
-    tarifa_tarea: 1250.00,
   },
   {
     id: 't-105',
@@ -300,11 +303,13 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
     orden_tarea: 1,
     estado: 'En Proceso',
-    tipo_tarea: 'Proyecto Especial',
+    tipo_tarea: 'Proyecto',
+    categoria_proyecto: 'Diseño',
     fecha_vencimiento: '2026-08-12',
     tiempo_estimado: 40,
     tiempo_invertido: 15,
-    tarifa_tarea: 920.00,
+    tarifa_hora: 35000,
+    tarifa_tarea: 1400000,
   }
 ];
 

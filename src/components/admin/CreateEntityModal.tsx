@@ -119,7 +119,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       case 'proyecto':
         return {
           icon: <Layers className="w-5 h-5 text-sage-600" />,
-          title: 'Registrar Nuevo Proyecto Especial',
+          title: 'Registrar Nuevo Proyecto',
           subtitle: 'Añade una iniciativa institucional estratégica del CCV.',
         };
     }
