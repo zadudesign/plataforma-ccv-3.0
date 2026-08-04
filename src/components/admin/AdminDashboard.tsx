@@ -27,6 +27,8 @@ import { UserFormModal } from './UserFormModal';
 import { RolePermissionsModal } from './RolePermissionsModal';
 import { AdminResetPasswordModal } from './AdminResetPasswordModal';
 import { CreateEntityModal, TipoEntidad } from './CreateEntityModal';
+import { CreateRoleModal } from './CreateRoleModal';
+import { CreateAreaModal } from './CreateAreaModal';
 import { INITIAL_CURSOS } from '@/lib/mockData';
 
 interface AdminDashboardProps {
@@ -55,6 +57,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     actualizarUsuario,
     eliminarUsuario,
     actualizarPermisosRol,
+    crearRol,
+    crearArea,
     adminResetPassword,
     setIsDevSimulatorOpen,
     facultades,
@@ -82,6 +86,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [usuarioResetPassword, setUsuarioResetPassword] = useState<Usuario | null>(null);
   const [rolPermisosEditar, setRolPermisosEditar] = useState<Rol | null>(null);
   const [createEntityType, setCreateEntityType] = useState<TipoEntidad | null>(null);
+  const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
+  const [isCreateAreaModalOpen, setIsCreateAreaModalOpen] = useState(false);
 
   // Filter users by search box
   const usuariosFiltrados = usuarios.filter(u =>
@@ -505,13 +511,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Roles Tab */}
       {pestana === 'roles' && (
         <div className="ccv-card p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <h3 className="text-lg font-bold text-charcoal-900">Matriz de Roles de la Plataforma CCV</h3>
               <p className="text-xs text-charcoal-500 mt-0.5">
-                Definición de los 9 roles organizacionales y asignación de permisos CRUD.
+                Definición de roles organizacionales ({roles.length}) y asignación de permisos CRUD.
               </p>
             </div>
+            <button
+              onClick={() => setIsCreateRoleModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow transition-all shrink-0 self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" /> Crear Nuevo Rol
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -562,10 +574,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Areas Hierarchy Tab */}
       {pestana === 'areas' && (
         <div className="ccv-card p-6">
-          <h3 className="text-lg font-bold text-charcoal-900 mb-2">Cadena Organizacional y Niveles Jerárquicos</h3>
-          <p className="text-xs text-charcoal-500 mb-6">
-            La regla de visibilidad descendente (RLS) permite que los roles con áreas de jerarquía superior (Nivel 6 ADMIN, Nivel 5 CMU, Nivel 4 DEPARTAMENTO, Nivel 3 FACULTAD) supervisen los registros e información de sus áreas inferiores dependientes.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-charcoal-900 mb-1">Cadena Organizacional y Niveles Jerárquicos</h3>
+              <p className="text-xs text-charcoal-500">
+                La regla de visibilidad descendente (RLS) permite que los roles con áreas de jerarquía superior supervisen los registros e información de sus áreas inferiores dependientes.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsCreateAreaModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow transition-all shrink-0 self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" /> Crear Nueva Área
+            </button>
+          </div>
 
           <div className="space-y-3 max-w-2xl">
             {areas.sort((a, b) => b.nivel - a.nivel).map((area) => (
@@ -689,6 +711,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onCrearPrograma={crearPrograma}
           onCrearCurso={crearCurso}
           onCrearProyecto={crearProyecto}
+        />
+      )}
+
+      {isCreateRoleModalOpen && (
+        <CreateRoleModal
+          areas={areas}
+          permisosDef={permisosDef}
+          onClose={() => setIsCreateRoleModalOpen(false)}
+          onCrearRol={crearRol}
+        />
+      )}
+
+      {isCreateAreaModalOpen && (
+        <CreateAreaModal
+          onClose={() => setIsCreateAreaModalOpen(false)}
+          onCrearArea={crearArea}
         />
       )}
     </div>

@@ -1,8 +1,8 @@
-export type NivelArea = 1 | 2 | 3 | 4 | 5 | 6;
+export type NivelArea = number;
 
 export interface Area {
   id: string;
-  nombre: 'ADMIN' | 'CMU' | 'DEPARTAMENTO' | 'FACULTAD' | 'PROGRAMA' | 'CURSO';
+  nombre: string;
   nivel: NivelArea;
   created_at?: string;
 }

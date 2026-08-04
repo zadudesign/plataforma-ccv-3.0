@@ -49,6 +49,8 @@ interface AuthContextType {
   actualizarUsuario: (id: string, datos: Partial<Usuario>) => void;
   eliminarUsuario: (id: string) => void;
   actualizarPermisosRol: (rolId: string, permisos: string[]) => void;
+  crearRol: (nombre: string, areaId: string, permisos?: string[]) => void;
+  crearArea: (nombre: string, nivel: NivelArea) => void;
   adminResetPassword: (userId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 
   // Acciones de Creación de Entidades (Admin)
@@ -69,7 +71,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [usuarios, setUsuarios] = useState<Usuario[]>(INITIAL_USUARIOS);
   const [roles, setRoles] = useState<Rol[]>(INITIAL_ROLES);
-  const [areas] = useState<Area[]>(INITIAL_AREAS);
+  const [areas, setAreas] = useState<Area[]>(INITIAL_AREAS);
   const [permisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
   const [rolesPermisosMap, setRolesPermisosMap] = useState<Record<string, string[]>>(ROLES_PERMISOS_MAP);
   
@@ -265,6 +267,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const crearRol = (nombre: string, areaId: string, permisos: string[] = ['registro:ver']) => {
+    const areaObj = areas.find(a => a.id === areaId);
+    const nuevoRol: Rol = {
+      id: `r-${Date.now()}`,
+      nombre: nombre.trim(),
+      area_id: areaId,
+      area_nombre: areaObj?.nombre || 'CMU',
+      created_at: new Date().toISOString()
+    };
+    setRoles(prev => [...prev, nuevoRol]);
+    setRolesPermisosMap(prev => ({
+      ...prev,
+      [nuevoRol.id]: permisos
+    }));
+  };
+
+  const crearArea = (nombre: string, nivel: NivelArea) => {
+    const nuevaArea: Area = {
+      id: `a-${Date.now()}`,
+      nombre: nombre.trim().toUpperCase(),
+      nivel,
+      created_at: new Date().toISOString()
+    };
+    setAreas(prev => [...prev, nuevaArea]);
+  };
+
   const crearFacultad = (nombre: string, decanoId?: string) => {
     const decano = usuarios.find(u => u.id === decanoId);
     const nueva: Facultad = {
@@ -386,6 +414,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         actualizarUsuario,
         eliminarUsuario,
         actualizarPermisosRol,
+        crearRol,
+        crearArea,
         adminResetPassword,
         crearFacultad,
         crearPrograma,
