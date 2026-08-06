@@ -12,7 +12,10 @@ import {
   MessageSquare, 
   Send,
   Building2,
-  FileText
+  FileText,
+  BookOpen,
+  FolderKanban,
+  ChevronRight
 } from 'lucide-react';
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
 
@@ -23,6 +26,7 @@ interface TaskDetailModalProps {
   onClose: () => void;
   onUpdateStatus: (tareaId: string, nuevoEstado: EstadoTarea) => void;
   onAddComment: (tareaId: string, texto: string) => void;
+  onOpenCursoOProyecto?: (entidadId: string, tipo: 'curso' | 'proyecto') => void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -32,6 +36,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onClose,
   onUpdateStatus,
   onAddComment,
+  onOpenCursoOProyecto,
 }) => {
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [firmaVerificada, setFirmaVerificada] = useState(true);
@@ -67,10 +72,45 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </span>
             </div>
             <h3 className="text-xl font-extrabold text-charcoal-900">{tarea.titulo}</h3>
-            <p className="text-xs text-charcoal-500 mt-1">
-              Área: <span className="font-semibold text-charcoal-800">{tarea.area_nombre || 'CMU'}</span> • 
-              {tarea.curso_nombre ? ` Curso: ${tarea.curso_nombre}` : ` Proyecto: ${tarea.proyecto_nombre}`}
-            </p>
+            <div className="text-xs text-charcoal-600 mt-1 flex items-center gap-2 flex-wrap">
+              <span>Área: <strong className="font-extrabold text-charcoal-900">{tarea.area_nombre || 'CMU'}</strong></span>
+              
+              {tarea.curso_id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenCursoOProyecto && tarea.curso_id) {
+                      onOpenCursoOProyecto(tarea.curso_id, 'curso');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sage-100 hover:bg-sage-600 text-sage-900 hover:text-white border border-sage-300 font-extrabold text-xs transition-all shadow-xs hover:shadow-md cursor-pointer group"
+                  title="Ir a la ventana modal del Curso Virtual"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-sage-700 group-hover:text-white transition-colors" />
+                  <span>Ver Curso: {tarea.curso_nombre}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-sage-700 group-hover:text-white transition-colors" />
+                </button>
+              )}
+
+              {tarea.proyecto_id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenCursoOProyecto && tarea.proyecto_id) {
+                      onOpenCursoOProyecto(tarea.proyecto_id, 'proyecto');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 hover:bg-amber-600 text-amber-950 hover:text-white border border-amber-300 font-extrabold text-xs transition-all shadow-xs hover:shadow-md cursor-pointer group"
+                  title="Ir a la ventana modal del Proyecto Especial"
+                >
+                  <FolderKanban className="w-3.5 h-3.5 text-amber-700 group-hover:text-white transition-colors" />
+                  <span>Ver Proyecto: {tarea.proyecto_nombre}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-amber-700 group-hover:text-white transition-colors" />
+                </button>
+              )}
+            </div>
           </div>
 
           <button

@@ -264,6 +264,15 @@ export default function Home() {
             onClose={() => setTareaSeleccionada(null)}
             onUpdateStatus={handleUpdateStatus}
             onAddComment={handleAddComment}
+            onOpenCursoOProyecto={(entidadId, tipo) => {
+              if (tipo === 'curso') {
+                const c = cursos.find(x => x.id === entidadId);
+                if (c) setEntidadProgresoSeleccionada({ entidad: c, tipo: 'curso' });
+              } else {
+                const p = proyectos.find(x => x.id === entidadId);
+                if (p) setEntidadProgresoSeleccionada({ entidad: p, tipo: 'proyecto' });
+              }
+            }}
           />
         )}
 
@@ -289,6 +298,7 @@ export default function Home() {
             entidad={entidadProgresoSeleccionada.entidad}
             tipo={entidadProgresoSeleccionada.tipo}
             tareas={tareas}
+            comentarios={comentarios}
             onClose={() => setEntidadProgresoSeleccionada(null)}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onUpdateStatus={handleUpdateStatus}
