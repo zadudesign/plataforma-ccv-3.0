@@ -57,8 +57,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800">
                 {tarea.tipo_tarea}
               </span>
-              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                tarea.estado === 'Completado' ? 'badge-green' : 'badge-red'
+              <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border shadow-xs ${
+                tarea.estado === 'Pendiente' ? 'bg-rose-600 text-white border-rose-700' :
+                tarea.estado === 'En Proceso' ? 'bg-blue-600 text-white border-blue-700' :
+                tarea.estado === 'En Revisión' ? 'bg-amber-500 text-white border-amber-600' :
+                'bg-emerald-600 text-white border-emerald-700'
               }`}>
                 {tarea.estado}
               </span>
@@ -147,19 +150,31 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           <div>
             <h4 className="text-xs font-bold text-charcoal-500 uppercase tracking-wider mb-2">Cambiar Estado de la Tarea</h4>
             <div className="flex flex-wrap gap-2">
-              {(['Pendiente', 'En Proceso', 'En Revisión', 'Completado'] as EstadoTarea[]).map((est) => (
-                <button
-                  key={est}
-                  onClick={() => onUpdateStatus(tarea.id, est)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-                    tarea.estado === est
-                      ? 'bg-charcoal-900 text-white shadow-md scale-105'
-                      : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200'
-                  }`}
-                >
-                  {est}
-                </button>
-              ))}
+              {(['Pendiente', 'En Proceso', 'En Revisión', 'Completada'] as EstadoTarea[]).map((est) => {
+                const isActive = tarea.estado === est;
+                const getActiveBtnStyle = (estado: EstadoTarea) => {
+                  switch (estado) {
+                    case 'Pendiente': return 'bg-rose-600 text-white ring-2 ring-rose-300';
+                    case 'En Proceso': return 'bg-blue-600 text-white ring-2 ring-blue-300';
+                    case 'En Revisión': return 'bg-amber-500 text-white ring-2 ring-amber-300';
+                    case 'Completada': return 'bg-emerald-600 text-white ring-2 ring-emerald-300';
+                  }
+                };
+
+                return (
+                  <button
+                    key={est}
+                    onClick={() => onUpdateStatus(tarea.id, est)}
+                    className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all ${
+                      isActive
+                        ? `${getActiveBtnStyle(est)} shadow-md scale-105`
+                        : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200 border border-stone-200'
+                    }`}
+                  >
+                    {est}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

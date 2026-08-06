@@ -1,20 +1,42 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Layers, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Layers, CheckCircle2, AlertCircle, GitMerge } from 'lucide-react';
+import { Area } from '@/types';
 
 interface CreateAreaModalProps {
+  areas: Area[];
+  defaultParentId?: string;
   onClose: () => void;
-  onCrearArea: (nombre: string, nivel: number) => void;
+  onCrearArea: (nombre: string, nivel: number, parentId?: string | null) => void;
 }
 
 export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
+  areas,
+  defaultParentId = '',
   onClose,
   onCrearArea,
 }) => {
   const [nombre, setNombre] = useState('');
-  const [nivel, setNivel] = useState<number>(3);
+  const [nivel, setNivel] = useState<number>(() => {
+    if (defaultParentId) {
+      const parentObj = areas.find(a => a.id === defaultParentId);
+      if (parentObj) return parentObj.nivel;
+    }
+    return 5;
+  });
+  const [parentId, setParentId] = useState<string>(defaultParentId);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleParentChange = (selectedParentId: string) => {
+    setParentId(selectedParentId);
+    if (selectedParentId) {
+      const parentObj = areas.find(a => a.id === selectedParentId);
+      if (parentObj) {
+        setNivel(parentObj.nivel);
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +49,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
       return;
     }
 
-    onCrearArea(nombre, nivel);
+    onCrearArea(nombre, nivel, parentId || null);
     onClose();
   };
 
@@ -47,10 +69,10 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
           </div>
           <div>
             <h3 className="text-lg font-black text-charcoal-900">
-              Crear Nueva Área Jerárquica
+              Crear Nueva Área o Subárea
             </h3>
             <p className="text-xs text-charcoal-500">
-              Registra una unidad o nivel en la cadena organizacional.
+              Registra una unidad o sub-equipo en la cadena organizacional.
             </p>
           </div>
         </div>
@@ -65,15 +87,37 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-charcoal-700 mb-1">
-              Nombre de la Nueva Área <span className="text-rose-500">*</span>
+              Nombre de la Nueva Área / Subárea <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={nombre}
               onChange={e => setNombre(e.target.value)}
-              placeholder="Ej: VICERRECTORIA, SUBDIRECCION, LABORATORIO..."
+              placeholder="Ej: PRODUCCIÓN MULTIMEDIA, DISEÑO INSTRUCCIONAL..."
               className="w-full px-4 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-medium uppercase text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-charcoal-700 mb-1 flex items-center gap-1.5">
+              <GitMerge className="w-3.5 h-3.5 text-sage-600" />
+              Área Padre (Opcional - Para Subáreas)
+            </label>
+            <select
+              value={parentId}
+              onChange={e => handleParentChange(e.target.value)}
+              className="w-full px-4 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+            >
+              <option value="">-- Ninguna (Área Principal / Raíz) --</option>
+              {areas.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre} (Nivel {a.nivel}){a.area_padre_nombre ? ` — Padre: ${a.area_padre_nombre}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-charcoal-400 mt-1">
+              Si seleccionas un área padre, esta nueva unidad operará como subárea dentro de la jerarquía.
+            </p>
           </div>
 
           <div>
@@ -89,7 +133,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
               className="w-full px-4 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
             />
             <p className="text-[11px] text-charcoal-400 mt-1.5 leading-relaxed">
-              * Nota: Los niveles superiores (ej. Nivel 6 ADMIN) supervisan la información de las áreas en niveles inferiores (ej. Nivel 1 a 5).
+              * Nota: Los niveles superiores (ej. Nivel 6 ADMIN, Nivel 5 CMU) supervisan la información de las áreas y subáreas derivadas.
             </p>
           </div>
 

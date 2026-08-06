@@ -25,7 +25,8 @@ import {
   INITIAL_TAREAS, 
   INITIAL_COMENTARIOS 
 } from '@/lib/mockData';
-import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual } from '@/types';
+import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
+import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { ShieldAlert } from 'lucide-react';
 
 export default function Home() {
@@ -52,6 +53,7 @@ export default function Home() {
   // Modal states
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
 
   // If no user is logged in, show the Login Form (connected to Supabase & Dev Simulator)
   if (!usuarioActual) {
@@ -65,7 +67,7 @@ export default function Home() {
         return {
           ...t,
           estado: nuevoEstado,
-          fecha_completada: nuevoEstado === 'Completado' ? new Date().toISOString().split('T')[0] : undefined
+          fecha_completada: nuevoEstado === 'Completada' ? new Date().toISOString().split('T')[0] : undefined
         };
       }
       return t;
@@ -191,6 +193,7 @@ export default function Home() {
             proyectos={proyectosVisiblesPorRol}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+            onOpenProgreso={(entidad, tipo) => setEntidadProgresoSeleccionada({ entidad, tipo })}
           />
         )}
 
@@ -203,6 +206,7 @@ export default function Home() {
             tareas={tareasFiltradas}
             busqueda={busqueda}
             onSelectCurso={handleSelectCurso}
+            onOpenProgreso={(entidad, tipo) => setEntidadProgresoSeleccionada({ entidad, tipo })}
           />
         )}
 
@@ -277,6 +281,18 @@ export default function Home() {
         {/* Quick Role Simulator Modal */}
         {isDevSimulatorOpen && (
           <DevRoleSimulatorModal onClose={() => setIsDevSimulatorOpen(false)} />
+        )}
+
+        {/* Course & Project Progress Detail Modal */}
+        {entidadProgresoSeleccionada && (
+          <CourseProjectProgressModal
+            entidad={entidadProgresoSeleccionada.entidad}
+            tipo={entidadProgresoSeleccionada.tipo}
+            tareas={tareas}
+            onClose={() => setEntidadProgresoSeleccionada(null)}
+            onSelectTask={(t) => setTareaSeleccionada(t)}
+            onUpdateStatus={handleUpdateStatus}
+          />
         )}
       </main>
     </div>

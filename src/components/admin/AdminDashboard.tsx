@@ -19,9 +19,12 @@ import {
   BookOpen,
   Building2,
   CheckCircle2,
-  DollarSign
+  DollarSign,
+  GitMerge,
+  CornerDownRight,
+  Briefcase
 } from 'lucide-react';
-import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, CategoriaTareaProyecto } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { UserFormModal } from './UserFormModal';
 import { RolePermissionsModal } from './RolePermissionsModal';
@@ -29,7 +32,204 @@ import { AdminResetPasswordModal } from './AdminResetPasswordModal';
 import { CreateEntityModal, TipoEntidad } from './CreateEntityModal';
 import { CreateRoleModal } from './CreateRoleModal';
 import { CreateAreaModal } from './CreateAreaModal';
+import { ConfirmDeleteAreaModal } from './ConfirmDeleteAreaModal';
 import { INITIAL_CURSOS } from '@/lib/mockData';
+
+interface AreaHierarchyNodeProps {
+  area: Area;
+  allAreas: Area[];
+  roles: Rol[];
+  usuarios: Usuario[];
+  proyectos: ProyectoEspecial[];
+  onOpenCreateSubarea: (parentAreaId: string) => void;
+  onOpenCreateRole: (areaId: string) => void;
+  onOpenDeleteArea: (area: Area) => void;
+  depth?: number;
+}
+
+const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
+  area,
+  allAreas,
+  roles,
+  usuarios,
+  proyectos,
+  onOpenCreateSubarea,
+  onOpenCreateRole,
+  onOpenDeleteArea,
+  depth = 0,
+}) => {
+  const subareas = allAreas.filter(a => a.parent_id === area.id);
+  const rolesArea = roles.filter(r => r.area_id === area.id || r.area_nombre === area.nombre);
+  const usuariosArea = usuarios.filter(u => 
+    rolesArea.some(r => r.id === u.rol_id) || 
+    u.area_nombre === area.nombre
+  );
+  const proyectosArea = proyectos.filter(p => p.area_id === area.id);
+
+  const getNivelColor = (nivel: number) => {
+    switch (nivel) {
+      case 6: return 'bg-amber-600 text-white';
+      case 5: return 'bg-sage-600 text-white';
+      case 4: return 'bg-sky-600 text-white';
+      case 3: return 'bg-purple-600 text-white';
+      case 2: return 'bg-indigo-600 text-white';
+      case 1: return 'bg-teal-600 text-white';
+      default: return 'bg-stone-600 text-white';
+    }
+  };
+
+  return (
+    <div className={`space-y-3 ${depth > 0 ? 'ml-6 pl-4 border-l-2 border-sage-300/80 mt-3' : ''}`}>
+      <div className="p-5 bg-white rounded-3xl border border-stone-200/90 shadow-sm hover:shadow-md transition-all space-y-4">
+        {/* Header: Área & Acciones */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+          <div className="flex items-center gap-3">
+            {depth > 0 && (
+              <CornerDownRight className="w-5 h-5 text-sage-600 shrink-0" />
+            )}
+            <div className={`w-10 h-10 rounded-2xl ${getNivelColor(area.nivel)} font-extrabold flex items-center justify-center text-sm shadow-xs`}>
+              {area.nivel}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="font-extrabold text-charcoal-900 text-base">{area.nombre}</h4>
+                {depth === 0 ? (
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 uppercase tracking-wide">
+                    Área Principal
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-cream-200 text-charcoal-700 uppercase tracking-wide">
+                    Subárea de {area.area_padre_nombre || 'Área Superior'}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-charcoal-500 mt-0.5">
+                Nivel RLS {area.nivel} — Visibilidad descendente activa
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => onOpenCreateRole(area.id)}
+              className="px-3 py-1.5 bg-cream-100 hover:bg-cream-200 text-charcoal-800 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 border border-stone-200"
+              title="Agregar nuevo rol adscrito a este área"
+            >
+              <Plus className="w-3.5 h-3.5 text-sage-600" /> Nuevo Rol
+            </button>
+            <button
+              onClick={() => onOpenCreateSubarea(area.id)}
+              className="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow-xs transition-all flex items-center gap-1.5"
+              title="Crear una subárea dependiente de esta unidad"
+            >
+              <Plus className="w-3.5 h-3.5" /> Nueva Subárea
+            </button>
+            <button
+              onClick={() => onOpenDeleteArea(area)}
+              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-full border border-rose-200 transition-all shadow-xs"
+              title="Eliminar esta área de forma controlada"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desglose de Dependencias (Roles, Usuarios, Proyectos) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {/* Roles dependientes */}
+          <div className="p-3 bg-cream-50/60 rounded-2xl border border-stone-200/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-charcoal-700 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-sage-600" />
+                Roles Adscritos ({rolesArea.length})
+              </span>
+            </div>
+            {rolesArea.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {rolesArea.map(r => (
+                  <span key={r.id} className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-stone-200 text-charcoal-800 shadow-xs">
+                    {r.nombre}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-charcoal-400 italic">Sin roles específicos asignados</p>
+            )}
+          </div>
+
+          {/* Usuarios pertenecientes */}
+          <div className="p-3 bg-cream-50/60 rounded-2xl border border-stone-200/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-charcoal-700 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-sage-600" />
+                Usuarios en el Área ({usuariosArea.length})
+              </span>
+            </div>
+            {usuariosArea.length > 0 ? (
+              <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+                {usuariosArea.map(u => (
+                  <div key={u.id} title={`${u.nombre_completo} (${u.rol_nombre || 'Sin Rol'})`} className="shrink-0">
+                    {u.avatar_url ? (
+                      <img src={u.avatar_url} alt={u.nombre_completo} className="w-7 h-7 rounded-full object-cover border border-sage-300" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-sage-700 text-white text-[10px] font-bold flex items-center justify-center border border-sage-300">
+                        {u.nombre_completo.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-charcoal-400 italic">Sin usuarios asignados</p>
+            )}
+          </div>
+
+          {/* Proyectos Especiales */}
+          <div className="p-3 bg-cream-50/60 rounded-2xl border border-stone-200/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-charcoal-700 flex items-center gap-1.5">
+                <Briefcase className="w-4 h-4 text-sage-600" />
+                Proyectos CCV ({proyectosArea.length})
+              </span>
+            </div>
+            {proyectosArea.length > 0 ? (
+              <div className="space-y-1">
+                {proyectosArea.map(p => (
+                  <div key={p.id} className="text-[10px] font-medium text-charcoal-800 truncate flex items-center justify-between">
+                    <span>• {p.nombre}</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-sage-100 text-sage-800 font-bold">{p.estado}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-charcoal-400 italic">Sin proyectos asociados</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Subáreas Hijas (Recursivo) */}
+      {subareas.length > 0 && (
+        <div className="space-y-3">
+          {subareas.map(sub => (
+            <AreaHierarchyNode
+              key={sub.id}
+              area={sub}
+              allAreas={allAreas}
+              roles={roles}
+              usuarios={usuarios}
+              proyectos={proyectos}
+              onOpenCreateSubarea={onOpenCreateSubarea}
+              onOpenCreateRole={onOpenCreateRole}
+              onOpenDeleteArea={onOpenDeleteArea}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface AdminDashboardProps {
   areas: Area[];
@@ -59,6 +259,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     actualizarPermisosRol,
     crearRol,
     crearArea,
+    eliminarArea,
     adminResetPassword,
     setIsDevSimulatorOpen,
     facultades,
@@ -88,6 +289,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [createEntityType, setCreateEntityType] = useState<TipoEntidad | null>(null);
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
   const [isCreateAreaModalOpen, setIsCreateAreaModalOpen] = useState(false);
+  const [defaultParentIdForAreaModal, setDefaultParentIdForAreaModal] = useState<string | undefined>(undefined);
+  const [defaultAreaIdForRoleModal, setDefaultAreaIdForRoleModal] = useState<string | undefined>(undefined);
+  const [areaAEliminar, setAreaAEliminar] = useState<Area | null>(null);
+
+  const handleOpenCreateSubarea = (parentAreaId: string) => {
+    setDefaultParentIdForAreaModal(parentAreaId);
+    setIsCreateAreaModalOpen(true);
+  };
+
+  const handleOpenCreateRoleForArea = (areaId: string) => {
+    setDefaultAreaIdForRoleModal(areaId);
+    setIsCreateRoleModalOpen(true);
+  };
+
+  const handleOpenDeleteArea = (area: Area) => {
+    setAreaAEliminar(area);
+  };
 
   // Filter users by search box
   const usuariosFiltrados = usuarios.filter(u =>
@@ -576,36 +794,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="ccv-card p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
-              <h3 className="text-lg font-bold text-charcoal-900 mb-1">Cadena Organizacional y Niveles Jerárquicos</h3>
+              <h3 className="text-lg font-bold text-charcoal-900 mb-1 flex items-center gap-2">
+                <GitMerge className="w-5 h-5 text-sage-600" />
+                Organigrama de Áreas Jerárquicas y Subáreas
+              </h3>
               <p className="text-xs text-charcoal-500">
-                La regla de visibilidad descendente (RLS) permite que los roles con áreas de jerarquía superior supervisen los registros e información de sus áreas inferiores dependientes.
+                La regla de visibilidad descendente (RLS) permite que las áreas padre tengan supervisión total de las tareas e información creadas en sus subáreas derivadas.
               </p>
             </div>
             <button
               onClick={() => setIsCreateAreaModalOpen(true)}
               className="flex items-center gap-1.5 px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow transition-all shrink-0 self-start sm:self-auto"
             >
-              <Plus className="w-4 h-4" /> Crear Nueva Área
+              <Plus className="w-4 h-4" /> Crear Nueva Área / Subárea
             </button>
           </div>
 
-          <div className="space-y-3 max-w-2xl">
-            {areas.sort((a, b) => b.nivel - a.nivel).map((area) => (
-              <div key={area.id} className="p-4 bg-white rounded-2xl border border-stone-200 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-sage-600 text-white font-black flex items-center justify-center text-sm shadow-sm">
-                    {area.nivel}
-                  </div>
-                  <div>
-                    <h4 className="font-black text-charcoal-900 text-sm">{area.nombre}</h4>
-                    <p className="text-xs text-charcoal-500">
-                      {area.nivel === 6 ? 'Acceso Total Administrador' : area.nivel === 5 ? 'Centro Multimedial CCV (Producción y Supervisión)' : `Acceso Jerárquico Nivel ${area.nivel}`}
-                    </p>
-                  </div>
-                </div>
-                <span className="badge-green font-mono">Jerarquía Nivel {area.nivel}</span>
-              </div>
-            ))}
+          <div className="space-y-4 max-w-4xl">
+            {/* Renderizar áreas raíz y sus jerarquías de dependencias completas */}
+            {areas
+              .filter(a => !a.parent_id || !areas.some(p => p.id === a.parent_id))
+              .sort((a, b) => b.nivel - a.nivel)
+              .map((areaPrincipal) => (
+                <AreaHierarchyNode
+                  key={areaPrincipal.id}
+                  area={areaPrincipal}
+                  allAreas={areas}
+                  roles={roles}
+                  usuarios={usuarios}
+                  proyectos={proyectos}
+                  onOpenCreateSubarea={handleOpenCreateSubarea}
+                  onOpenCreateRole={handleOpenCreateRoleForArea}
+                  onOpenDeleteArea={handleOpenDeleteArea}
+                />
+              ))}
           </div>
         </div>
       )}
@@ -718,15 +940,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <CreateRoleModal
           areas={areas}
           permisosDef={permisosDef}
-          onClose={() => setIsCreateRoleModalOpen(false)}
+          defaultAreaId={defaultAreaIdForRoleModal}
+          onClose={() => {
+            setIsCreateRoleModalOpen(false);
+            setDefaultAreaIdForRoleModal(undefined);
+          }}
           onCrearRol={crearRol}
         />
       )}
 
       {isCreateAreaModalOpen && (
         <CreateAreaModal
-          onClose={() => setIsCreateAreaModalOpen(false)}
+          areas={areas}
+          defaultParentId={defaultParentIdForAreaModal}
+          onClose={() => {
+            setIsCreateAreaModalOpen(false);
+            setDefaultParentIdForAreaModal(undefined);
+          }}
           onCrearArea={crearArea}
+        />
+      )}
+
+      {areaAEliminar && (
+        <ConfirmDeleteAreaModal
+          area={areaAEliminar}
+          allAreas={areas}
+          roles={roles}
+          usuarios={usuarios}
+          proyectos={proyectos}
+          onClose={() => setAreaAEliminar(null)}
+          onConfirmDelete={eliminarArea}
         />
       )}
     </div>

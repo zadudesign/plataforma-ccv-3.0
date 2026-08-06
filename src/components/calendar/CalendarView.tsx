@@ -41,14 +41,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <span className="text-xs font-extrabold text-charcoal-900 px-2">{mesActual}</span>
             <button className="text-charcoal-600 hover:text-charcoal-900 p-1"><ChevronRight className="w-4 h-4" /></button>
           </div>
-
-          <button
-            onClick={onOpenCreateTask}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold transition-all shadow"
-          >
-            <Plus className="w-4 h-4" />
-            Programar Entrega
-          </button>
         </div>
       </div>
 
@@ -107,13 +99,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       key={t.id}
                       onClick={() => onSelectTask(t)}
                       className={`p-1.5 rounded-lg text-[10px] font-bold truncate cursor-pointer transition-transform hover:scale-102 ${
-                        t.estado === 'Completado' 
-                          ? 'bg-sage-600 text-white' 
+                        t.estado === 'Completada' 
+                          ? 'bg-emerald-600 text-white shadow-xs' 
                           : t.estado === 'En Revisión' 
-                          ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-amber-100 text-amber-900'
+                          ? 'bg-amber-500 text-white shadow-xs' 
+                          : t.estado === 'En Proceso'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-rose-600 text-white shadow-xs'
                       }`}
-                      title={t.titulo}
+                      title={`${t.titulo} (${t.estado})`}
                     >
                       {t.titulo}
                     </div>

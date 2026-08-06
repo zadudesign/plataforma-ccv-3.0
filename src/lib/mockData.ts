@@ -8,12 +8,15 @@ export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
 ];
 
 export const INITIAL_AREAS: Area[] = [
-  { id: 'a-6', nombre: 'ADMIN', nivel: 6 },
-  { id: 'a-5', nombre: 'CMU', nivel: 5 },
-  { id: 'a-4', nombre: 'DEPARTAMENTO', nivel: 4 },
-  { id: 'a-3', nombre: 'FACULTAD', nivel: 3 },
-  { id: 'a-2', nombre: 'PROGRAMA', nivel: 2 },
-  { id: 'a-1', nombre: 'CURSO', nivel: 1 },
+  { id: 'a-6', nombre: 'ADMIN', nivel: 6, parent_id: null },
+  { id: 'a-5', nombre: 'CMU', nivel: 5, parent_id: 'a-6', area_padre_nombre: 'ADMIN' },
+  { id: 'a-5-1', nombre: 'PRODUCCIÓN MULTIMEDIA', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
+  { id: 'a-5-2', nombre: 'DISEÑO INSTRUCCIONAL', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
+  { id: 'a-5-3', nombre: 'SOPORTE LMS', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
+  { id: 'a-4', nombre: 'DEPARTAMENTO', nivel: 4, parent_id: 'a-6', area_padre_nombre: 'ADMIN' },
+  { id: 'a-3', nombre: 'FACULTAD', nivel: 3, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
+  { id: 'a-2', nombre: 'PROGRAMA', nivel: 2, parent_id: 'a-3', area_padre_nombre: 'FACULTAD' },
+  { id: 'a-1', nombre: 'CURSO', nivel: 1, parent_id: 'a-2', area_padre_nombre: 'PROGRAMA' },
 ];
 
 export const INITIAL_ROLES: Rol[] = [
@@ -283,7 +286,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_nombre: 'Prof. Ana María Silva',
     responsable_avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80',
     orden_tarea: 1,
-    estado: 'Completado',
+    estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-07-15',
     fecha_completada: '2026-07-14',

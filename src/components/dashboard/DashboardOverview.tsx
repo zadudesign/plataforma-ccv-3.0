@@ -22,7 +22,7 @@ import {
   Search,
   Shield
 } from 'lucide-react';
-import { TareaCCV, Usuario, CursoVirtual, ProyectoEspecial, Programa, TareaComentario } from '@/types';
+import { TareaCCV, Usuario, CursoVirtual, ProyectoEspecial, Programa, TareaComentario, EstadoTarea } from '@/types';
 
 const SEGMENT_COLORS = [
   '#DC2626', // Red (0-11%)
@@ -103,6 +103,7 @@ interface DashboardOverviewProps {
   proyectos: ProyectoEspecial[];
   onSelectTask: (tarea: TareaCCV) => void;
   onOpenCreateTask: () => void;
+  onOpenProgreso?: (entidad: CursoVirtual | ProyectoEspecial, tipo: 'curso' | 'proyecto') => void;
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
@@ -115,6 +116,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   proyectos,
   onSelectTask,
   onOpenCreateTask,
+  onOpenProgreso,
 }) => {
   // 1. MÉTRICAS INSTITUCIONALES GENERALES
   const numProgramas = programas.length;
@@ -353,12 +355,33 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <p className="text-xs text-charcoal-500 text-center py-6">No hay tareas registradas recientemente.</p>
               ) : (
                 ultimasTareas.map((tarea) => {
-                  const getEstadoBadgeClass = (estado: string) => {
+                  const getCardStyle = (estado: EstadoTarea) => {
                     switch (estado) {
-                      case 'Completado': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                      case 'En Revisión': return 'bg-purple-100 text-purple-800 border-purple-200';
-                      case 'En Proceso': return 'bg-blue-100 text-blue-800 border-blue-200';
-                      default: return 'bg-amber-100 text-amber-800 border-amber-200';
+                      case 'Pendiente':
+                        return 'bg-rose-50/80 border-rose-200 hover:border-rose-400';
+                      case 'En Proceso':
+                        return 'bg-blue-50/80 border-blue-200 hover:border-blue-400';
+                      case 'En Revisión':
+                        return 'bg-amber-50/80 border-amber-200 hover:border-amber-400';
+                      case 'Completada':
+                        return 'bg-emerald-50/80 border-emerald-200 hover:border-emerald-400';
+                      default:
+                        return 'bg-white border-stone-200';
+                    }
+                  };
+
+                  const getBadgeStyle = (estado: EstadoTarea) => {
+                    switch (estado) {
+                      case 'Pendiente':
+                        return 'bg-rose-600 text-white border-rose-700';
+                      case 'En Proceso':
+                        return 'bg-blue-600 text-white border-blue-700';
+                      case 'En Revisión':
+                        return 'bg-amber-500 text-white border-amber-600';
+                      case 'Completada':
+                        return 'bg-emerald-600 text-white border-emerald-700';
+                      default:
+                        return 'bg-stone-600 text-white';
                     }
                   };
 
@@ -366,29 +389,29 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                     <div
                       key={tarea.id}
                       onClick={() => onSelectTask(tarea)}
-                      className="p-3 bg-white hover:bg-cream-50 rounded-2xl border border-cream-200/60 shadow-sm transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer flex items-center justify-between gap-3 group"
+                      className={`p-3.5 rounded-2xl border shadow-xs transition-all hover:shadow hover:-translate-y-0.5 cursor-pointer flex items-center justify-between gap-3 group ${getCardStyle(tarea.estado)}`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
                           src={tarea.responsable_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
                           alt={tarea.responsable_nombre}
-                          className="w-10 h-10 rounded-full object-cover border border-cream-300 flex-shrink-0"
+                          className="w-10 h-10 rounded-full object-cover border border-white shadow-sm flex-shrink-0"
                         />
                         <div className="min-w-0">
-                          <p className="text-xs font-extrabold text-charcoal-900 truncate group-hover:text-sage-700 transition-colors">
+                          <p className="text-xs font-extrabold text-charcoal-900 truncate group-hover:underline">
                             {tarea.titulo}
                           </p>
-                          <p className="text-[11px] text-charcoal-500 truncate mt-0.5">
-                            {tarea.curso_nombre || tarea.proyecto_nombre || 'Asignación General'} • <span className="font-semibold text-charcoal-700">{tarea.responsable_nombre}</span>
+                          <p className="text-[11px] text-charcoal-600 truncate mt-0.5">
+                            {tarea.curso_nombre || tarea.proyecto_nombre || 'Asignación General'} • <span className="font-bold text-charcoal-900">{tarea.responsable_nombre}</span>
                           </p>
                         </div>
                       </div>
 
                       <div className="flex flex-col items-end flex-shrink-0 space-y-1">
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${getEstadoBadgeClass(tarea.estado)}`}>
+                        <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border shadow-xs ${getBadgeStyle(tarea.estado)}`}>
                           {tarea.estado}
                         </span>
-                        <span className="text-[10px] font-semibold text-charcoal-500">
+                        <span className="text-[10px] font-semibold text-charcoal-600">
                           Vence: {tarea.fecha_vencimiento}
                         </span>
                       </div>

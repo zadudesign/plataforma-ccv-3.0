@@ -4,6 +4,8 @@ export interface Area {
   id: string;
   nombre: string;
   nivel: NivelArea;
+  parent_id?: string | null;
+  area_padre_nombre?: string;
   created_at?: string;
 }
 
@@ -78,7 +80,7 @@ export interface CursoVirtual {
   created_at?: string;
 }
 
-export type EstadoTarea = 'Pendiente' | 'En Proceso' | 'En Revisión' | 'Completado';
+export type EstadoTarea = 'Pendiente' | 'En Proceso' | 'En Revisión' | 'Completada';
 export type TipoTarea = 'Curso Virtual' | 'Proyecto';
 export type CategoriaTareaProyecto = 'Diseño' | 'Multimedia' | 'Soporte' | 'Transmisión';
 

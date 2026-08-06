@@ -15,10 +15,14 @@ CREATE TABLE IF NOT EXISTS public.areas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre TEXT NOT NULL UNIQUE,
     nivel INT NOT NULL CHECK (nivel BETWEEN 1 AND 6),
+    parent_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 COMMENT ON COLUMN public.areas.nivel IS 'Jerarquía descendente: 6=ADMIN, 5=CMU, 4=DEPARTAMENTO, 3=FACULTAD, 2=PROGRAMA, 1=CURSO';
+COMMENT ON COLUMN public.areas.parent_id IS 'Área padre para jerarquía de subáreas';
+
+CREATE INDEX IF NOT EXISTS idx_areas_parent_id ON public.areas(parent_id);
 
 -- Tabla de Roles por Área
 CREATE TABLE IF NOT EXISTS public.roles (
@@ -116,7 +120,7 @@ CREATE TABLE IF NOT EXISTS public.tareas (
     responsable_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     rol_destino UUID REFERENCES public.roles(id) ON DELETE SET NULL,
     orden_tarea INT DEFAULT 0,
-    estado TEXT NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'En Proceso', 'En Revisión', 'Completado')),
+    estado TEXT NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'En Proceso', 'En Revisión', 'Completada')),
     tipo_tarea TEXT NOT NULL CHECK (tipo_tarea IN ('Curso Virtual', 'Proyecto Especial')),
     fecha_vencimiento DATE,
     fecha_completada DATE,
@@ -159,6 +163,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Función RPC Recursiva para obtener un área y todas sus subáreas descendientes
+CREATE OR REPLACE FUNCTION public.get_subarea_ids(root_area_id UUID)
+RETURNS TABLE (area_id UUID) AS $$
+BEGIN
+    RETURN QUERY
+    WITH RECURSIVE subareas AS (
+        SELECT id FROM public.areas WHERE id = root_area_id
+        UNION ALL
+        SELECT a.id FROM public.areas a
+        INNER JOIN subareas s ON a.parent_id = s.id
+    )
+    SELECT id FROM subareas;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
 -- Función para manejar nuevos registros en auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -183,13 +202,13 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Trigger para marcar fecha_completada automáticamente al cambiar estado a 'Completado'
+-- Trigger para marcar fecha_completada automáticamente al cambiar estado a 'Completada'
 CREATE OR REPLACE FUNCTION public.handle_tarea_completada()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.estado = 'Completado' AND OLD.estado != 'Completado' THEN
+    IF NEW.estado = 'Completada' AND OLD.estado != 'Completada' THEN
         NEW.fecha_completada := CURRENT_DATE;
-    ELSIF NEW.estado != 'Completado' THEN
+    ELSIF NEW.estado != 'Completada' THEN
         NEW.fecha_completada := NULL;
     END IF;
     NEW.updated_at := NOW();

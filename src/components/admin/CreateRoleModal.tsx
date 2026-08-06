@@ -7,6 +7,7 @@ import { Area, PermisoDef } from '@/types';
 interface CreateRoleModalProps {
   areas: Area[];
   permisosDef: PermisoDef[];
+  defaultAreaId?: string;
   onClose: () => void;
   onCrearRol: (nombre: string, areaId: string, permisos: string[]) => void;
 }
@@ -14,11 +15,12 @@ interface CreateRoleModalProps {
 export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
   areas,
   permisosDef,
+  defaultAreaId,
   onClose,
   onCrearRol,
 }) => {
   const [nombre, setNombre] = useState('');
-  const [areaId, setAreaId] = useState(areas[0]?.id || '');
+  const [areaId, setAreaId] = useState(defaultAreaId || areas[0]?.id || '');
   const [permisosSeleccionados, setPermisosSeleccionados] = useState<string[]>([
     'registro:ver',
     'registro:crear',

@@ -50,7 +50,8 @@ interface AuthContextType {
   eliminarUsuario: (id: string) => void;
   actualizarPermisosRol: (rolId: string, permisos: string[]) => void;
   crearRol: (nombre: string, areaId: string, permisos?: string[]) => void;
-  crearArea: (nombre: string, nivel: NivelArea) => void;
+  crearArea: (nombre: string, nivel: NivelArea, parentId?: string | null) => void;
+  eliminarArea: (areaId: string) => void;
   adminResetPassword: (userId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 
   // Acciones de Creación de Entidades (Admin)
@@ -283,14 +284,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
-  const crearArea = (nombre: string, nivel: NivelArea) => {
+  const crearArea = (nombre: string, nivel: NivelArea, parentId?: string | null) => {
+    const areaPadre = parentId ? areas.find(a => a.id === parentId) : null;
     const nuevaArea: Area = {
       id: `a-${Date.now()}`,
       nombre: nombre.trim().toUpperCase(),
       nivel,
+      parent_id: parentId || null,
+      area_padre_nombre: areaPadre ? areaPadre.nombre : undefined,
       created_at: new Date().toISOString()
     };
     setAreas(prev => [...prev, nuevaArea]);
+  };
+
+  const eliminarArea = (areaId: string) => {
+    const areaAEliminar = areas.find(a => a.id === areaId);
+    if (!areaAEliminar) return;
+
+    const nuevoParentId = areaAEliminar.parent_id || null;
+    const areaPadreObjeto = nuevoParentId ? areas.find(a => a.id === nuevoParentId) : null;
+
+    setAreas(prev => 
+      prev
+        .filter(a => a.id !== areaId)
+        .map(a => {
+          if (a.parent_id === areaId) {
+            return {
+              ...a,
+              parent_id: nuevoParentId,
+              area_padre_nombre: areaPadreObjeto ? areaPadreObjeto.nombre : undefined
+            };
+          }
+          return a;
+        })
+    );
   };
 
   const crearFacultad = (nombre: string, decanoId?: string) => {
@@ -416,6 +443,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         actualizarPermisosRol,
         crearRol,
         crearArea,
+        eliminarArea,
         adminResetPassword,
         crearFacultad,
         crearPrograma,
