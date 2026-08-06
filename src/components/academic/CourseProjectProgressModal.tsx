@@ -555,27 +555,6 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
             )
           )}
         </div>
-
-        {/* Modal Footer */}
-        <div className="p-4 bg-stone-50 border-t border-stone-200/80 flex items-center justify-between shrink-0">
-          <div>
-            {pestanaModal === 'detalle_tarea' && (
-              <button
-                onClick={() => setPestanaModal('resumen')}
-                className="px-4 py-2 bg-white border border-stone-300 hover:bg-stone-100 text-charcoal-800 text-xs font-bold rounded-full transition-all shadow-2xs flex items-center gap-1.5"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Volver al Avance General</span>
-              </button>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="px-5 py-2 bg-charcoal-900 hover:bg-sage-700 text-white text-xs font-bold rounded-full transition-all shadow"
-          >
-            Cerrar Ventana
-          </button>
-        </div>
       </div>
     </div>
   );
