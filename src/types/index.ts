@@ -129,4 +129,17 @@ export interface TareaComentario {
   created_at: string;
 }
 
-export type VistaNavegacion = 'dashboard' | 'academic' | 'kanban' | 'calendar' | 'admin';
+export interface RegistroHoras {
+  id: string;
+  tarea_id: string;
+  tarea_titulo?: string;
+  usuario_id?: string;
+  usuario_nombre?: string;
+  rol_destino: string;
+  horas_registradas: number;
+  fecha: string; // Formato YYYY-MM-DD
+  descripcion_avance?: string;
+  created_at?: string;
+}
+
+export type VistaNavegacion = 'dashboard' | 'academic' | 'kanban' | 'calendar' | 'productivity' | 'admin';

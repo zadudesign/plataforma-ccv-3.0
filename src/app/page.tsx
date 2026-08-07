@@ -23,9 +23,10 @@ import {
   INITIAL_PROYECTOS, 
   INITIAL_CURSOS, 
   INITIAL_TAREAS, 
-  INITIAL_COMENTARIOS 
+  INITIAL_COMENTARIOS
 } from '@/lib/mockData';
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
+import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
 import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { ShieldAlert } from 'lucide-react';
 
@@ -40,7 +41,8 @@ export default function Home() {
     facultades,
     programas,
     cursos,
-    proyectos
+    proyectos,
+    areas
   } = useAuth();
 
   const [vistaActual, setVistaActual] = useState<VistaNavegacion>('dashboard');
@@ -54,6 +56,18 @@ export default function Home() {
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
+
+  const handleUpdateTaskHours = (tareaId: string, horasAñadir: number) => {
+    setTareas(prev => prev.map(t => {
+      if (t.id === tareaId) {
+        return {
+          ...t,
+          tiempo_invertido: (t.tiempo_invertido || 0) + horasAñadir
+        };
+      }
+      return t;
+    }));
+  };
 
   // If no user is logged in, show the Login Form (connected to Supabase & Dev Simulator)
   if (!usuarioActual) {
@@ -203,6 +217,7 @@ export default function Home() {
             programas={programas}
             cursos={cursos}
             proyectos={proyectos}
+            areas={areas}
             tareas={tareasFiltradas}
             busqueda={busqueda}
             onSelectCurso={handleSelectCurso}
@@ -224,6 +239,16 @@ export default function Home() {
             tareas={tareasFiltradas}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+          />
+        )}
+
+        {vistaActual === 'productivity' && (
+          <ProductivityDashboard
+            tareas={tareasFiltradas}
+            usuarios={usuarios}
+            usuarioActual={usuarioActual}
+            onUpdateTaskHours={handleUpdateTaskHours}
+            onSelectTask={(t) => setTareaSeleccionada(t)}
           />
         )}
 

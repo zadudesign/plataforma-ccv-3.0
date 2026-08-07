@@ -340,7 +340,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
-                    Área Responsable
+                    Departamento / Área Responsable
                   </label>
                   <select
                     value={areaId}

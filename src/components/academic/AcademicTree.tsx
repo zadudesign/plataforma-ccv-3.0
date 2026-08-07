@@ -12,15 +12,18 @@ import {
   CheckCircle2, 
   Clock, 
   Plus,
-  Filter
+  Filter,
+  Layers,
+  Sparkles
 } from 'lucide-react';
-import { Facultad, Programa, CursoVirtual, ProyectoEspecial, TareaCCV } from '@/types';
+import { Facultad, Programa, CursoVirtual, ProyectoEspecial, TareaCCV, Area } from '@/types';
 
 interface AcademicTreeProps {
   facultades: Facultad[];
   programas: Programa[];
   cursos: CursoVirtual[];
   proyectos: ProyectoEspecial[];
+  areas?: Area[];
   tareas: TareaCCV[];
   busqueda: string;
   onSelectCurso: (curso: CursoVirtual) => void;
@@ -32,12 +35,14 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   programas,
   cursos,
   proyectos,
+  areas = [],
   tareas,
   busqueda,
   onSelectCurso,
   onOpenProgreso,
 }) => {
   const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
+  const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
   const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({
     'f-1': true,
     'f-2': true,
@@ -48,22 +53,61 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
     setFacultadesAbiertas(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const getEstadoBadge = (estado: CursoVirtual['estado']) => {
+  const toggleAreaProyecto = (areaId: string) => {
+    setAreasProyectosAbiertas(prev => ({ 
+      ...prev, 
+      [areaId]: prev[areaId] === undefined ? false : !prev[areaId] 
+    }));
+  };
+
+  const getEstadoBadge = (estado: CursoVirtual['estado'] | ProyectoEspecial['estado']) => {
     switch (estado) {
       case 'En Diseño':
-        return <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> En Diseño</span>;
+      case 'Planificación':
+        return <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> {estado}</span>;
       case 'En Producción':
-        return <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> En Producción</span>;
+      case 'En Proceso':
+        return <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> {estado}</span>;
       case 'En Revisión':
-        return <span className="bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> En Revisión Calidad</span>;
+        return <span className="bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> En Revisión</span>;
       case 'Aprobado CCV':
-        return <span className="badge-green flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Aprobado CCV</span>;
+      case 'Completado':
+        return <span className="badge-green flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> {estado}</span>;
       case 'Publicado LMS':
         return <span className="bg-sage-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Publicado LMS</span>;
+      case 'Pausado':
+        return <span className="bg-stone-100 text-charcoal-600 border border-stone-300 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">Pausado</span>;
       default:
         return null;
     }
   };
+
+  // Agrupar proyectos por Departamento (Subáreas del área DEPARTAMENTO)
+  const proyectosPorDepartamento = React.useMemo(() => {
+    const mapa: Record<string, { departamentoNombre: string; proyectos: ProyectoEspecial[] }> = {};
+
+    proyectos.forEach(proy => {
+      const areaObj = areas.find(a => a.id === proy.area_id);
+      const areaKey = proy.area_id || 'sin-departamento';
+      const departamentoNombre = areaObj 
+        ? areaObj.nombre 
+        : (proy.area_id ? `Departamento (${proy.area_id})` : 'General / Sin Departamento Asignado');
+
+      if (!mapa[areaKey]) {
+        mapa[areaKey] = {
+          departamentoNombre,
+          proyectos: []
+        };
+      }
+      mapa[areaKey].proyectos.push(proy);
+    });
+
+    return Object.entries(mapa).map(([departamentoId, data]) => ({
+      departamentoId,
+      departamentoNombre: data.departamentoNombre,
+      proyectos: data.proyectos
+    }));
+  }, [proyectos, areas]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -75,12 +119,12 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
             Estructura Académica e Institucional CCV
           </h2>
           <p className="text-sm text-charcoal-500 mt-1">
-            Organización jerárquica de Facultades, Programas de Educación Continua y Cursos Virtuales.
+            Organización jerárquica de Facultades, Programas y Proyectos clasificados por sus Departamentos asignados.
           </p>
         </div>
       </div>
 
-      {/* Proyectos Section Accordion */}
+      {/* Proyectos Section Accordion (Clasificados por Departamento) */}
       <div className="ccv-card overflow-hidden">
         {/* Proyectos Accordion Header */}
         <div 
@@ -88,65 +132,122 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
           className="p-5 flex items-center justify-between cursor-pointer bg-amber-50/40 hover:bg-amber-50/80 transition-colors border-b border-stone-100"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold shadow-2xs">
               <FolderKanban className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-charcoal-900">Proyectos</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-extrabold text-charcoal-900">Proyectos por Departamento</h3>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
+                  Clasificación Institucional
+                </span>
+              </div>
               <p className="text-xs text-charcoal-500 flex items-center gap-1 mt-0.5">
-                Proyectos transversales de desarrollo multimedial, microcredenciales y renovación curricular
+                Iniciativas estratégicas y proyectos especiales distribuidos por el Departamento al que están asignados
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
-              {proyectos.length} Proyectos
+              {proyectosPorDepartamento.length} {proyectosPorDepartamento.length === 1 ? 'Departamento' : 'Departamentos'} • {proyectos.length} Proyectos
             </span>
             {proyectosAbiertos ? <ChevronDown className="w-5 h-5 text-charcoal-500" /> : <ChevronRight className="w-5 h-5 text-charcoal-500" />}
           </div>
         </div>
 
-        {/* Proyectos Grid Content */}
+        {/* Proyectos Content grouped by Department */}
         {proyectosAbiertos && (
-          <div className="p-6 bg-white">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {proyectos.map((proy) => {
-                const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
-                const completadasProy = tareasProy.filter(t => t.estado === 'Completada').length;
-                const pctProy = tareasProy.length > 0 ? Math.round((completadasProy / tareasProy.length) * 100) : 0;
+          <div className="p-6 bg-stone-50/30 space-y-6">
+            {proyectosPorDepartamento.length === 0 ? (
+              <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-stone-200">
+                <FolderKanban className="w-10 h-10 text-stone-300 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-charcoal-600">No hay proyectos registrados en el sistema.</p>
+              </div>
+            ) : (
+              proyectosPorDepartamento.map(grupo => {
+                const isAreaOpen = areasProyectosAbiertas[grupo.departamentoId] !== false; // Abierto por defecto
 
                 return (
-                  <div 
-                    key={proy.id} 
-                    onClick={() => onOpenProgreso && onOpenProgreso(proy, 'proyecto')}
-                    className="p-4 bg-cream-50 rounded-2xl border border-stone-200/60 hover:border-sage-500 hover:shadow-md transition-all cursor-pointer space-y-3"
-                  >
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-extrabold text-charcoal-900 text-sm">{proy.nombre}</h4>
-                      <span className="badge-green">{proy.estado}</span>
-                    </div>
-                    <p className="text-xs text-charcoal-500 line-clamp-2">{proy.descripcion}</p>
-
-                    {/* Progress Bar & Percentage */}
-                    <div className="space-y-1 pt-1">
-                      <div className="flex justify-between items-center text-[11px] font-bold">
-                        <span className="text-charcoal-600">Avance del Proyecto</span>
-                        <span className="text-sage-700">{pctProy}%</span>
+                  <div key={grupo.departamentoId} className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden border-l-4 border-l-amber-500">
+                    {/* Header del Departamento de Proyectos */}
+                    <div 
+                      onClick={() => toggleAreaProyecto(grupo.departamentoId)}
+                      className="p-4 bg-gradient-to-r from-amber-50/50 via-white to-white flex items-center justify-between cursor-pointer border-b border-stone-100 hover:bg-amber-50/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold shadow-2xs">
+                          <Layers className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-charcoal-900 text-sm flex items-center gap-2">
+                            Departamento: {grupo.departamentoNombre}
+                          </h4>
+                          <span className="text-[11px] text-charcoal-500">
+                            {grupo.proyectos.length} {grupo.proyectos.length === 1 ? 'Proyecto asignado' : 'Proyectos asignados'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
-                        <div className="bg-sage-600 h-full rounded-full transition-all" style={{ width: `${pctProy}%` }} />
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                          {grupo.proyectos.length} Proyectos
+                        </span>
+                        {isAreaOpen ? <ChevronDown className="w-4 h-4 text-charcoal-500" /> : <ChevronRight className="w-4 h-4 text-charcoal-500" />}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-charcoal-600 pt-2 border-t border-stone-200/40">
-                      <span>Área: CMU</span>
-                      <span className="font-semibold">{completadasProy}/{tareasProy.length} Tareas Completadas</span>
-                    </div>
+                    {/* Grilla de Proyectos del Departamento */}
+                    {isAreaOpen && (
+                      <div className="p-4 bg-white">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {grupo.proyectos.map((proy) => {
+                            const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
+                            const completadasProy = tareasProy.filter(t => t.estado === 'Completada').length;
+                            const pctProy = tareasProy.length > 0 ? Math.round((completadasProy / tareasProy.length) * 100) : 0;
+
+                            return (
+                              <div 
+                                key={proy.id} 
+                                onClick={() => onOpenProgreso && onOpenProgreso(proy, 'proyecto')}
+                                className="p-4 bg-cream-50/80 rounded-2xl border border-stone-200/80 hover:border-amber-500 hover:shadow-md transition-all cursor-pointer space-y-3"
+                              >
+                                <div className="flex justify-between items-start gap-2">
+                                  <h5 className="font-extrabold text-charcoal-900 text-sm leading-snug">{proy.nombre}</h5>
+                                  {getEstadoBadge(proy.estado)}
+                                </div>
+                                
+                                {proy.descripcion && (
+                                  <p className="text-xs text-charcoal-500 line-clamp-2 leading-relaxed">{proy.descripcion}</p>
+                                )}
+
+                                {/* Progress Bar & Percentage */}
+                                <div className="space-y-1 pt-1">
+                                  <div className="flex justify-between items-center text-[11px] font-bold">
+                                    <span className="text-charcoal-600">Avance del Proyecto</span>
+                                    <span className="text-amber-800 font-extrabold">{pctProy}%</span>
+                                  </div>
+                                  <div className="w-full bg-stone-200/80 h-2 rounded-full overflow-hidden">
+                                    <div className="bg-amber-600 h-full rounded-full transition-all" style={{ width: `${pctProy}%` }} />
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs text-charcoal-600 pt-2 border-t border-stone-200/50">
+                                  <span className="font-medium text-[11px] text-amber-900 bg-amber-100/60 px-2 py-0.5 rounded truncate max-w-[200px]" title={grupo.departamentoNombre}>
+                                    Dpto: {grupo.departamentoNombre}
+                                  </span>
+                                  <span className="font-semibold text-charcoal-700 shrink-0">{completadasProy}/{tareasProy.length} Tareas</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
         )}
       </div>

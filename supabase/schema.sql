@@ -146,6 +146,22 @@ CREATE TABLE IF NOT EXISTS public.tarea_comentarios (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Tabla de Registro Diario de Horas de Productividad
+CREATE TABLE IF NOT EXISTS public.registro_horas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tarea_id UUID NOT NULL REFERENCES public.tareas(id) ON DELETE CASCADE,
+    usuario_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    rol_destino TEXT NOT NULL,
+    horas_registradas NUMERIC(5, 2) NOT NULL CHECK (horas_registradas > 0),
+    fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+    descripcion_avance TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_registro_horas_fecha ON public.registro_horas(fecha);
+CREATE INDEX IF NOT EXISTS idx_registro_horas_rol ON public.registro_horas(rol_destino);
+CREATE INDEX IF NOT EXISTS idx_registro_horas_tarea ON public.registro_horas(tarea_id);
+
 -- ----------------------------------------------------------------------------
 -- 4. TRIGGERS Y FUNCIONES RPC AUTOMÁTICAS
 -- ----------------------------------------------------------------------------

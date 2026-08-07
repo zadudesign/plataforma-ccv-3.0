@@ -1,4 +1,4 @@
-import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa, RegistroHoras } from '@/types';
 
 export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
   { id: 'tar-1', categoria: 'Diseño', tarifa_hora: 35000, descripcion: 'Tarifa por hora (COP) para diseño gráfico, instruccional y diagramación' },
@@ -14,6 +14,9 @@ export const INITIAL_AREAS: Area[] = [
   { id: 'a-5-2', nombre: 'DISEÑO INSTRUCCIONAL', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
   { id: 'a-5-3', nombre: 'SOPORTE LMS', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
   { id: 'a-4', nombre: 'DEPARTAMENTO', nivel: 4, parent_id: 'a-6', area_padre_nombre: 'ADMIN' },
+  { id: 'a-4-1', nombre: 'Departamento de Innovación y Educación Virtual CCV', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
+  { id: 'a-4-2', nombre: 'Departamento de Producción Multimedial (CMU)', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
+  { id: 'a-4-3', nombre: 'Departamento de Desarrollo e Integración Tecnológica', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
   { id: 'a-3', nombre: 'FACULTAD', nivel: 3, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
   { id: 'a-2', nombre: 'PROGRAMA', nivel: 2, parent_id: 'a-3', area_padre_nombre: 'FACULTAD' },
   { id: 'a-1', nombre: 'CURSO', nivel: 1, parent_id: 'a-2', area_padre_nombre: 'PROGRAMA' },
@@ -170,8 +173,10 @@ export const INITIAL_PROGRAMAS: Programa[] = [
 ];
 
 export const INITIAL_PROYECTOS: ProyectoEspecial[] = [
-  { id: 'pry-1', nombre: 'Renovación Curricular Educación Continua 2026', descripcion: 'Actualización y virtualización de microcredenciales institucionales', area_id: 'a-5', estado: 'En Proceso' },
-  { id: 'pry-2', nombre: 'Plataforma Interactiva de Simulación Clínica', descripcion: 'Desarrollo de escenarios inmersivos para posgrados de medicina', area_id: 'a-5', estado: 'Planificación' },
+  { id: 'pry-1', nombre: 'Renovación Curricular Educación Continua 2026', descripcion: 'Actualización y virtualización de microcredenciales institucionales', area_id: 'a-4-1', estado: 'En Proceso' },
+  { id: 'pry-2', nombre: 'Plataforma Interactiva de Simulación Clínica', descripcion: 'Desarrollo de escenarios inmersivos para posgrados de medicina', area_id: 'a-4-2', estado: 'Planificación' },
+  { id: 'pry-3', nombre: 'Banco Institucional de Objetos de Aprendizaje H5P', descripcion: 'Repositorio estandarizado de recursos didácticos interactivos', area_id: 'a-4-3', estado: 'En Proceso' },
+  { id: 'pry-4', nombre: 'Migración y Integración de Paquetes SCORM 2026', descripcion: 'Optimización de empaquetado para plataformas LMS Canvas y Moodle', area_id: 'a-4-1', estado: 'Completado' },
 ];
 
 export const INITIAL_CURSOS: CursoVirtual[] = [
@@ -231,12 +236,14 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_id: 'u-diseno',
     responsable_nombre: 'Lic. Carlic Bolomboy',
     responsable_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Diseño',
     orden_tarea: 1,
-    estado: 'En Proceso',
+    estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
-    fecha_vencimiento: '2026-07-28',
+    fecha_vencimiento: '2026-08-01',
+    fecha_completada: '2026-08-04', // 3 días de retraso
     tiempo_estimado: 24,
-    tiempo_invertido: 18,
+    tiempo_invertido: 20.5,
   },
   {
     id: 't-102',
@@ -249,12 +256,14 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_id: 'u-multi',
     responsable_nombre: 'Ing. Carlos Mendoza',
     responsable_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Multimedia',
     orden_tarea: 2,
-    estado: 'Pendiente',
+    estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-08-05',
+    fecha_completada: '2026-08-03', // 2 días antes (A tiempo)
     tiempo_estimado: 16,
-    tiempo_invertido: 4,
+    tiempo_invertido: 16.5,
   },
   {
     id: 't-103',
@@ -267,12 +276,13 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_id: 'u-par',
     responsable_nombre: 'Dr. Roberto Gómez',
     responsable_avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Par Evaluador',
     orden_tarea: 1,
     estado: 'En Revisión',
     tipo_tarea: 'Curso Virtual',
-    fecha_vencimiento: '2026-07-25',
+    fecha_vencimiento: '2026-08-02', // Pendiente con retraso respecto a 2026-08-07
     tiempo_estimado: 12,
-    tiempo_invertido: 10,
+    tiempo_invertido: 8.5,
   },
   {
     id: 't-104',
@@ -285,13 +295,14 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_id: 'u-docente',
     responsable_nombre: 'Prof. Ana María Silva',
     responsable_avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Soporte',
     orden_tarea: 1,
     estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
-    fecha_vencimiento: '2026-07-15',
-    fecha_completada: '2026-07-14',
+    fecha_vencimiento: '2026-07-25',
+    fecha_completada: '2026-07-24', // A tiempo (1 día antes)
     tiempo_estimado: 30,
-    tiempo_invertido: 28,
+    tiempo_invertido: 9.5,
   },
   {
     id: 't-105',
@@ -304,15 +315,36 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_id: 'u-coord',
     responsable_nombre: 'Mg. Fernando Ríos',
     responsable_avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Diseño',
     orden_tarea: 1,
     estado: 'En Proceso',
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Diseño',
-    fecha_vencimiento: '2026-08-12',
+    fecha_vencimiento: '2026-08-15', // Pendiente dentro del plazo
     tiempo_estimado: 40,
-    tiempo_invertido: 15,
+    tiempo_invertido: 10.0,
     tarifa_hora: 35000,
     tarifa_tarea: 1400000,
+  },
+  {
+    id: 't-106',
+    titulo: 'Validación de Accesibilidad Web y SCORM 2.0',
+    descripcion: 'Pruebas de compatibilidad con lectores de pantalla y estándares WCAG 2.1.',
+    curso_id: 'c-3',
+    curso_nombre: 'Estrategia y Transformación Digital de Negocios',
+    area_id: 'a-5',
+    area_nombre: 'CMU',
+    responsable_id: 'u-multi',
+    responsable_nombre: 'Ing. Carlos Mendoza',
+    responsable_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Multimedia',
+    orden_tarea: 2,
+    estado: 'Completada',
+    tipo_tarea: 'Curso Virtual',
+    fecha_vencimiento: '2026-07-30',
+    fecha_completada: '2026-08-05', // 6 días de retraso
+    tiempo_estimado: 18,
+    tiempo_invertido: 13.0,
   }
 ];
 
@@ -334,5 +366,176 @@ export const INITIAL_COMENTARIOS: TareaComentario[] = [
     usuario_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     comentario: 'Entendido, ajustaré los diagramas vectoriales para la animación multimedia esta tarde.',
     created_at: '2026-07-20 15:23'
+  }
+];
+
+export const INITIAL_REGISTRO_HORAS: RegistroHoras[] = [
+  {
+    id: 'log-1',
+    tarea_id: 't-101',
+    tarea_titulo: 'Diseño de Guiones Didácticos - Módulo 2 IA',
+    usuario_id: 'u-diseno',
+    usuario_nombre: 'Lic. Carlic Bolomboy',
+    rol_destino: 'Diseño',
+    horas_registradas: 4.0,
+    fecha: '2026-08-01',
+    descripcion_avance: 'Elaboración de esquemas conceptuales y diagramas pedagógicos',
+    created_at: '2026-08-01 17:00'
+  },
+  {
+    id: 'log-2',
+    tarea_id: 't-102',
+    tarea_titulo: 'Edición y Renderizado de Videos Interactivos H5P',
+    usuario_id: 'u-multi',
+    usuario_nombre: 'Ing. Carlos Mendoza',
+    rol_destino: 'Multimedia',
+    horas_registradas: 3.5,
+    fecha: '2026-08-01',
+    descripcion_avance: 'Corte inicial de video y sincronización de pistas de audio',
+    created_at: '2026-08-01 18:30'
+  },
+  {
+    id: 'log-3',
+    tarea_id: 't-101',
+    tarea_titulo: 'Diseño de Guiones Didácticos - Módulo 2 IA',
+    usuario_id: 'u-diseno',
+    usuario_nombre: 'Lic. Carlic Bolomboy',
+    rol_destino: 'Diseño',
+    horas_registradas: 6.0,
+    fecha: '2026-08-02',
+    descripcion_avance: 'Redacción final de scripts de locución para las lecciones 1 a 4',
+    created_at: '2026-08-02 16:45'
+  },
+  {
+    id: 'log-4',
+    tarea_id: 't-103',
+    tarea_titulo: 'Auditoría Teórica y Evaluación de Calidad Técnico-Docente',
+    usuario_id: 'u-par',
+    usuario_nombre: 'Dr. Roberto Gómez',
+    rol_destino: 'Par Evaluador',
+    horas_registradas: 5.0,
+    fecha: '2026-08-02',
+    descripcion_avance: 'Revisión técnica del syllabus y estructura del sistema de evaluación',
+    created_at: '2026-08-02 19:10'
+  },
+  {
+    id: 'log-5',
+    tarea_id: 't-104',
+    tarea_titulo: 'Montaje Final de Recursos y Exámenes en LMS Moodle/Canvas',
+    usuario_id: 'u-docente',
+    usuario_nombre: 'Prof. Ana María Silva',
+    rol_destino: 'Soporte',
+    horas_registradas: 4.5,
+    fecha: '2026-08-03',
+    descripcion_avance: 'Carga de objetos SCORM y pruebas de calificación automática',
+    created_at: '2026-08-03 14:20'
+  },
+  {
+    id: 'log-6',
+    tarea_id: 't-105',
+    tarea_titulo: 'Estructuración de Microcredenciales de Educación Continua',
+    usuario_id: 'u-coord',
+    usuario_nombre: 'Mg. Fernando Ríos',
+    rol_destino: 'Diseño',
+    horas_registradas: 3.0,
+    fecha: '2026-08-03',
+    descripcion_avance: 'Diseño gráfico de insignias digitales y criterios de logro',
+    created_at: '2026-08-03 16:00'
+  },
+  {
+    id: 'log-7',
+    tarea_id: 't-102',
+    tarea_titulo: 'Edición y Renderizado de Videos Interactivos H5P',
+    usuario_id: 'u-multi',
+    usuario_nombre: 'Ing. Carlos Mendoza',
+    rol_destino: 'Multimedia',
+    horas_registradas: 5.5,
+    fecha: '2026-08-04',
+    descripcion_avance: 'Incrustación de preguntas evaluativas H5P y render final MP4',
+    created_at: '2026-08-04 18:00'
+  },
+  {
+    id: 'log-8',
+    tarea_id: 't-101',
+    tarea_titulo: 'Diseño de Guiones Didácticos - Módulo 2 IA',
+    usuario_id: 'u-diseno',
+    usuario_nombre: 'Lic. Carlic Bolomboy',
+    rol_destino: 'Diseño',
+    horas_registradas: 4.0,
+    fecha: '2026-08-04',
+    descripcion_avance: 'Corrección de observaciones teóricas del par evaluador',
+    created_at: '2026-08-04 17:30'
+  },
+  {
+    id: 'log-9',
+    tarea_id: 't-103',
+    tarea_titulo: 'Auditoría Teórica y Evaluación de Calidad Técnico-Docente',
+    usuario_id: 'u-par',
+    usuario_nombre: 'Dr. Roberto Gómez',
+    rol_destino: 'Par Evaluador',
+    horas_registradas: 3.5,
+    fecha: '2026-08-05',
+    descripcion_avance: 'Emisión del concepto favorable y firma digital de aprobación',
+    created_at: '2026-08-05 12:15'
+  },
+  {
+    id: 'log-10',
+    tarea_id: 't-105',
+    tarea_titulo: 'Estructuración de Microcredenciales de Educación Continua',
+    usuario_id: 'u-coord',
+    usuario_nombre: 'Mg. Fernando Ríos',
+    rol_destino: 'Diseño',
+    horas_registradas: 7.0,
+    fecha: '2026-08-05',
+    descripcion_avance: 'Vinculación de insignias en plataforma OpenBadges',
+    created_at: '2026-08-05 18:45'
+  },
+  {
+    id: 'log-11',
+    tarea_id: 't-104',
+    tarea_titulo: 'Montaje Final de Recursos y Exámenes en LMS Moodle/Canvas',
+    usuario_id: 'u-docente',
+    usuario_nombre: 'Prof. Ana María Silva',
+    rol_destino: 'Soporte',
+    horas_registradas: 5.0,
+    fecha: '2026-08-06',
+    descripcion_avance: 'Verificación final de accesibilidad y simulación de estudiante',
+    created_at: '2026-08-06 15:30'
+  },
+  {
+    id: 'log-12',
+    tarea_id: 't-102',
+    tarea_titulo: 'Edición y Renderizado de Videos Interactivos H5P',
+    usuario_id: 'u-multi',
+    usuario_nombre: 'Ing. Carlos Mendoza',
+    rol_destino: 'Multimedia',
+    horas_registradas: 4.5,
+    fecha: '2026-08-06',
+    descripcion_avance: 'Exportación SCORM de módulos multimediales',
+    created_at: '2026-08-06 17:15'
+  },
+  {
+    id: 'log-13',
+    tarea_id: 't-101',
+    tarea_titulo: 'Diseño de Guiones Didácticos - Módulo 2 IA',
+    usuario_id: 'u-diseno',
+    usuario_nombre: 'Lic. Carlic Bolomboy',
+    rol_destino: 'Diseño',
+    horas_registradas: 6.5,
+    fecha: '2026-08-07',
+    descripcion_avance: 'Entrega de paquete de diseño completo para aprobación final',
+    created_at: '2026-08-07 11:30'
+  },
+  {
+    id: 'log-14',
+    tarea_id: 't-102',
+    tarea_titulo: 'Edición y Renderizado de Videos Interactivos H5P',
+    usuario_id: 'u-multi',
+    usuario_nombre: 'Ing. Carlos Mendoza',
+    rol_destino: 'Multimedia',
+    horas_registradas: 3.0,
+    fecha: '2026-08-07',
+    descripcion_avance: 'Ajuste de niveles de audio y publicación en servidor de video',
+    created_at: '2026-08-07 12:45'
   }
 ];

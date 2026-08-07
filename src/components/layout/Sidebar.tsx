@@ -9,7 +9,8 @@ import {
   ShieldCheck, 
   Settings, 
   LogOut,
-  Sparkles
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { VistaNavegacion } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -27,6 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
     { id: 'academic', label: 'Estructura Académica', icon: <FolderTree className="w-5 h-5" /> },
     { id: 'kanban', label: 'Tablero Kanban', icon: <Kanban className="w-5 h-5" /> },
     { id: 'calendar', label: 'Calendario', icon: <Calendar className="w-5 h-5" /> },
+    { id: 'productivity', label: 'Productividad', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'admin', label: 'Administración RBAC', icon: <ShieldCheck className="w-5 h-5" />, requiresAdmin: true },
   ];
 
