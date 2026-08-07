@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { WelcomeBanner } from '@/components/layout/WelcomeBanner';
@@ -25,6 +25,14 @@ import {
   INITIAL_TAREAS, 
   INITIAL_COMENTARIOS
 } from '@/lib/mockData';
+import { 
+  fetchTareasDB, 
+  createTareaDB, 
+  updateTareaEstadoDB, 
+  fetchComentariosDB, 
+  addComentarioDB,
+  addRegistroHorasDB
+} from '@/lib/supabaseService';
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
 import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
@@ -57,7 +65,45 @@ export default function Home() {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
 
-  const handleUpdateTaskHours = (tareaId: string, horasAñadir: number) => {
+  // Cargar tareas iniciales desde Supabase DB
+  useEffect(() => {
+    const loadTareas = async () => {
+      const dbTareas = await fetchTareasDB();
+      if (dbTareas && dbTareas.length > 0) {
+        setTareas(dbTareas);
+      }
+    };
+    loadTareas();
+  }, []);
+
+  // Cargar comentarios al seleccionar una tarea
+  useEffect(() => {
+    if (tareaSeleccionada) {
+      const loadComentarios = async () => {
+        const dbComs = await fetchComentariosDB(tareaSeleccionada.id);
+        if (dbComs && dbComs.length > 0) {
+          setComentarios(prev => {
+            const otros = prev.filter(c => c.tarea_id !== tareaSeleccionada.id);
+            return [...dbComs, ...otros];
+          });
+        }
+      };
+      loadComentarios();
+    }
+  }, [tareaSeleccionada]);
+
+  const handleUpdateTaskHours = async (tareaId: string, horasAñadir: number) => {
+    const tareaObj = tareas.find(t => t.id === tareaId);
+    if (tareaObj) {
+      await addRegistroHorasDB({
+        tarea_id: tareaId,
+        usuario_id: usuarioActual?.id,
+        rol_destino: tareaObj.rol_destino || 'General',
+        horas_registradas: horasAñadir,
+        fecha: new Date().toISOString().split('T')[0],
+        descripcion_avance: `Imputación de ${horasAñadir} horas de trabajo`
+      });
+    }
     setTareas(prev => prev.map(t => {
       if (t.id === tareaId) {
         return {
@@ -75,7 +121,8 @@ export default function Home() {
   }
 
   // Handlers
-  const handleUpdateStatus = (tareaId: string, nuevoEstado: EstadoTarea) => {
+  const handleUpdateStatus = async (tareaId: string, nuevoEstado: EstadoTarea) => {
+    await updateTareaEstadoDB(tareaId, nuevoEstado);
     setTareas(prev => prev.map(t => {
       if (t.id === tareaId) {
         return {
@@ -91,9 +138,10 @@ export default function Home() {
     }
   };
 
-  const handleAddComment = (tareaId: string, texto: string) => {
+  const handleAddComment = async (tareaId: string, texto: string) => {
     if (!usuarioActual) return;
-    const nuevoComentarioObj: TareaComentario = {
+    const dbCom = await addComentarioDB(tareaId, usuarioActual.id, texto);
+    const nuevoComentarioObj: TareaComentario = dbCom || {
       id: `com-${Date.now()}`,
       tarea_id: tareaId,
       usuario_id: usuarioActual.id,
@@ -105,8 +153,9 @@ export default function Home() {
     setComentarios(prev => [nuevoComentarioObj, ...prev]);
   };
 
-  const handleCreateTask = (nuevaTarea: Omit<TareaCCV, 'id'>) => {
-    const id = `t-${Date.now()}`;
+  const handleCreateTask = async (nuevaTarea: Omit<TareaCCV, 'id'>) => {
+    const dbTarea = await createTareaDB(nuevaTarea);
+    const id = dbTarea?.id || `t-${Date.now()}`;
     const tareaCompleta: TareaCCV = { ...nuevaTarea, id };
     setTareas(prev => [tareaCompleta, ...prev]);
   };

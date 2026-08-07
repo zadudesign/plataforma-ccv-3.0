@@ -15,6 +15,19 @@ import {
   INITIAL_TARIFAS_PROYECTO
 } from '@/lib/mockData';
 import { supabase } from '@/lib/supabaseClient';
+import {
+  fetchAreas,
+  fetchRoles,
+  fetchUsuarios,
+  fetchFacultades,
+  fetchProgramas,
+  fetchCursos,
+  fetchProyectos,
+  createFacultadDB,
+  createProgramaDB,
+  createCursoDB,
+  createProyectoDB
+} from '@/lib/supabaseService';
 
 interface AuthContextType {
   usuarioActual: Usuario | null;
@@ -87,20 +100,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
   const [isDevSimulatorOpen, setIsDevSimulatorOpen] = useState(false);
 
-  // Escuchar sesión de Supabase Auth si está conectada
+  // Cargar datos iniciales desde Supabase o Fallback
   useEffect(() => {
-    const checkSupabaseAuth = async () => {
+    const loadInitialData = async () => {
+      const [dbAreas, dbRoles, dbUsuarios, dbFacultades, dbProgramas, dbCursos, dbProyectos] = await Promise.all([
+        fetchAreas(),
+        fetchRoles(),
+        fetchUsuarios(),
+        fetchFacultades(),
+        fetchProgramas(),
+        fetchCursos(),
+        fetchProyectos()
+      ]);
+
+      if (dbAreas.length > 0) setAreas(dbAreas);
+      if (dbRoles.length > 0) setRoles(dbRoles);
+      if (dbUsuarios.length > 0) setUsuarios(dbUsuarios);
+      if (dbFacultades.length > 0) setFacultades(dbFacultades);
+      if (dbProgramas.length > 0) setProgramas(dbProgramas);
+      if (dbCursos.length > 0) setCursos(dbCursos);
+      if (dbProyectos.length > 0) setProyectos(dbProyectos);
+
+      // Verificar sesión de Supabase Auth
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Buscar perfil en estado local o Supabase
         const email = session.user.email;
-        const usuarioEncontrado = usuarios.find(u => u.email === email);
+        const usuarioEncontrado = dbUsuarios.find(u => u.email === email) || usuarios.find(u => u.email === email);
         if (usuarioEncontrado) {
           setUsuarioActual(usuarioEncontrado);
         }
       }
     };
-    checkSupabaseAuth();
+    loadInitialData();
   }, []);
 
   // Calcular permisos y nivel de área del usuario actual
@@ -320,54 +351,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const crearFacultad = (nombre: string, decanoId?: string) => {
+  const crearFacultad = async (nombre: string, decanoId?: string) => {
+    const dbItem = await createFacultadDB(nombre, decanoId);
     const decano = usuarios.find(u => u.id === decanoId);
     const nueva: Facultad = {
-      id: `f-${Date.now()}`,
+      id: dbItem?.id || `f-${Date.now()}`,
       nombre,
       decano_id: decanoId,
       decano_nombre: decano?.nombre_completo || 'Sin Asignar',
-      created_at: new Date().toISOString()
+      created_at: dbItem?.created_at || new Date().toISOString()
     };
     setFacultades(prev => [nueva, ...prev]);
   };
 
-  const crearPrograma = (nombre: string, facultadId: string, coordinadorId?: string) => {
+  const crearPrograma = async (nombre: string, facultadId: string, coordinadorId?: string) => {
+    const dbItem = await createProgramaDB(nombre, facultadId, coordinadorId);
     const facultad = facultades.find(f => f.id === facultadId);
     const coord = usuarios.find(u => u.id === coordinadorId);
     const nuevo: Programa = {
-      id: `p-${Date.now()}`,
+      id: dbItem?.id || `p-${Date.now()}`,
       nombre,
       facultad_id: facultadId,
       facultad_nombre: facultad?.nombre || 'Facultad General',
       coordinador_id: coordinadorId,
       coordinador_nombre: coord?.nombre_completo || 'Sin Asignar',
-      created_at: new Date().toISOString()
+      created_at: dbItem?.created_at || new Date().toISOString()
     };
     setProgramas(prev => [nuevo, ...prev]);
   };
 
-  const crearCurso = (datos: Omit<CursoVirtual, 'id'>) => {
+  const crearCurso = async (datos: Omit<CursoVirtual, 'id'>) => {
+    const dbItem = await createCursoDB(datos);
     const prog = programas.find(p => p.id === datos.programa_id);
     const doc = usuarios.find(u => u.id === datos.docente_id);
     const ev = usuarios.find(u => u.id === datos.evaluador_id);
     const nuevo: CursoVirtual = {
       ...datos,
-      id: `c-${Date.now()}`,
+      id: dbItem?.id || `c-${Date.now()}`,
       programa_nombre: prog?.nombre || datos.programa_nombre,
       facultad_nombre: prog?.facultad_nombre || datos.facultad_nombre,
       docente_nombre: doc?.nombre_completo || 'Sin Asignar',
       evaluador_nombre: ev?.nombre_completo || 'Sin Asignar',
-      created_at: new Date().toISOString()
+      created_at: dbItem?.created_at || new Date().toISOString()
     };
     setCursos(prev => [nuevo, ...prev]);
   };
 
-  const crearProyecto = (datos: Omit<ProyectoEspecial, 'id'>) => {
+  const crearProyecto = async (datos: Omit<ProyectoEspecial, 'id'>) => {
+    const dbItem = await createProyectoDB(datos);
     const nuevo: ProyectoEspecial = {
       ...datos,
-      id: `pry-${Date.now()}`,
-      created_at: new Date().toISOString()
+      id: dbItem?.id || `pry-${Date.now()}`,
+      created_at: dbItem?.created_at || new Date().toISOString()
     };
     setProyectos(prev => [nuevo, ...prev]);
   };

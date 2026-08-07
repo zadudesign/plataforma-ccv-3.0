@@ -1,0 +1,433 @@
+import { supabase } from './supabaseClient';
+import {
+  Usuario,
+  Rol,
+  Area,
+  PermisoDef,
+  Facultad,
+  Programa,
+  CursoVirtual,
+  ProyectoEspecial,
+  TareaCCV,
+  TareaComentario,
+  RegistroHoras,
+  EstadoTarea,
+  TipoTarea
+} from '@/types';
+import {
+  INITIAL_AREAS,
+  INITIAL_ROLES,
+  INITIAL_PERMISOS,
+  INITIAL_USUARIOS,
+  INITIAL_FACULTADES,
+  INITIAL_PROGRAMAS,
+  INITIAL_CURSOS,
+  INITIAL_PROYECTOS,
+  INITIAL_TAREAS,
+  INITIAL_REGISTRO_HORAS
+} from './mockData';
+
+// Helper para determinar si Supabase responde adecuadamente
+export async function testSupabaseConnection(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.from('areas').select('id').limit(1);
+    if (error) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 1. ÁREAS, ROLES, PERMISOS Y USUARIOS
+// ----------------------------------------------------------------------------
+
+export async function fetchAreas(): Promise<Area[]> {
+  try {
+    const { data, error } = await supabase.from('areas').select('*').order('nivel', { ascending: false });
+    if (error || !data || data.length === 0) return INITIAL_AREAS;
+    return data.map((item: any) => ({
+      id: item.id,
+      nombre: item.nombre,
+      nivel: item.nivel,
+      parent_id: item.parent_id,
+      created_at: item.created_at
+    }));
+  } catch {
+    return INITIAL_AREAS;
+  }
+}
+
+export async function fetchRoles(): Promise<Rol[]> {
+  try {
+    const { data, error } = await supabase
+      .from('roles')
+      .select('*, areas(nombre)');
+    if (error || !data || data.length === 0) return INITIAL_ROLES;
+    return data.map((item: any) => ({
+      id: item.id,
+      nombre: item.nombre,
+      area_id: item.area_id,
+      area_nombre: item.areas?.nombre || 'General',
+      created_at: item.created_at
+    }));
+  } catch {
+    return INITIAL_ROLES;
+  }
+}
+
+export async function fetchUsuarios(): Promise<Usuario[]> {
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*, roles(nombre, areas(nombre))');
+    if (error || !data || data.length === 0) return INITIAL_USUARIOS;
+    return data.map((u: any) => ({
+      id: u.id,
+      nombre_completo: u.nombre_completo,
+      email: u.email,
+      rol_id: u.rol_id,
+      rol_nombre: u.roles?.nombre || 'Docente',
+      area_nombre: u.roles?.areas?.nombre || 'CURSO',
+      firma_digital: u.firma_digital,
+      avatar_url: u.avatar_url,
+      telefono: u.telefono,
+      activo: u.activo,
+      created_at: u.created_at
+    }));
+  } catch {
+    return INITIAL_USUARIOS;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 2. ENTIDADES ACADÉMICAS (FACULTADES, PROGRAMAS, CURSOS, PROYECTOS)
+// ----------------------------------------------------------------------------
+
+export async function fetchFacultades(): Promise<Facultad[]> {
+  try {
+    const { data, error } = await supabase
+      .from('facultades')
+      .select('*, decano:usuarios!facultades_decano_id_fkey(nombre_completo)');
+    if (error || !data || data.length === 0) return INITIAL_FACULTADES;
+    return data.map((f: any) => ({
+      id: f.id,
+      nombre: f.nombre,
+      decano_id: f.decano_id,
+      decano_nombre: f.decano?.nombre_completo,
+      created_at: f.created_at
+    }));
+  } catch {
+    return INITIAL_FACULTADES;
+  }
+}
+
+export async function createFacultadDB(nombre: string, decanoId?: string): Promise<Facultad | null> {
+  try {
+    const payload: any = { nombre };
+    if (decanoId) payload.decano_id = decanoId;
+    const { data, error } = await supabase.from('facultades').insert(payload).select().single();
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchProgramas(): Promise<Programa[]> {
+  try {
+    const { data, error } = await supabase
+      .from('programas')
+      .select('*, facultades(nombre), coordinador:usuarios!programas_coordinador_id_fkey(nombre_completo)');
+    if (error || !data || data.length === 0) return INITIAL_PROGRAMAS;
+    return data.map((p: any) => ({
+      id: p.id,
+      nombre: p.nombre,
+      facultad_id: p.facultad_id,
+      facultad_nombre: p.facultades?.nombre,
+      coordinador_id: p.coordinador_id,
+      coordinador_nombre: p.coordinador?.nombre_completo,
+      created_at: p.created_at
+    }));
+  } catch {
+    return INITIAL_PROGRAMAS;
+  }
+}
+
+export async function createProgramaDB(nombre: string, facultadId: string, coordinadorId?: string): Promise<Programa | null> {
+  try {
+    const payload: any = { nombre, facultad_id: facultadId };
+    if (coordinadorId) payload.coordinador_id = coordinadorId;
+    const { data, error } = await supabase.from('programas').insert(payload).select().single();
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchProyectos(): Promise<ProyectoEspecial[]> {
+  try {
+    const { data, error } = await supabase.from('proyectos').select('*');
+    if (error || !data || data.length === 0) return INITIAL_PROYECTOS;
+    return data;
+  } catch {
+    return INITIAL_PROYECTOS;
+  }
+}
+
+export async function createProyectoDB(proyecto: Omit<ProyectoEspecial, 'id'>): Promise<ProyectoEspecial | null> {
+  try {
+    const { data, error } = await supabase.from('proyectos').insert(proyecto).select().single();
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCursos(): Promise<CursoVirtual[]> {
+  try {
+    const { data, error } = await supabase
+      .from('cursos')
+      .select(`
+        *,
+        programas(nombre, facultades(nombre)),
+        docente:usuarios!cursos_docente_id_fkey(nombre_completo),
+        evaluador:usuarios!cursos_evaluador_id_fkey(nombre_completo)
+      `);
+    if (error || !data || data.length === 0) return INITIAL_CURSOS;
+    return data.map((c: any) => ({
+      id: c.id,
+      nombre: c.nombre,
+      codigo: c.codigo,
+      programa_id: c.programa_id,
+      programa_nombre: c.programas?.nombre,
+      facultad_nombre: c.programas?.facultades?.nombre,
+      periodo: c.periodo,
+      docente_id: c.docente_id,
+      docente_nombre: c.docente?.nombre_completo,
+      evaluador_id: c.evaluador_id,
+      evaluador_nombre: c.evaluador?.nombre_completo,
+      estado: c.estado,
+      created_at: c.created_at
+    }));
+  } catch {
+    return INITIAL_CURSOS;
+  }
+}
+
+export async function createCursoDB(curso: Omit<CursoVirtual, 'id'>): Promise<CursoVirtual | null> {
+  try {
+    const payload = {
+      nombre: curso.nombre,
+      codigo: curso.codigo,
+      programa_id: curso.programa_id,
+      periodo: curso.periodo,
+      docente_id: curso.docente_id || null,
+      evaluador_id: curso.evaluador_id || null,
+      estado: curso.estado || 'En Diseño'
+    };
+    const { data, error } = await supabase.from('cursos').insert(payload).select().single();
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 3. TAREAS Y COMENTARIOS
+// ----------------------------------------------------------------------------
+
+export async function fetchTareasDB(): Promise<TareaCCV[]> {
+  try {
+    const { data, error } = await supabase
+      .from('tareas')
+      .select(`
+        *,
+        proyecto:proyectos(nombre),
+        curso:cursos(nombre),
+        area:areas(nombre),
+        responsable:usuarios!tareas_responsable_id_fkey(nombre_completo, avatar_url)
+      `)
+      .order('orden_tarea', { ascending: true });
+
+    if (error || !data || data.length === 0) return INITIAL_TAREAS;
+
+    return data.map((t: any) => ({
+      id: t.id,
+      titulo: t.titulo,
+      descripcion: t.descripcion || '',
+      proyecto_id: t.proyecto_id,
+      proyecto_nombre: t.proyecto?.nombre,
+      curso_id: t.curso_id,
+      curso_nombre: t.curso?.nombre,
+      area_id: t.area_id,
+      area_nombre: t.area?.nombre,
+      responsable_id: t.responsable_id,
+      responsable_nombre: t.responsable?.nombre_completo,
+      responsable_avatar: t.responsable?.avatar_url,
+      rol_destino: t.rol_destino,
+      orden_tarea: t.orden_tarea || 0,
+      estado: t.estado as EstadoTarea,
+      tipo_tarea: (t.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
+      fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
+      fecha_completada: t.fecha_completada,
+      tiempo_estimado: Number(t.tiempo_estimado || 0),
+      tiempo_invertido: Number(t.tiempo_invertido || 0),
+      tarifa_tarea: Number(t.tarifa_tarea || 0),
+      created_at: t.created_at
+    }));
+  } catch {
+    return INITIAL_TAREAS;
+  }
+}
+
+export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaCCV | null> {
+  try {
+    const payload = {
+      titulo: tarea.titulo,
+      descripcion: tarea.descripcion,
+      proyecto_id: tarea.proyecto_id || null,
+      curso_id: tarea.curso_id || null,
+      area_id: tarea.area_id || null,
+      responsable_id: tarea.responsable_id || null,
+      rol_destino: tarea.rol_destino || null,
+      orden_tarea: tarea.orden_tarea || 0,
+      estado: tarea.estado,
+      tipo_tarea: tarea.tipo_tarea === 'Proyecto' ? 'Proyecto Especial' : tarea.tipo_tarea,
+      fecha_vencimiento: tarea.fecha_vencimiento,
+      tiempo_estimado: tarea.tiempo_estimado || 0,
+      tiempo_invertido: tarea.tiempo_invertido || 0,
+      tarifa_tarea: tarea.tarifa_tarea || 0
+    };
+    const { data, error } = await supabase.from('tareas').insert(payload).select().single();
+    if (error) return null;
+    return {
+      ...tarea,
+      id: data.id,
+      created_at: data.created_at
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function updateTareaEstadoDB(id: string, nuevoEstado: EstadoTarea): Promise<boolean> {
+  try {
+    const payload: any = { estado: nuevoEstado, updated_at: new Date().toISOString() };
+    if (nuevoEstado === 'Completada') {
+      payload.fecha_completada = new Date().toISOString().split('T')[0];
+    } else {
+      payload.fecha_completada = null;
+    }
+    const { error } = await supabase.from('tareas').update(payload).eq('id', id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchComentariosDB(tareaId: string): Promise<TareaComentario[]> {
+  try {
+    const { data, error } = await supabase
+      .from('tarea_comentarios')
+      .select('*, usuario:usuarios(nombre_completo, avatar_url)')
+      .eq('tarea_id', tareaId)
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return [];
+    return data.map((c: any) => ({
+      id: c.id,
+      tarea_id: c.tarea_id,
+      usuario_id: c.usuario_id,
+      usuario_nombre: c.usuario?.nombre_completo || 'Usuario',
+      usuario_avatar: c.usuario?.avatar_url,
+      comentario: c.comentario,
+      adjunto_url: c.adjunto_url,
+      created_at: c.created_at
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function addComentarioDB(tareaId: string, usuarioId: string, comentario: string, adjuntoUrl?: string): Promise<TareaComentario | null> {
+  try {
+    const payload = { tarea_id: tareaId, usuario_id: usuarioId, comentario, adjunto_url: adjuntoUrl || null };
+    const { data, error } = await supabase.from('tarea_comentarios').insert(payload).select('*, usuario:usuarios(nombre_completo, avatar_url)').single();
+    if (error) return null;
+    return {
+      id: data.id,
+      tarea_id: data.tarea_id,
+      usuario_id: data.usuario_id,
+      usuario_nombre: data.usuario?.nombre_completo || 'Usuario',
+      usuario_avatar: data.usuario?.avatar_url,
+      comentario: data.comentario,
+      adjunto_url: data.adjunto_url,
+      created_at: data.created_at
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 4. REGISTRO DE HORAS DE PRODUCTIVIDAD
+// ----------------------------------------------------------------------------
+
+export async function fetchRegistroHorasDB(): Promise<RegistroHoras[]> {
+  try {
+    const { data, error } = await supabase
+      .from('registro_horas')
+      .select('*, tarea:tareas(titulo), usuario:usuarios(nombre_completo)')
+      .order('created_at', { ascending: false });
+
+    if (error || !data || data.length === 0) return INITIAL_REGISTRO_HORAS;
+    return data.map((r: any) => ({
+      id: r.id,
+      tarea_id: r.tarea_id,
+      tarea_titulo: r.tarea?.titulo || 'Tarea General',
+      usuario_id: r.usuario_id,
+      usuario_nombre: r.usuario?.nombre_completo || 'Usuario',
+      rol_destino: r.rol_destino,
+      horas_registradas: Number(r.horas_registradas),
+      fecha: r.fecha,
+      descripcion_avance: r.descripcion_avance,
+      created_at: r.created_at
+    }));
+  } catch {
+    return INITIAL_REGISTRO_HORAS;
+  }
+}
+
+export async function addRegistroHorasDB(registro: Omit<RegistroHoras, 'id'>): Promise<RegistroHoras | null> {
+  try {
+    const payload = {
+      tarea_id: registro.tarea_id,
+      usuario_id: registro.usuario_id || null,
+      rol_destino: registro.rol_destino,
+      horas_registradas: registro.horas_registradas,
+      fecha: registro.fecha,
+      descripcion_avance: registro.descripcion_avance || ''
+    };
+    const { data, error } = await supabase.from('registro_horas').insert(payload).select().single();
+    if (error) return null;
+    
+    // Además actualizar tiempo_invertido en la tarea en Supabase
+    const { data: tareaAtual } = await supabase.from('tareas').select('tiempo_invertido').eq('id', registro.tarea_id).single();
+    if (tareaAtual) {
+      const nuevoTiempo = Number(tareaAtual.tiempo_invertido || 0) + Number(registro.horas_registradas);
+      await supabase.from('tareas').update({ tiempo_invertido: nuevoTiempo }).eq('id', registro.tarea_id);
+    }
+
+    return {
+      ...registro,
+      id: data.id,
+      created_at: data.created_at
+    };
+  } catch {
+    return null;
+  }
+}
