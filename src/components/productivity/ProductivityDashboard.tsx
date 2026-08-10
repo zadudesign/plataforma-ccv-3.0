@@ -262,7 +262,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
 
   // Rango global de fechas para la escala del Dumbbell Plot
   const escalaFechas = useMemo(() => {
-    if (tareasDumbbell.length === 0) return { fechaMin: '2026-07-15', fechaMax: '2026-08-20', minTimestamp: 0, maxTimestamp: 1 };
+    if (tareasDumbbell.length === 0) return { fechaMin: '2026-07-15', fechaMax: '2026-08-20', minTimestamp: 0, maxTimestamp: 1, rangoTotal: 1 };
     
     let minTime = Infinity;
     let maxTime = -Infinity;
