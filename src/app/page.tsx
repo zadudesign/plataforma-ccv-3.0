@@ -14,17 +14,7 @@ import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { DevRoleSimulatorModal } from '@/components/auth/DevRoleSimulatorModal';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  INITIAL_AREAS, 
-  INITIAL_ROLES, 
-  INITIAL_USUARIOS,
-  INITIAL_FACULTADES, 
-  INITIAL_PROGRAMAS, 
-  INITIAL_PROYECTOS, 
-  INITIAL_CURSOS, 
-  INITIAL_TAREAS, 
-  INITIAL_COMENTARIOS
-} from '@/lib/mockData';
+
 import { 
   fetchTareasDB, 
   createTareaDB, 
@@ -50,15 +40,16 @@ export default function Home() {
     programas,
     cursos,
     proyectos,
-    areas
+    areas,
+    roles
   } = useAuth();
 
   const [vistaActual, setVistaActual] = useState<VistaNavegacion>('dashboard');
   const [busqueda, setBusqueda] = useState('');
   
   // Data state
-  const [tareas, setTareas] = useState<TareaCCV[]>(INITIAL_TAREAS);
-  const [comentarios, setComentarios] = useState<TareaComentario[]>(INITIAL_COMENTARIOS);
+  const [tareas, setTareas] = useState<TareaCCV[]>([]);
+  const [comentarios, setComentarios] = useState<TareaComentario[]>([]);
   
   // Modal states
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);
@@ -175,7 +166,7 @@ export default function Home() {
     
     // Mapear área de la tarea a su nivel
     const areaTareaNombre = t.area_nombre || 'CURSO';
-    const areaTareaDef = INITIAL_AREAS.find(a => a.nombre === areaTareaNombre);
+    const areaTareaDef = areas.find(a => a.nombre === areaTareaNombre);
     const nivelTarea = areaTareaDef?.nivel || 1;
 
     return nivelArea >= nivelTarea;
@@ -304,9 +295,9 @@ export default function Home() {
         {vistaActual === 'admin' && (
           isAdmin() ? (
             <AdminDashboard
-              areas={INITIAL_AREAS}
-              roles={INITIAL_ROLES}
-              usuarios={INITIAL_USUARIOS}
+              areas={areas}
+              roles={roles}
+              usuarios={usuarios}
               facultades={facultades}
               programas={programas}
             />
@@ -352,10 +343,10 @@ export default function Home() {
 
         {isCreateTaskOpen && (
           <CreateTaskModal
-            areas={INITIAL_AREAS}
+            areas={areas}
             cursos={cursos}
             proyectos={proyectos}
-            usuarios={INITIAL_USUARIOS}
+            usuarios={usuarios}
             onClose={() => setIsCreateTaskOpen(false)}
             onCreateTask={handleCreateTask}
           />

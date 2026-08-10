@@ -81,7 +81,7 @@ export async function fetchUsuarios(): Promise<Usuario[]> {
     const { data, error } = await supabase
       .from('usuarios')
       .select('*, roles(nombre, areas(nombre))');
-    if (error || !data || data.length === 0) return INITIAL_USUARIOS;
+    if (error || !data || data.length === 0) return [];
     return data.map((u: any) => ({
       id: u.id,
       nombre_completo: u.nombre_completo,
@@ -96,7 +96,7 @@ export async function fetchUsuarios(): Promise<Usuario[]> {
       created_at: u.created_at
     }));
   } catch {
-    return INITIAL_USUARIOS;
+    return [];
   }
 }
 
@@ -109,7 +109,7 @@ export async function fetchFacultades(): Promise<Facultad[]> {
     const { data, error } = await supabase
       .from('facultades')
       .select('*, decano:usuarios!facultades_decano_id_fkey(nombre_completo)');
-    if (error || !data || data.length === 0) return INITIAL_FACULTADES;
+    if (error || !data || data.length === 0) return [];
     return data.map((f: any) => ({
       id: f.id,
       nombre: f.nombre,
@@ -118,7 +118,7 @@ export async function fetchFacultades(): Promise<Facultad[]> {
       created_at: f.created_at
     }));
   } catch {
-    return INITIAL_FACULTADES;
+    return [];
   }
 }
 
@@ -139,7 +139,7 @@ export async function fetchProgramas(): Promise<Programa[]> {
     const { data, error } = await supabase
       .from('programas')
       .select('*, facultades(nombre), coordinador:usuarios!programas_coordinador_id_fkey(nombre_completo)');
-    if (error || !data || data.length === 0) return INITIAL_PROGRAMAS;
+    if (error || !data || data.length === 0) return [];
     return data.map((p: any) => ({
       id: p.id,
       nombre: p.nombre,
@@ -150,7 +150,7 @@ export async function fetchProgramas(): Promise<Programa[]> {
       created_at: p.created_at
     }));
   } catch {
-    return INITIAL_PROGRAMAS;
+    return [];
   }
 }
 
@@ -169,10 +169,10 @@ export async function createProgramaDB(nombre: string, facultadId: string, coord
 export async function fetchProyectos(): Promise<ProyectoEspecial[]> {
   try {
     const { data, error } = await supabase.from('proyectos').select('*');
-    if (error || !data || data.length === 0) return INITIAL_PROYECTOS;
+    if (error || !data || data.length === 0) return [];
     return data;
   } catch {
-    return INITIAL_PROYECTOS;
+    return [];
   }
 }
 
@@ -196,7 +196,7 @@ export async function fetchCursos(): Promise<CursoVirtual[]> {
         docente:usuarios!cursos_docente_id_fkey(nombre_completo),
         evaluador:usuarios!cursos_evaluador_id_fkey(nombre_completo)
       `);
-    if (error || !data || data.length === 0) return INITIAL_CURSOS;
+    if (error || !data || data.length === 0) return [];
     return data.map((c: any) => ({
       id: c.id,
       nombre: c.nombre,
@@ -213,7 +213,7 @@ export async function fetchCursos(): Promise<CursoVirtual[]> {
       created_at: c.created_at
     }));
   } catch {
-    return INITIAL_CURSOS;
+    return [];
   }
 }
 
@@ -253,7 +253,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       `)
       .order('orden_tarea', { ascending: true });
 
-    if (error || !data || data.length === 0) return INITIAL_TAREAS;
+    if (error || !data || data.length === 0) return [];
 
     return data.map((t: any) => ({
       id: t.id,
@@ -280,7 +280,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       created_at: t.created_at
     }));
   } catch {
-    return INITIAL_TAREAS;
+    return [];
   }
 }
 
@@ -384,7 +384,7 @@ export async function fetchRegistroHorasDB(): Promise<RegistroHoras[]> {
       .select('*, tarea:tareas(titulo), usuario:usuarios(nombre_completo)')
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) return INITIAL_REGISTRO_HORAS;
+    if (error || !data || data.length === 0) return [];
     return data.map((r: any) => ({
       id: r.id,
       tarea_id: r.tarea_id,
@@ -398,7 +398,7 @@ export async function fetchRegistroHorasDB(): Promise<RegistroHoras[]> {
       created_at: r.created_at
     }));
   } catch {
-    return INITIAL_REGISTRO_HORAS;
+    return [];
   }
 }
 

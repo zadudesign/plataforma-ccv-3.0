@@ -83,17 +83,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(INITIAL_USUARIOS);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [roles, setRoles] = useState<Rol[]>(INITIAL_ROLES);
   const [areas, setAreas] = useState<Area[]>(INITIAL_AREAS);
   const [permisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
   const [rolesPermisosMap, setRolesPermisosMap] = useState<Record<string, string[]>>(ROLES_PERMISOS_MAP);
   
   // Entidades Académicas y Proyectos en Estado Global
-  const [facultades, setFacultades] = useState<Facultad[]>(INITIAL_FACULTADES);
-  const [programas, setProgramas] = useState<Programa[]>(INITIAL_PROGRAMAS);
-  const [cursos, setCursos] = useState<CursoVirtual[]>(INITIAL_CURSOS);
-  const [proyectos, setProyectos] = useState<ProyectoEspecial[]>(INITIAL_PROYECTOS);
+  const [facultades, setFacultades] = useState<Facultad[]>([]);
+  const [programas, setProgramas] = useState<Programa[]>([]);
+  const [cursos, setCursos] = useState<CursoVirtual[]>([]);
+  const [proyectos, setProyectos] = useState<ProyectoEspecial[]>([]);
   const [tarifasProyecto, setTarifasProyecto] = useState<ConfiguracionTarifa[]>(INITIAL_TARIFAS_PROYECTO);
   
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
