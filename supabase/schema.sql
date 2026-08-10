@@ -194,20 +194,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
--- Función para manejar nuevos registros en auth.users
+-- Función para manejar nuevos registros en auth.users asignando el rol enviado en metadata o Docente por defecto
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_rol_id UUID;
+    v_rol_text TEXT;
 BEGIN
-    INSERT INTO public.usuarios (id, nombre_completo, email, rol_id)
+    v_rol_text := NEW.raw_user_meta_data->>'rol_id';
+    
+    IF v_rol_text IS NOT NULL AND v_rol_text != '' THEN
+        BEGIN
+            v_rol_id := v_rol_text::UUID;
+        EXCEPTION WHEN OTHERS THEN
+            v_rol_id := (SELECT id FROM public.roles WHERE nombre = 'Docente' LIMIT 1);
+        END;
+    ELSE
+        SELECT id INTO v_rol_id FROM public.roles WHERE nombre = 'Docente' LIMIT 1;
+    END IF;
+
+    INSERT INTO public.usuarios (id, nombre_completo, email, rol_id, activo)
     VALUES (
         NEW.id,
         COALESCE(NEW.raw_user_meta_data->>'nombre_completo', NEW.email),
         NEW.email,
-        (SELECT id FROM public.roles WHERE nombre = 'Docente' LIMIT 1)
+        v_rol_id,
+        true
     )
     ON CONFLICT (id) DO UPDATE
     SET nombre_completo = EXCLUDED.nombre_completo,
-        email = EXCLUDED.email;
+        email = EXCLUDED.email,
+        rol_id = COALESCE(EXCLUDED.rol_id, public.usuarios.rol_id);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

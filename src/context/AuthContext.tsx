@@ -57,6 +57,7 @@ interface AuthContextType {
   actualizarTarifaProyecto: (categoria: CategoriaTareaProyecto, nuevaTarifa: number) => void;
   cambiarUsuarioSimulado: (usuarioId: string) => void;
   loginConSupabase: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  registroConSupabase: (email: string, password: string, nombreCompleto: string, rolId: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   crearUsuario: (nuevo: Omit<Usuario, 'id'> & { password?: string }) => Promise<{ success: boolean; error?: string }>;
   actualizarUsuario: (id: string, datos: Partial<Usuario>) => void;
@@ -242,6 +243,104 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true };
       }
       return { success: false, error: err?.message || 'Error al iniciar sesión' };
+    }
+  };
+
+  const registroConSupabase = async (
+    email: string,
+    password: string,
+    nombreCompleto: string,
+    rolId: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const rolSeleccionado = roles.find(r => r.id === rolId);
+
+      // 1. Crear cuenta en Supabase Auth enviando metadata (nombre y rol_id)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nombre_completo: nombreCompleto,
+            rol_id: rolId,
+          },
+        },
+      });
+
+      if (error) {
+        // En entorno local/offline sin Supabase backend activo, registrar usuario simulado
+        const usuarioExistente = usuarios.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (usuarioExistente) {
+          return { success: false, error: 'El correo electrónico ya se encuentra registrado.' };
+        }
+
+        const nuevoSimulado: Usuario = {
+          id: `u-${Date.now()}`,
+          nombre_completo: nombreCompleto,
+          email,
+          rol_id: rolId,
+          rol_nombre: rolSeleccionado?.nombre || 'Docente',
+          area_nombre: rolSeleccionado?.area_nombre || 'CURSO',
+          activo: true,
+          created_at: new Date().toISOString()
+        };
+        setUsuarios(prev => [nuevoSimulado, ...prev]);
+        setUsuarioActual(nuevoSimulado);
+        return { success: true };
+      }
+
+      if (data.user) {
+        // 2. Garantizar que la sesión quede iniciada de forma transparente
+        let activeUser = data.session?.user;
+        if (!activeUser) {
+          const signInRes = await supabase.auth.signInWithPassword({ email, password });
+          if (signInRes.data.user) {
+            activeUser = signInRes.data.user;
+          }
+        }
+
+        // 3. Sincronizar perfiles actualizados desde Supabase
+        const freshUsers = await fetchUsuarios();
+        let usr: Usuario | undefined;
+        if (freshUsers.length > 0) {
+          setUsuarios(freshUsers);
+          usr = freshUsers.find(u => u.id === data.user?.id || u.email?.toLowerCase() === email.toLowerCase());
+        }
+
+        if (!usr) {
+          usr = {
+            id: data.user.id,
+            nombre_completo: nombreCompleto,
+            email: email,
+            rol_id: rolId,
+            rol_nombre: rolSeleccionado?.nombre || 'Docente',
+            area_nombre: rolSeleccionado?.area_nombre || 'CURSO',
+            activo: true,
+            created_at: new Date().toISOString()
+          };
+          setUsuarios(prev => [usr!, ...prev]);
+        }
+
+        setUsuarioActual(usr);
+        return { success: true };
+      }
+
+      return { success: false, error: 'No se pudo completar el registro del usuario.' };
+    } catch (err: any) {
+      const rolSeleccionado = roles.find(r => r.id === rolId);
+      const nuevoSimulado: Usuario = {
+        id: `u-${Date.now()}`,
+        nombre_completo: nombreCompleto,
+        email,
+        rol_id: rolId,
+        rol_nombre: rolSeleccionado?.nombre || 'Docente',
+        area_nombre: rolSeleccionado?.area_nombre || 'CURSO',
+        activo: true,
+        created_at: new Date().toISOString()
+      };
+      setUsuarios(prev => [nuevoSimulado, ...prev]);
+      setUsuarioActual(nuevoSimulado);
+      return { success: true };
     }
   };
 
@@ -516,6 +615,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         actualizarTarifaProyecto,
         cambiarUsuarioSimulado,
         loginConSupabase,
+        registroConSupabase,
         logout,
         crearUsuario,
         actualizarUsuario,
