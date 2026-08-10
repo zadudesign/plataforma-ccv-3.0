@@ -44,7 +44,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onGoToLog
       return;
     }
     if (!rolId) {
-      setErrorMsg('Selecciona tu rol en la plataforma.');
+      setErrorMsg('Por favor selecciona el rol requerido para tu usuario.');
       return;
     }
     if (password.length < 6) {
@@ -138,12 +138,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onGoToLog
             </div>
           </div>
 
-          {/* Seleccionar Rol en la Plataforma */}
+          {/* Seleccionar Rol Requerido en la Plataforma */}
           <div>
             <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Rol y Nivel Jerárquico</span>
+              <span>Rol y Nivel Jerárquico Requerido</span>
               {rolSeleccionadoObj && (
-                <span className="text-[10px] bg-sage-100 text-sage-800 font-extrabold px-2 py-0.5 rounded-full border border-sage-300">
+                <span className="text-[10px] bg-sage-100 text-sage-800 font-extrabold px-2.5 py-0.5 rounded-full border border-sage-300">
                   {rolSeleccionadoObj.area_nombre || 'Área Jerárquica'}
                 </span>
               )}
@@ -156,16 +156,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onGoToLog
                 className="w-full pl-10 pr-8 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500 transition-all appearance-none cursor-pointer"
                 required
               >
+                <option value="" disabled>-- Selecciona el Rol Requerido --</option>
                 {roles.map(rol => (
                   <option key={rol.id} value={rol.id}>
-                    {rol.nombre} ({rol.area_nombre || 'CCV'})
+                    {rol.nombre} (Área: {rol.area_nombre || 'CCV'})
                   </option>
                 ))}
               </select>
               <ChevronDown className="w-4 h-4 text-charcoal-400 absolute right-3.5 top-3.5 pointer-events-none" />
             </div>
             <p className="text-[10px] text-charcoal-400 font-medium mt-1">
-              Este rol determinará tus permisos RBAC y la visibilidad de áreas/tareas en la plataforma.
+              Selecciona el rol institucional correspondiente para activar los permisos RBAC correspondientes al registrarte.
             </p>
           </div>
 
