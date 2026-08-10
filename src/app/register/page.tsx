@@ -6,24 +6,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  const { usuarioActual } = useAuth();
   const router = useRouter();
 
-  // Si el usuario ya está autenticado, redirigir al Dashboard principal
+  // El registro de usuarios está habilitado exclusivamente para el Administrador
   React.useEffect(() => {
-    if (usuarioActual) {
-      router.push('/');
-    }
-  }, [usuarioActual, router]);
+    router.replace('/');
+  }, [router]);
 
-  return (
-    <RegisterForm
-      onSuccess={() => {
-        router.push('/');
-      }}
-      onGoToLogin={() => {
-        router.push('/');
-      }}
-    />
-  );
+  return null;
 }

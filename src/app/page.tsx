@@ -12,7 +12,6 @@ import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { TaskDetailModal } from '@/components/tasks/TaskDetailModal';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { RegisterForm } from '@/components/auth/RegisterForm';
 import { DevRoleSimulatorModal } from '@/components/auth/DevRoleSimulatorModal';
 import { useAuth } from '@/context/AuthContext';
 
@@ -46,7 +45,6 @@ export default function Home() {
   } = useAuth();
 
   const [vistaActual, setVistaActual] = useState<VistaNavegacion>('dashboard');
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [busqueda, setBusqueda] = useState('');
   
   // Data state
@@ -108,12 +106,9 @@ export default function Home() {
     }));
   };
 
-  // If no user is logged in, show Login or Register Form
+  // If no user is logged in, show Login Form
   if (!usuarioActual) {
-    if (authMode === 'register') {
-      return <RegisterForm onGoToLogin={() => setAuthMode('login')} />;
-    }
-    return <LoginForm onGoToRegister={() => setAuthMode('register')} />;
+    return <LoginForm />;
   }
 
   // Handlers

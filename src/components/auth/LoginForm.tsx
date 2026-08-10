@@ -1,17 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, LogIn, AlertCircle, UserPlus } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
-import Link from 'next/link';
 
 interface LoginFormProps {
   onSuccess?: () => void;
-  onGoToRegister?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onGoToRegister }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { loginConSupabase } = useAuth();
   
   const [email, setEmail] = useState('');
@@ -126,27 +124,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onGoToRegister 
         </form>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-stone-100 text-center flex items-center justify-between">
-          {onGoToRegister ? (
-            <button
-              type="button"
-              onClick={onGoToRegister}
-              className="inline-flex items-center gap-1 text-xs font-bold text-sage-700 hover:text-sage-900 hover:underline"
-            >
-              <UserPlus className="w-3.5 h-3.5" /> ¿No tienes cuenta? Regístrate
-            </button>
-          ) : (
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1 text-xs font-bold text-sage-700 hover:text-sage-900 hover:underline"
-            >
-              <UserPlus className="w-3.5 h-3.5" /> ¿No tienes cuenta? Regístrate
-            </Link>
-          )}
-
-          <span className="text-[11px] text-charcoal-400 font-medium">
-            CCV • Universidad
-          </span>
+        <div className="mt-6 pt-4 border-t border-stone-100 text-center">
+          <p className="text-[11px] text-charcoal-400 font-medium">
+            Centro de Educación Virtual (CCV) • Universidad
+          </p>
         </div>
       </div>
 
