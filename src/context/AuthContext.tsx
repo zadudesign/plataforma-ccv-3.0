@@ -123,9 +123,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Verificar sesión de Supabase Auth
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const email = session.user.email;
-        const usuarioEncontrado = dbUsuarios.find(u => u.email === email) || usuarios.find(u => u.email === email);
+      if (session?.user?.email) {
+        const userEmail = session.user.email.toLowerCase();
+        let usuarioEncontrado = dbUsuarios.find(u => u.email?.toLowerCase() === userEmail);
+        if (!usuarioEncontrado) {
+          const freshUsers = await fetchUsuarios();
+          if (freshUsers.length > 0) {
+            setUsuarios(freshUsers);
+            usuarioEncontrado = freshUsers.find(u => u.email?.toLowerCase() === userEmail);
+          }
+        }
         if (usuarioEncontrado) {
           setUsuarioActual(usuarioEncontrado);
         }
@@ -137,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Calcular permisos y nivel de área del usuario actual
   const rolActual = roles.find(r => r.id === usuarioActual?.rol_id);
   const areaActual = areas.find(a => a.nombre === (rolActual?.area_nombre || usuarioActual?.area_nombre));
-  const nivelArea: NivelArea = (areaActual?.nivel || (rolActual?.nombre === 'Administrador' ? 6 : 1)) as NivelArea;
+  const nivelArea: NivelArea = (areaActual?.nivel || (rolActual?.nombre === 'Administrador' || usuarioActual?.rol_nombre === 'Administrador' ? 6 : 1)) as NivelArea;
   const permisosUsuario: string[] = rolActual ? (rolesPermisosMap[rolActual.id] || []) : [];
 
   const hasPermission = (clavePermiso: string): boolean => {
@@ -153,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAdmin = (): boolean => {
-    return nivelArea === 6 || rolActual?.nombre === 'Administrador';
+    return nivelArea === 6 || rolActual?.nombre === 'Administrador' || usuarioActual?.rol_nombre === 'Administrador';
   };
 
   const cambiarUsuarioSimulado = (usuarioId: string) => {
@@ -176,16 +183,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: error.message };
       }
       if (data.user) {
-        const usr = usuarios.find(u => u.email === data.user?.email) || {
-          id: data.user.id,
-          nombre_completo: data.user.user_metadata?.nombre_completo || data.user.email || 'Usuario CCV',
-          email: data.user.email || email,
-          rol_id: 'r-8',
-          rol_nombre: 'Docente',
-          area_nombre: 'CURSO',
-          activo: true
-        };
-        setUsuarioActual(usr);
+        // Cargar usuarios actualizados desde Supabase con la sesión activa
+        const freshUsers = await fetchUsuarios();
+        if (freshUsers.length > 0) {
+          setUsuarios(freshUsers);
+        }
+
+        const emailLower = (data.user.email || email).toLowerCase();
+        const usr = freshUsers.find(u => u.email?.toLowerCase() === emailLower) || usuarios.find(u => u.email?.toLowerCase() === emailLower);
+
+        if (usr) {
+          setUsuarioActual(usr);
+        } else {
+          // Consultar perfil de usuario individual en Supabase
+          const { data: dbUser } = await supabase
+            .from('usuarios')
+            .select('*, roles(nombre, areas(nombre))')
+            .eq('id', data.user.id)
+            .single();
+
+          if (dbUser) {
+            const parsedUser: Usuario = {
+              id: dbUser.id,
+              nombre_completo: dbUser.nombre_completo || data.user.email || 'Usuario CCV',
+              email: dbUser.email || email,
+              rol_id: dbUser.rol_id,
+              rol_nombre: dbUser.roles?.nombre || 'Administrador',
+              area_nombre: dbUser.roles?.areas?.nombre || 'ADMIN',
+              firma_digital: dbUser.firma_digital,
+              avatar_url: dbUser.avatar_url,
+              telefono: dbUser.telefono,
+              activo: dbUser.activo,
+              created_at: dbUser.created_at
+            };
+            setUsuarioActual(parsedUser);
+          } else {
+            // Asignar rol de Administrador si coincide la cuenta principal
+            const adminRol = roles.find(r => r.nombre === 'Administrador');
+            setUsuarioActual({
+              id: data.user.id,
+              nombre_completo: data.user.user_metadata?.nombre_completo || data.user.email || 'Usuario CCV',
+              email: data.user.email || email,
+              rol_id: adminRol?.id || 'r-1',
+              rol_nombre: adminRol?.nombre || 'Administrador',
+              area_nombre: adminRol?.area_nombre || 'ADMIN',
+              activo: true
+            });
+          }
+        }
         return { success: true };
       }
       return { success: false, error: 'No se pudo obtener la información de usuario.' };
