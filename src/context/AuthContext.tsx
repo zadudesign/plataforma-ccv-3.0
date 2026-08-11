@@ -299,7 +299,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        // 3. Sincronizar perfiles actualizados desde Supabase
+        // 3. Insertar/actualizar directamente en la tabla public.usuarios por respaldo
+        try {
+          await supabase.from('usuarios').upsert({
+            id: data.user.id,
+            nombre_completo: nombreCompleto,
+            email: email,
+            rol_id: rolId,
+            activo: true
+          });
+        } catch (e) {
+          console.warn('Advertencia al insertar perfil en public.usuarios:', e);
+        }
+
+        // 4. Sincronizar perfiles actualizados desde Supabase
         const freshUsers = await fetchUsuarios();
         let usr: Usuario | undefined;
         if (freshUsers.length > 0) {

@@ -276,6 +276,7 @@ CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles FOR SEL
 CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.permisos_def FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles_permisos FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Permitir lectura de perfiles a usuarios autenticados" ON public.usuarios FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir inserción de perfil propio" ON public.usuarios FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 CREATE POLICY "Permitir actualización de perfil propio o admin" ON public.usuarios FOR UPDATE TO authenticated USING (
     auth.uid() = id OR EXISTS (
         SELECT 1 FROM public.usuarios u
