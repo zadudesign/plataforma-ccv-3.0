@@ -299,7 +299,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        // 3. Sincronizar perfiles actualizados desde Supabase
+        // 3. Garantizar inserción explícita en public.usuarios (por si el trigger tarda o no está presente)
+        try {
+          await supabase.from('usuarios').upsert({
+            id: data.user.id,
+            nombre_completo: nombreCompleto,
+            email: email,
+            rol_id: rolId,
+            activo: true
+          });
+        } catch (e) {
+          console.warn('Error guardando perfil en public.usuarios:', e);
+        }
+
+        // 4. Sincronizar perfiles actualizados desde Supabase
         const freshUsers = await fetchUsuarios();
         let usr: Usuario | undefined;
         if (freshUsers.length > 0) {
@@ -318,7 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             activo: true,
             created_at: new Date().toISOString()
           };
-          setUsuarios(prev => [usr!, ...prev]);
+          setUsuarios(prev => [usr!, ...prev.filter(u => u.id !== usr?.id)]);
         }
 
         setUsuarioActual(usr);
@@ -378,19 +391,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    const rol = roles.find(r => r.id === nuevo.rol_id);
-    const usuarioCompleto: Usuario = {
-      nombre_completo: nuevo.nombre_completo,
-      email: nuevo.email,
-      rol_id: nuevo.rol_id,
-      telefono: nuevo.telefono,
-      activo: nuevo.activo !== false,
-      id: newUserId,
-      rol_nombre: rol?.nombre || 'Docente',
-      area_nombre: rol?.area_nombre || 'CURSO',
-      avatar_url: nuevo.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-    };
-    setUsuarios(prev => [usuarioCompleto, ...prev]);
+    // Intentar upsert directo en Supabase DB public.usuarios si tenemos un UUID válido o conexión
+    if (!newUserId.startsWith('u-')) {
+      try {
+        await supabase.from('usuarios').upsert({
+          id: newUserId,
+          nombre_completo: nuevo.nombre_completo,
+          email: nuevo.email,
+          rol_id: nuevo.rol_id,
+          telefono: nuevo.telefono,
+          activo: nuevo.activo !== false
+        });
+      } catch (e) {
+        console.warn('No se pudo hacer upsert en public.usuarios:', e);
+      }
+    }
+
+    const freshUsers = await fetchUsuarios();
+    if (freshUsers.length > 0) {
+      setUsuarios(freshUsers);
+    } else {
+      const rol = roles.find(r => r.id === nuevo.rol_id);
+      const usuarioCompleto: Usuario = {
+        nombre_completo: nuevo.nombre_completo,
+        email: nuevo.email,
+        rol_id: nuevo.rol_id,
+        telefono: nuevo.telefono,
+        activo: nuevo.activo !== false,
+        id: newUserId,
+        rol_nombre: rol?.nombre || 'Docente',
+        area_nombre: rol?.area_nombre || 'CURSO',
+        avatar_url: nuevo.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+      };
+      setUsuarios(prev => [usuarioCompleto, ...prev]);
+    }
     return { success: true };
   };
 

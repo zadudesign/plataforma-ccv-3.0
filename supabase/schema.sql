@@ -271,11 +271,22 @@ ALTER TABLE public.tareas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tarea_comentarios ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de lectura pública/autenticada
+DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.areas;
 CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.areas FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.roles;
 CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.permisos_def;
 CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.permisos_def FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.roles_permisos;
 CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles_permisos FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir lectura de perfiles a usuarios autenticados" ON public.usuarios;
 CREATE POLICY "Permitir lectura de perfiles a usuarios autenticados" ON public.usuarios FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir actualización de perfil propio o admin" ON public.usuarios;
 CREATE POLICY "Permitir actualización de perfil propio o admin" ON public.usuarios FOR UPDATE TO authenticated USING (
     auth.uid() = id OR EXISTS (
         SELECT 1 FROM public.usuarios u
@@ -285,6 +296,7 @@ CREATE POLICY "Permitir actualización de perfil propio o admin" ON public.usuar
     )
 );
 
+DROP POLICY IF EXISTS "Gestión total de usuarios exclusiva para Administrador" ON public.usuarios;
 CREATE POLICY "Gestión total de usuarios exclusiva para Administrador" ON public.usuarios FOR ALL TO authenticated USING (
     EXISTS (
         SELECT 1 FROM public.usuarios u
@@ -294,12 +306,26 @@ CREATE POLICY "Gestión total de usuarios exclusiva para Administrador" ON publi
     )
 );
 
+DROP POLICY IF EXISTS "Permitir inserción de perfil propio al registrarse" ON public.usuarios;
+CREATE POLICY "Permitir inserción de perfil propio al registrarse" ON public.usuarios FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Permitir inserción a usuarios anon o durante autenticación" ON public.usuarios;
+CREATE POLICY "Permitir inserción a usuarios anon o durante autenticación" ON public.usuarios FOR INSERT TO anon WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir lectura de facultades a usuarios autenticados" ON public.facultades;
 CREATE POLICY "Permitir lectura de facultades a usuarios autenticados" ON public.facultades FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir lectura de programas a usuarios autenticados" ON public.programas;
 CREATE POLICY "Permitir lectura de programas a usuarios autenticados" ON public.programas FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir lectura de proyectos a usuarios autenticados" ON public.proyectos;
 CREATE POLICY "Permitir lectura de proyectos a usuarios autenticados" ON public.proyectos FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Permitir lectura de cursos a usuarios autenticados" ON public.cursos;
 CREATE POLICY "Permitir lectura de cursos a usuarios autenticados" ON public.cursos FOR SELECT TO authenticated USING (true);
 
 -- Política RLS Descendente de Tareas según Nivel de Área (Cada rol controla su área y áreas dependientes)
+DROP POLICY IF EXISTS "Visibilidad descendente de tareas por jerarquía de área" ON public.tareas;
 CREATE POLICY "Visibilidad descendente de tareas por jerarquía de área" ON public.tareas FOR SELECT TO authenticated USING (
     EXISTS (
         SELECT 1 FROM public.usuarios u
@@ -315,6 +341,7 @@ CREATE POLICY "Visibilidad descendente de tareas por jerarquía de área" ON pub
     )
 );
 
+DROP POLICY IF EXISTS "Permitir modificación de tareas según jerarquía o responsabilidad" ON public.tareas;
 CREATE POLICY "Permitir modificación de tareas según jerarquía o responsabilidad" ON public.tareas FOR ALL TO authenticated USING (
     EXISTS (
         SELECT 1 FROM public.usuarios u
@@ -330,7 +357,10 @@ CREATE POLICY "Permitir modificación de tareas según jerarquía o responsabili
     )
 );
 
+DROP POLICY IF EXISTS "Lectura de comentarios por usuarios autenticados" ON public.tarea_comentarios;
 CREATE POLICY "Lectura de comentarios por usuarios autenticados" ON public.tarea_comentarios FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Creación de comentarios por usuario autenticado" ON public.tarea_comentarios;
 CREATE POLICY "Creación de comentarios por usuario autenticado" ON public.tarea_comentarios FOR INSERT TO authenticated WITH CHECK (auth.uid() = usuario_id);
 
 -- ----------------------------------------------------------------------------
@@ -380,3 +410,54 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.roles_permisos (rol_id, permiso_id)
 SELECT (SELECT id FROM public.roles WHERE nombre = 'Jefe'), id FROM public.permisos_def WHERE clave != 'usuario:gestionar'
 ON CONFLICT DO NOTHING;
+
+-- ----------------------------------------------------------------------------
+-- 7. TRIGGER AUTOMÁTICO PARA SINCRONIZAR AUTH.USERS -> PUBLIC.USUARIOS
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    default_rol_id UUID;
+BEGIN
+    -- Obtener el rol_id enviado en user_metadata o el rol Docente por defecto
+    IF NEW.raw_user_meta_data->>'rol_id' IS NOT NULL THEN
+        default_rol_id := (NEW.raw_user_meta_data->>'rol_id')::UUID;
+    ELSE
+        SELECT id INTO default_rol_id FROM public.roles WHERE nombre = 'Docente' LIMIT 1;
+        IF default_rol_id IS NULL THEN
+            SELECT id INTO default_rol_id FROM public.roles LIMIT 1;
+        END IF;
+    END IF;
+
+    INSERT INTO public.usuarios (
+        id,
+        nombre_completo,
+        email,
+        rol_id,
+        telefono,
+        activo,
+        created_at
+    )
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'nombre_completo', NEW.email, 'Usuario CCV'),
+        NEW.email,
+        default_rol_id,
+        NEW.raw_user_meta_data->>'telefono',
+        true,
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        nombre_completo = EXCLUDED.nombre_completo,
+        email = EXCLUDED.email,
+        rol_id = COALESCE(EXCLUDED.rol_id, public.usuarios.rol_id);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
