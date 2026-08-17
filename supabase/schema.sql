@@ -283,79 +283,75 @@ CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.permisos_def 
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.roles_permisos;
 CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles_permisos FOR SELECT TO authenticated USING (true);
 
+-- Helper function para verificar rol Admin sin causar recursión infinita RLS
+CREATE OR REPLACE FUNCTION public.es_admin(p_user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 
+        FROM public.usuarios u
+        JOIN public.roles r ON u.rol_id = r.id
+        JOIN public.areas a ON r.area_id = a.id
+        WHERE u.id = p_user_id AND a.nivel = 6
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- Políticas de lectura de perfiles
 DROP POLICY IF EXISTS "Permitir lectura de perfiles a usuarios autenticados" ON public.usuarios;
-CREATE POLICY "Permitir lectura de perfiles a usuarios autenticados" ON public.usuarios FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Permitir lectura de usuarios" ON public.usuarios;
+CREATE POLICY "Permitir lectura de usuarios" ON public.usuarios FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Permitir actualización de perfil propio o admin" ON public.usuarios;
-CREATE POLICY "Permitir actualización de perfil propio o admin" ON public.usuarios FOR UPDATE TO authenticated USING (
-    auth.uid() = id OR EXISTS (
-        SELECT 1 FROM public.usuarios u
-        JOIN public.roles r ON u.rol_id = r.id
-        JOIN public.areas a ON r.area_id = a.id
-        WHERE u.id = auth.uid() AND a.nivel = 6
-    )
+DROP POLICY IF EXISTS "Gestión total de usuarios exclusiva para Administrador" ON public.usuarios;
+
+CREATE POLICY "Permitir edición a dueño o admin" ON public.usuarios FOR UPDATE USING (
+    auth.uid() = id OR public.es_admin(auth.uid())
 );
 
-DROP POLICY IF EXISTS "Gestión total de usuarios exclusiva para Administrador" ON public.usuarios;
-CREATE POLICY "Gestión total de usuarios exclusiva para Administrador" ON public.usuarios FOR ALL TO authenticated USING (
-    EXISTS (
-        SELECT 1 FROM public.usuarios u
-        JOIN public.roles r ON u.rol_id = r.id
-        JOIN public.areas a ON r.area_id = a.id
-        WHERE u.id = auth.uid() AND a.nivel = 6
-    )
+CREATE POLICY "Permitir eliminación solo a admin" ON public.usuarios FOR DELETE USING (
+    public.es_admin(auth.uid())
 );
 
 DROP POLICY IF EXISTS "Permitir inserción de perfil propio al registrarse" ON public.usuarios;
-CREATE POLICY "Permitir inserción de perfil propio al registrarse" ON public.usuarios FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Permitir inserción a usuarios anon o durante autenticación" ON public.usuarios;
-CREATE POLICY "Permitir inserción a usuarios anon o durante autenticación" ON public.usuarios FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Permitir inserción de perfil propio al registrarse" ON public.usuarios FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura de facultades a usuarios autenticados" ON public.facultades;
-CREATE POLICY "Permitir lectura de facultades a usuarios autenticados" ON public.facultades FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Permitir lectura de facultades" ON public.facultades;
+CREATE POLICY "Permitir lectura de facultades" ON public.facultades FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Permitir gestión de facultades" ON public.facultades;
+CREATE POLICY "Permitir gestión de facultades" ON public.facultades FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Permitir lectura de programas a usuarios autenticados" ON public.programas;
-CREATE POLICY "Permitir lectura de programas a usuarios autenticados" ON public.programas FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Permitir lectura de programas" ON public.programas;
+CREATE POLICY "Permitir lectura de programas" ON public.programas FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Permitir gestión de programas" ON public.programas;
+CREATE POLICY "Permitir gestión de programas" ON public.programas FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Permitir lectura de proyectos a usuarios autenticados" ON public.proyectos;
-CREATE POLICY "Permitir lectura de proyectos a usuarios autenticados" ON public.proyectos FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Permitir lectura de proyectos" ON public.proyectos;
+CREATE POLICY "Permitir lectura de proyectos" ON public.proyectos FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Permitir gestión de proyectos" ON public.proyectos;
+CREATE POLICY "Permitir gestión de proyectos" ON public.proyectos FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Permitir lectura de cursos a usuarios autenticados" ON public.cursos;
-CREATE POLICY "Permitir lectura de cursos a usuarios autenticados" ON public.cursos FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Permitir lectura de cursos" ON public.cursos;
+CREATE POLICY "Permitir lectura de cursos" ON public.cursos FOR SELECT USING (true);
 
--- Política RLS Descendente de Tareas según Nivel de Área (Cada rol controla su área y áreas dependientes)
+DROP POLICY IF EXISTS "Permitir gestión de cursos" ON public.cursos;
+CREATE POLICY "Permitir gestión de cursos" ON public.cursos FOR ALL USING (true);
+
+-- Política de Tareas
 DROP POLICY IF EXISTS "Visibilidad descendente de tareas por jerarquía de área" ON public.tareas;
-CREATE POLICY "Visibilidad descendente de tareas por jerarquía de área" ON public.tareas FOR SELECT TO authenticated USING (
-    EXISTS (
-        SELECT 1 FROM public.usuarios u
-        JOIN public.roles r ON u.rol_id = r.id
-        JOIN public.areas a ON r.area_id = a.id
-        JOIN public.areas ta ON tareas.area_id = ta.id
-        WHERE u.id = auth.uid()
-        AND (
-            a.nivel >= 5 OR -- ADMIN (6) y CMU/Jefe/Diseño/Multimedia/Soporte (5) ven todo
-            u.id = tareas.responsable_id OR -- O es el usuario asignado
-            a.nivel >= ta.nivel -- O el área del usuario es superior o igual al área de la tarea
-        )
-    )
-);
+DROP POLICY IF EXISTS "Permitir lectura de tareas" ON public.tareas;
+CREATE POLICY "Permitir lectura de tareas" ON public.tareas FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Permitir modificación de tareas según jerarquía o responsabilidad" ON public.tareas;
-CREATE POLICY "Permitir modificación de tareas según jerarquía o responsabilidad" ON public.tareas FOR ALL TO authenticated USING (
-    EXISTS (
-        SELECT 1 FROM public.usuarios u
-        JOIN public.roles r ON u.rol_id = r.id
-        JOIN public.areas a ON r.area_id = a.id
-        JOIN public.areas ta ON tareas.area_id = ta.id
-        WHERE u.id = auth.uid()
-        AND (
-            a.nivel >= 5 OR 
-            u.id = tareas.responsable_id OR
-            a.nivel >= ta.nivel
-        )
-    )
-);
+DROP POLICY IF EXISTS "Permitir gestión de tareas" ON public.tareas;
+CREATE POLICY "Permitir gestión de tareas" ON public.tareas FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Lectura de comentarios por usuarios autenticados" ON public.tarea_comentarios;
 CREATE POLICY "Lectura de comentarios por usuarios autenticados" ON public.tarea_comentarios FOR SELECT TO authenticated USING (true);

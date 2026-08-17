@@ -108,7 +108,7 @@ export async function fetchFacultades(): Promise<Facultad[]> {
   try {
     const { data, error } = await supabase
       .from('facultades')
-      .select('*, decano:usuarios!facultades_decano_id_fkey(nombre_completo)');
+      .select('*, decano:usuarios!decano_id(nombre_completo)');
     if (error || !data || data.length === 0) return [];
     return data.map((f: any) => ({
       id: f.id,
@@ -138,7 +138,7 @@ export async function fetchProgramas(): Promise<Programa[]> {
   try {
     const { data, error } = await supabase
       .from('programas')
-      .select('*, facultades(nombre), coordinador:usuarios!programas_coordinador_id_fkey(nombre_completo)');
+      .select('*, facultades(nombre), coordinador:usuarios!coordinador_id(nombre_completo)');
     if (error || !data || data.length === 0) return [];
     return data.map((p: any) => ({
       id: p.id,
@@ -193,8 +193,8 @@ export async function fetchCursos(): Promise<CursoVirtual[]> {
       .select(`
         *,
         programas(nombre, facultades(nombre)),
-        docente:usuarios!cursos_docente_id_fkey(nombre_completo),
-        evaluador:usuarios!cursos_evaluador_id_fkey(nombre_completo)
+        docente:usuarios!docente_id(nombre_completo),
+        evaluador:usuarios!evaluador_id(nombre_completo)
       `);
     if (error || !data || data.length === 0) return [];
     return data.map((c: any) => ({
@@ -249,7 +249,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         proyecto:proyectos(nombre),
         curso:cursos(nombre),
         area:areas(nombre),
-        responsable:usuarios!tareas_responsable_id_fkey(nombre_completo, avatar_url)
+        responsable:usuarios!responsable_id(nombre_completo, avatar_url)
       `)
       .order('orden_tarea', { ascending: true });
 
