@@ -558,9 +558,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <Building2 className="w-5 h-5 text-sage-600" />
                 <h3 className="text-base font-extrabold text-charcoal-900">1. Asignación y Registro de Facultades</h3>
               </div>
-              <span className="text-[11px] font-bold text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 shrink-0 self-start sm:self-auto">
-                ⚡ Sincronizado desde Áreas Jerárquicas (Nivel 3)
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 shrink-0">
+                  ⚡ Sincronizado desde Áreas Jerárquicas (Nivel 3)
+                </span>
+                <button
+                  onClick={() => setCreateEntityType('facultad')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Agregar Facultad
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {facultades.map(fac => (
@@ -598,9 +606,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <GraduationCap className="w-5 h-5 text-sage-600" />
                 <h3 className="text-base font-extrabold text-charcoal-900">2. Asignación y Registro de Programas Académicos</h3>
               </div>
-              <span className="text-[11px] font-bold text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 shrink-0 self-start sm:self-auto">
-                ⚡ Sincronizado desde Áreas Jerárquicas (Nivel 2)
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 shrink-0">
+                  ⚡ Sincronizado desde Áreas Jerárquicas (Nivel 2)
+                </span>
+                <button
+                  onClick={() => setCreateEntityType('programa')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Agregar Programa
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {programas.map(prog => (

@@ -605,6 +605,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setFacultades(prev => [nueva, ...prev]);
+
+    setAreas(prev => {
+      const exists = prev.some(a => a.nombre.trim().toUpperCase() === nombre.trim().toUpperCase());
+      if (exists) return prev;
+      return [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          nombre: nombre.trim().toUpperCase(),
+          nivel: 3,
+          parent_id: null,
+          created_at: new Date().toISOString()
+        }
+      ];
+    });
   };
 
   const crearPrograma = async (nombre: string, facultadId: string, coordinadorId?: string) => {
@@ -621,6 +636,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setProgramas(prev => [nuevo, ...prev]);
+
+    setAreas(prev => {
+      const exists = prev.some(a => a.nombre.trim().toUpperCase() === nombre.trim().toUpperCase());
+      if (exists) return prev;
+      const parentArea = prev.find(a => a.nombre.trim().toUpperCase() === (facultad?.nombre || '').trim().toUpperCase());
+      return [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          nombre: nombre.trim().toUpperCase(),
+          nivel: 2,
+          parent_id: parentArea ? parentArea.id : null,
+          area_padre_nombre: parentArea ? parentArea.nombre : facultad?.nombre,
+          created_at: new Date().toISOString()
+        }
+      ];
+    });
   };
 
   const crearCurso = async (datos: Omit<CursoVirtual, 'id'>) => {
