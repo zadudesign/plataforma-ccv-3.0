@@ -1,7 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, UserPlus, Edit, ShieldCheck, Mail, Phone, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { 
+  X, 
+  UserPlus, 
+  Edit, 
+  ShieldCheck, 
+  Mail, 
+  Phone, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  CheckCircle2, 
+  AlertCircle,
+  Upload,
+  Camera,
+  Trash2,
+  User,
+  Sparkles,
+  Image as ImageIcon
+} from 'lucide-react';
 import { Usuario, Rol } from '@/types';
 
 interface UserFormModalProps {
@@ -22,12 +40,100 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   const [rolId, setRolId] = useState(usuarioEditar?.rol_id || roles[0]?.id || '');
   const [telefono, setTelefono] = useState(usuarioEditar?.telefono || '');
   const [activo, setActivo] = useState(usuarioEditar?.activo !== false);
+  const [avatarUrl, setAvatarUrl] = useState(usuarioEditar?.avatar_url || '');
+  const [isDragging, setIsDragging] = useState(false);
   
   // Campos de contraseña para la creación inicial
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Por favor selecciona un archivo de imagen válido (JPG, PNG, WebP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('La imagen seleccionada supera el límite de 5MB.');
+      return;
+    }
+
+    setErrorMsg(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+      // Optimizar y redimensionar la imagen a max 400x400
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 400;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          setAvatarUrl(compressedDataUrl);
+        } else {
+          setAvatarUrl(rawDataUrl);
+        }
+      };
+      img.onerror = () => {
+        setAvatarUrl(rawDataUrl);
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarUrl('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +160,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
       rol_id: rolId,
       telefono,
       activo,
+      avatar_url: avatarUrl || undefined,
       ...(usuarioEditar ? {} : { password }),
     });
     onClose();
@@ -61,7 +168,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-md p-6 relative">
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 max-h-[92vh] overflow-y-auto relative">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all"
@@ -79,8 +186,8 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             </h3>
             <p className="text-xs text-charcoal-500">
               {usuarioEditar
-                ? 'Modifica los permisos, rol o estado del usuario.'
-                : 'Crea una cuenta institucional y asigna su rol jerárquico.'}
+                ? 'Actualiza los datos, foto de perfil, rol o estado del integrante.'
+                : 'Crea una cuenta institucional, asigna su foto y rol jerárquico.'}
             </p>
           </div>
         </div>
@@ -92,6 +199,84 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               <span>{errorMsg}</span>
             </div>
           )}
+
+          {/* Sección de Foto de Perfil / Avatar */}
+          <div className="p-4 bg-cream-50/80 rounded-2xl border border-stone-200/80 flex flex-col sm:flex-row items-center gap-4">
+            {/* Input oculto de archivo */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png, image/jpeg, image/webp, image/gif"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            {/* Avatar Preview con zona de drop */}
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`relative w-20 h-20 rounded-full cursor-pointer group shrink-0 border-2 transition-all overflow-hidden shadow-md flex items-center justify-center bg-white ${
+                isDragging ? 'border-sage-600 ring-4 ring-sage-100 scale-105' : 'border-stone-200 hover:border-sage-500'
+              }`}
+              title="Haz clic o arrastra una imagen para cambiar la foto"
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={nombreCompleto || 'Avatar'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-sage-100 to-sage-200 text-sage-700 flex flex-col items-center justify-center">
+                  <User className="w-8 h-8 opacity-80" />
+                </div>
+              )}
+
+              {/* Overlay hover */}
+              <div className="absolute inset-0 bg-charcoal-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-0.5">
+                <Camera className="w-5 h-5 text-white" />
+                <span>Cambiar</span>
+              </div>
+            </div>
+
+            {/* Controles de Foto */}
+            <div className="flex-1 text-center sm:text-left space-y-1.5">
+              <label className="block text-xs font-bold text-charcoal-800 uppercase tracking-wider">
+                Foto de Perfil del Usuario
+              </label>
+              <p className="text-[11px] text-charcoal-500 leading-tight">
+                Sube una foto personalizada para reemplazar el avatar por defecto.
+              </p>
+              
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 bg-white hover:bg-sage-50 text-sage-800 border border-stone-200 hover:border-sage-300 text-xs font-bold rounded-full transition-all shadow-xs flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5 text-sage-600" />
+                  <span>{avatarUrl ? 'Cambiar Foto' : 'Subir Foto'}</span>
+                </button>
+
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="px-3 py-1.5 bg-white hover:bg-coral-50 text-coral-700 border border-stone-200 hover:border-coral-200 text-xs font-bold rounded-full transition-all shadow-xs flex items-center gap-1"
+                    title="Quitar foto y usar avatar inicial"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Quitar</span>
+                  </button>
+                )}
+              </div>
+              <span className="block text-[10px] text-charcoal-400 font-mono">
+                Formatos: JPG, PNG o WebP (Máx. 5MB)
+              </span>
+            </div>
+          </div>
 
           <div>
             <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">

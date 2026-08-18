@@ -23,6 +23,7 @@ import {
   addComentarioDB,
   addRegistroHorasDB
 } from '@/lib/supabaseService';
+import { INITIAL_TAREAS, INITIAL_COMENTARIOS } from '@/lib/mockData';
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
 import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
@@ -49,8 +50,8 @@ export default function Home() {
   const [busqueda, setBusqueda] = useState('');
   
   // Data state
-  const [tareas, setTareas] = useState<TareaCCV[]>([]);
-  const [comentarios, setComentarios] = useState<TareaComentario[]>([]);
+  const [tareas, setTareas] = useState<TareaCCV[]>(INITIAL_TAREAS);
+  const [comentarios, setComentarios] = useState<TareaComentario[]>(INITIAL_COMENTARIOS);
   
   // Modal states
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);

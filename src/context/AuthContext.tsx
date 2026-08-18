@@ -110,17 +110,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>(INITIAL_USUARIOS);
   const [roles, setRoles] = useState<Rol[]>(INITIAL_ROLES);
   const [areas, setAreas] = useState<Area[]>(INITIAL_AREAS);
   const [permisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
   const [rolesPermisosMap, setRolesPermisosMap] = useState<Record<string, string[]>>(ROLES_PERMISOS_MAP);
   
   // Entidades Académicas y Proyectos en Estado Global
-  const [facultades, setFacultades] = useState<Facultad[]>([]);
-  const [programas, setProgramas] = useState<Programa[]>([]);
-  const [cursos, setCursos] = useState<CursoVirtual[]>([]);
-  const [proyectos, setProyectos] = useState<ProyectoEspecial[]>([]);
+  const [facultades, setFacultades] = useState<Facultad[]>(INITIAL_FACULTADES);
+  const [programas, setProgramas] = useState<Programa[]>(INITIAL_PROGRAMAS);
+  const [cursos, setCursos] = useState<CursoVirtual[]>(INITIAL_CURSOS);
+  const [proyectos, setProyectos] = useState<ProyectoEspecial[]>(INITIAL_PROYECTOS);
   const [tarifasProyecto, setTarifasProyecto] = useState<ConfiguracionTarifa[]>(INITIAL_TARIFAS_PROYECTO);
   
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
@@ -223,16 +223,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginConSupabase = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const emailLower = email.toLowerCase().trim();
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // Si es entorno local sin backend Supabase activo, intentar login simulado por email
-        const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === email.toLowerCase());
+        // Si es entorno local sin backend Supabase activo o falló la conexión ("Failed to fetch"), intentar login simulado por email
+        const usuarioEncontrado = usuarios.find(u => u.email?.toLowerCase().trim() === emailLower)
+          || INITIAL_USUARIOS.find(u => u.email?.toLowerCase().trim() === emailLower);
         if (usuarioEncontrado) {
           establecerUsuarioAutenticado(usuarioEncontrado);
           return { success: true };
         }
-        return { success: false, error: error.message };
+        return { success: false, error: 'Credenciales inválidas o usuario no registrado.' };
       }
       if (data.user) {
         // Cargar usuarios actualizados desde Supabase con la sesión activa
@@ -241,8 +243,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUsuarios(freshUsers);
         }
 
-        const emailLower = (data.user.email || email).toLowerCase();
-        const usr = freshUsers.find(u => u.email?.toLowerCase() === emailLower) || usuarios.find(u => u.email?.toLowerCase() === emailLower);
+        const sessionEmail = (data.user.email || email).toLowerCase().trim();
+        const usr = freshUsers.find(u => u.email?.toLowerCase().trim() === sessionEmail) 
+          || usuarios.find(u => u.email?.toLowerCase().trim() === sessionEmail)
+          || INITIAL_USUARIOS.find(u => u.email?.toLowerCase().trim() === sessionEmail);
 
         if (usr) {
           establecerUsuarioAutenticado(usr);
@@ -287,13 +291,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { success: false, error: 'No se pudo obtener la información de usuario.' };
     } catch (err: any) {
-      // Fallback para usuarios simulados si Supabase no está configurado aún
-      const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === email.toLowerCase());
+      // Fallback para usuarios simulados si Supabase arroja Failed to fetch o excepción de red
+      const usuarioEncontrado = usuarios.find(u => u.email?.toLowerCase().trim() === emailLower)
+        || INITIAL_USUARIOS.find(u => u.email?.toLowerCase().trim() === emailLower);
       if (usuarioEncontrado) {
         establecerUsuarioAutenticado(usuarioEncontrado);
         return { success: true };
       }
-      return { success: false, error: err?.message || 'Error al iniciar sesión' };
+      return { success: false, error: 'Usuario no encontrado o error de conexión.' };
     }
   };
 
