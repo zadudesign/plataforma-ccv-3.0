@@ -60,6 +60,8 @@ export interface ProyectoEspecial {
   nombre: string;
   descripcion: string;
   area_id?: string;
+  lider_id?: string;
+  lider_nombre?: string;
   estado: 'Planificación' | 'En Proceso' | 'Completado' | 'Pausado';
   created_at?: string;
 }

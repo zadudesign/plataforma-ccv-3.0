@@ -274,6 +274,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     asignarCoordinador,
     asignarDocenteCurso,
     asignarEvaluadorCurso,
+    asignarLiderProyecto,
     tarifasProyecto,
     actualizarTarifaProyecto
   } = useAuth();
@@ -705,14 +706,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {proyectos.map(pry => (
-                <div key={pry.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-extrabold text-charcoal-900 text-sm">{pry.nombre}</h4>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
-                      {pry.estado}
-                    </span>
+                <div key={pry.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-extrabold text-charcoal-900 text-sm">{pry.nombre}</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
+                        {pry.estado}
+                      </span>
+                    </div>
+                    <p className="text-xs text-charcoal-600 mt-1">{pry.descripcion}</p>
+                    <p className="text-xs text-charcoal-500 mt-1">
+                      Líder Responsable: <strong className="text-sage-700">{pry.lider_nombre || 'Sin Asignar'}</strong>
+                    </p>
                   </div>
-                  <p className="text-xs text-charcoal-600">{pry.descripcion}</p>
+                  <div className="pt-2 border-t border-stone-200/60">
+                    <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Líder de Proyecto:</label>
+                    <select
+                      value={pry.lider_id || ''}
+                      onChange={e => asignarLiderProyecto(pry.id, e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
+                    >
+                      <option value="">-- Seleccionar Líder / Responsable --</option>
+                      {usuarios.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre_completo} ({u.rol_nombre || u.area_nombre})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>

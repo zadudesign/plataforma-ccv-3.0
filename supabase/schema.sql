@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS public.proyectos (
     nombre TEXT NOT NULL,
     descripcion TEXT,
     area_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
+    lider_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     estado TEXT DEFAULT 'En Proceso', -- 'Planificación', 'En Proceso', 'Completado', 'Pausado'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -79,6 +79,7 @@ interface AuthContextType {
   asignarCoordinador: (programaId: string, coordinadorId: string) => void;
   asignarDocenteCurso: (cursoId: string, docenteId: string) => void;
   asignarEvaluadorCurso: (cursoId: string, evaluadorId: string) => void;
+  asignarLiderProyecto: (proyectoId: string, liderId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -685,6 +686,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } : c));
   };
 
+  const asignarLiderProyecto = (proyectoId: string, liderId: string) => {
+    const lid = usuarios.find(u => u.id === liderId);
+    setProyectos(prev => prev.map(p => p.id === proyectoId ? {
+      ...p,
+      lider_id: liderId,
+      lider_nombre: lid?.nombre_completo || 'Sin Asignar'
+    } : p));
+  };
+
   const actualizarTarifaProyecto = (categoria: CategoriaTareaProyecto, nuevaTarifa: number) => {
     setTarifasProyecto(prev => prev.map(t => t.categoria === categoria ? { ...t, tarifa_hora: nuevaTarifa } : t));
   };
@@ -730,7 +740,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         asignarDecano,
         asignarCoordinador,
         asignarDocenteCurso,
-        asignarEvaluadorCurso
+        asignarEvaluadorCurso,
+        asignarLiderProyecto
       }}
     >
       {children}
