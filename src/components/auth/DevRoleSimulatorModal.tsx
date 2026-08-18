@@ -9,7 +9,9 @@ interface DevRoleSimulatorModalProps {
 }
 
 export const DevRoleSimulatorModal: React.FC<DevRoleSimulatorModalProps> = ({ onClose }) => {
-  const { usuarios, usuarioActual, cambiarUsuarioSimulado } = useAuth();
+  const { usuarios, usuarioActual, cambiarUsuarioSimulado, isRealAdmin } = useAuth();
+
+  if (!isRealAdmin()) return null;
 
   const handleSelect = (id: string) => {
     cambiarUsuarioSimulado(id);

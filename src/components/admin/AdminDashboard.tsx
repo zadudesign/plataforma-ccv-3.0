@@ -262,14 +262,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     eliminarArea,
     adminResetPassword,
     setIsDevSimulatorOpen,
+    isRealAdmin,
     facultades,
     programas,
     cursos,
     proyectos,
     crearFacultad,
+    editarFacultad,
+    eliminarFacultad,
     crearPrograma,
+    editarPrograma,
+    eliminarPrograma,
     crearCurso,
+    editarCurso,
+    eliminarCurso,
     crearProyecto,
+    editarProyecto,
+    eliminarProyecto,
     asignarDecano,
     asignarCoordinador,
     asignarDocenteCurso,
@@ -288,6 +297,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [usuarioResetPassword, setUsuarioResetPassword] = useState<Usuario | null>(null);
   const [rolPermisosEditar, setRolPermisosEditar] = useState<Rol | null>(null);
   const [createEntityType, setCreateEntityType] = useState<TipoEntidad | null>(null);
+  const [entityToEdit, setEntityToEdit] = useState<{ tipo: TipoEntidad; data: any } | null>(null);
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
   const [isCreateAreaModalOpen, setIsCreateAreaModalOpen] = useState(false);
   const [defaultParentIdForAreaModal, setDefaultParentIdForAreaModal] = useState<string | undefined>(undefined);
@@ -422,12 +432,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <h3 className="text-lg font-bold text-charcoal-900">Gestión de Perfiles, Áreas & Roles de Integrantes</h3>
-              <button
-                onClick={() => setIsDevSimulatorOpen(true)}
-                className="hidden lg:flex items-center gap-1 px-3 py-1 bg-coral-50 hover:bg-coral-100 text-coral-700 text-xs font-extrabold rounded-full border border-coral-200"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Cambiar Perfil Activo
-              </button>
+              {isRealAdmin() && (
+                <button
+                  onClick={() => setIsDevSimulatorOpen(true)}
+                  className="hidden lg:flex items-center gap-1 px-3 py-1 bg-coral-50 hover:bg-coral-100 text-coral-700 text-xs font-extrabold rounded-full border border-coral-200"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> Cambiar Perfil Activo
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -584,7 +596,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleConfirmDeleteFacultad(fac)}
+                        onClick={() => { if (window.confirm(`¿Eliminar la facultad "${fac.nombre}"?`)) eliminarFacultad(fac.id); }}
                         title="Eliminar Facultad"
                         className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
                       >
@@ -645,7 +657,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleConfirmDeletePrograma(prog)}
+                        onClick={() => { if (window.confirm(`¿Eliminar el programa "${prog.nombre}"?`)) eliminarPrograma(prog.id); }}
                         title="Eliminar Programa"
                         className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
                       >
@@ -706,7 +718,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => handleConfirmDeleteCurso(cur)}
+                          onClick={() => { if (window.confirm(`¿Eliminar el curso "${cur.nombre}"?`)) eliminarCurso(cur.id); }}
                           title="Eliminar Curso"
                           className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
                         >
@@ -788,7 +800,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => handleConfirmDeleteProyecto(pry)}
+                          onClick={() => { if (window.confirm(`¿Eliminar el proyecto "${pry.nombre}"?`)) eliminarProyecto(pry.id); }}
                           title="Eliminar Proyecto"
                           className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
                         >

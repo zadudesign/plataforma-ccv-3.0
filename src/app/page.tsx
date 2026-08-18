@@ -34,6 +34,7 @@ export default function Home() {
     usuarios,
     nivelArea, 
     isAdmin, 
+    isRealAdmin,
     isDevSimulatorOpen, 
     setIsDevSimulatorOpen,
     facultades,
@@ -353,7 +354,7 @@ export default function Home() {
         )}
 
         {/* Quick Role Simulator Modal */}
-        {isDevSimulatorOpen && (
+        {isDevSimulatorOpen && isRealAdmin() && (
           <DevRoleSimulatorModal onClose={() => setIsDevSimulatorOpen(false)} />
         )}
 

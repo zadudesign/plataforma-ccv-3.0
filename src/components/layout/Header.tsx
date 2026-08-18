@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   busqueda,
   setBusqueda,
 }) => {
-  const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen } = useAuth();
+  const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin } = useAuth();
   const usuarioActual = propsUsuario || contextUsuario;
 
   if (!usuarioActual) return null;
@@ -41,16 +41,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls Bar */}
       <div className="flex items-center gap-3 flex-wrap justify-end">
-        {/* Role Simulator Badge Button */}
-        <button
-          onClick={() => setIsDevSimulatorOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-800 text-xs font-bold border border-sage-200 transition-colors shadow-xs"
-          title="Haz clic para simular otro rol de usuario"
-        >
-          <Shield className="w-3.5 h-3.5 text-sage-600" />
-          <span>Simulador: {usuarioActual.rol_nombre || 'Docente'} (Nivel {nivelArea})</span>
-          <Sparkles className="w-3 h-3 text-amber-500 ml-0.5" />
-        </button>
+        {/* Role Simulator Badge Button (Exclusivo para Admin) */}
+        {isRealAdmin() && (
+          <button
+            onClick={() => setIsDevSimulatorOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-800 text-xs font-bold border border-sage-200 transition-colors shadow-xs"
+            title="Haz clic para simular otro rol de usuario"
+          >
+            <Shield className="w-3.5 h-3.5 text-sage-600" />
+            <span>Simulador: {usuarioActual.rol_nombre || 'Docente'} (Nivel {nivelArea})</span>
+            <Sparkles className="w-3 h-3 text-amber-500 ml-0.5" />
+          </button>
+        )}
 
         {/* Notification Bell */}
         <button 

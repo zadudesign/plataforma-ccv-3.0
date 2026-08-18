@@ -50,6 +50,7 @@ interface AuthContextType {
   rolesPermisosMap: Record<string, string[]>;
   permisosUsuario: string[];
   nivelArea: NivelArea;
+  usuarioReal: Usuario | null;
   isDevSimulatorOpen: boolean;
   setIsDevSimulatorOpen: (open: boolean) => void;
   
@@ -64,6 +65,7 @@ interface AuthContextType {
   hasPermission: (clavePermiso: string) => boolean;
   canAccessLevel: (nivelRequerido: NivelArea) => boolean;
   isAdmin: () => boolean;
+  isRealAdmin: () => boolean;
   
   // Acciones
   actualizarTarifaProyecto: (categoria: CategoriaTareaProyecto, nuevaTarifa: number) => void;
@@ -123,7 +125,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
-  const [isDevSimulatorOpen, setIsDevSimulatorOpen] = useState(false);
+  const [usuarioReal, setUsuarioReal] = useState<Usuario | null>(null);
+  const [isDevSimulatorOpenState, setIsDevSimulatorOpenState] = useState(false);
+
+  const establecerUsuarioAutenticado = (usr: Usuario | null) => {
+    setUsuarioActual(usr);
+    setUsuarioReal(usr);
+  };
+
+  const isRealAdmin = (): boolean => {
+    const targetUser = usuarioReal || usuarioActual;
+    if (!targetUser) return false;
+    const targetRol = roles.find(r => r.id === targetUser.rol_id);
+    return (
+      targetUser.rol_nombre === 'Administrador' ||
+      targetRol?.nombre === 'Administrador' ||
+      targetUser.area_nombre === 'ADMIN'
+    );
+  };
+
+  const setIsDevSimulatorOpen = (open: boolean) => {
+    if (open && !isRealAdmin()) {
+      setIsDevSimulatorOpenState(false);
+      return;
+    }
+    setIsDevSimulatorOpenState(open);
+  };
 
   // Cargar datos iniciales desde Supabase o Fallback
   useEffect(() => {
@@ -159,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         if (usuarioEncontrado) {
-          setUsuarioActual(usuarioEncontrado);
+          establecerUsuarioAutenticado(usuarioEncontrado);
         }
       }
     };
@@ -202,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Si es entorno local sin backend Supabase activo, intentar login simulado por email
         const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === email.toLowerCase());
         if (usuarioEncontrado) {
-          setUsuarioActual(usuarioEncontrado);
+          establecerUsuarioAutenticado(usuarioEncontrado);
           return { success: true };
         }
         return { success: false, error: error.message };
@@ -218,7 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const usr = freshUsers.find(u => u.email?.toLowerCase() === emailLower) || usuarios.find(u => u.email?.toLowerCase() === emailLower);
 
         if (usr) {
-          setUsuarioActual(usr);
+          establecerUsuarioAutenticado(usr);
         } else {
           // Consultar perfil de usuario individual en Supabase
           const { data: dbUser } = await supabase
@@ -241,11 +268,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               activo: dbUser.activo,
               created_at: dbUser.created_at
             };
-            setUsuarioActual(parsedUser);
+            establecerUsuarioAutenticado(parsedUser);
           } else {
             // Asignar rol de Administrador si coincide la cuenta principal
             const adminRol = roles.find(r => r.nombre === 'Administrador');
-            setUsuarioActual({
+            establecerUsuarioAutenticado({
               id: data.user.id,
               nombre_completo: data.user.user_metadata?.nombre_completo || data.user.email || 'Usuario CCV',
               email: data.user.email || email,
@@ -263,7 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback para usuarios simulados si Supabase no está configurado aún
       const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (usuarioEncontrado) {
-        setUsuarioActual(usuarioEncontrado);
+        establecerUsuarioAutenticado(usuarioEncontrado);
         return { success: true };
       }
       return { success: false, error: err?.message || 'Error al iniciar sesión' };
@@ -383,7 +410,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     supabase.auth.signOut();
-    setUsuarioActual(null);
+    establecerUsuarioAutenticado(null);
+    setIsDevSimulatorOpenState(false);
   };
 
   const crearUsuario = async (nuevo: Omit<Usuario, 'id'> & { password?: string }): Promise<{ success: boolean; error?: string }> => {
@@ -738,6 +766,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         usuarioActual,
+        usuarioReal,
         usuarios,
         roles,
         areas,
@@ -745,7 +774,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         rolesPermisosMap,
         permisosUsuario,
         nivelArea,
-        isDevSimulatorOpen,
+        isDevSimulatorOpen: isDevSimulatorOpenState,
         setIsDevSimulatorOpen,
         facultades,
         programas,
@@ -755,6 +784,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hasPermission,
         canAccessLevel,
         isAdmin,
+        isRealAdmin,
         actualizarTarifaProyecto,
         cambiarUsuarioSimulado,
         loginConSupabase,
