@@ -552,17 +552,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="space-y-6">
           {/* Section 1: Facultades & Decanos */}
           <div className="ccv-card p-6 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-sage-600" />
                 <h3 className="text-base font-extrabold text-charcoal-900">1. Asignación y Registro de Facultades</h3>
               </div>
-              <button
-                onClick={() => setCreateEntityType('facultad')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" /> Agregar Facultad
-              </button>
+              <span className="text-[11px] font-bold text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 shrink-0 self-start sm:self-auto">
+                ⚡ Sincronizado desde Áreas Jerárquicas (Nivel 3)
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {facultades.map(fac => (
@@ -595,17 +592,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Section 2: Programas & Coordinadores */}
           <div className="ccv-card p-6 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-sage-600" />
                 <h3 className="text-base font-extrabold text-charcoal-900">2. Asignación y Registro de Programas Académicos</h3>
               </div>
-              <button
-                onClick={() => setCreateEntityType('programa')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" /> Agregar Programa
-              </button>
+              <span className="text-[11px] font-bold text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 shrink-0 self-start sm:self-auto">
+                ⚡ Sincronizado desde Áreas Jerárquicas (Nivel 2)
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {programas.map(prog => (
