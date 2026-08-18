@@ -100,6 +100,34 @@ export async function fetchUsuarios(): Promise<Usuario[]> {
   }
 }
 
+// Helper de validación de UUID para PostgreSQL
+export function isGuid(id?: string | null): boolean {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+export async function createAreaDB(nombre: string, nivel: number, parentId?: string | null): Promise<Area | null> {
+  try {
+    const payload: any = { nombre, nivel };
+    if (parentId && isGuid(parentId)) payload.parent_id = parentId;
+    const { data, error } = await supabase.from('areas').insert(payload).select().single();
+    if (error) {
+      console.error('Supabase Error (createAreaDB):', error);
+      return null;
+    }
+    return {
+      id: data.id,
+      nombre: data.nombre,
+      nivel: data.nivel,
+      parent_id: data.parent_id,
+      created_at: data.created_at
+    };
+  } catch (err) {
+    console.error('Excepción (createAreaDB):', err);
+    return null;
+  }
+}
+
 // ----------------------------------------------------------------------------
 // 2. ENTIDADES ACADÉMICAS (FACULTADES, PROGRAMAS, CURSOS, PROYECTOS)
 // ----------------------------------------------------------------------------
@@ -125,12 +153,29 @@ export async function fetchFacultades(): Promise<Facultad[]> {
 export async function createFacultadDB(nombre: string, decanoId?: string): Promise<Facultad | null> {
   try {
     const payload: any = { nombre };
-    if (decanoId) payload.decano_id = decanoId;
+    if (decanoId && isGuid(decanoId)) payload.decano_id = decanoId;
     const { data, error } = await supabase.from('facultades').insert(payload).select().single();
-    if (error) return null;
+    if (error) {
+      console.error('Supabase Error (createFacultadDB):', error);
+      return null;
+    }
     return data;
-  } catch {
+  } catch (err) {
+    console.error('Excepción (createFacultadDB):', err);
     return null;
+  }
+}
+
+export async function updateFacultadDB(facultadId: string, decanoId?: string | null): Promise<boolean> {
+  try {
+    if (!isGuid(facultadId)) return false;
+    const payload: any = { decano_id: isGuid(decanoId) ? decanoId : null };
+    const { error } = await supabase.from('facultades').update(payload).eq('id', facultadId);
+    if (error) console.error('Error actualizando facultad en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción actualizando facultad:', err);
+    return false;
   }
 }
 
@@ -156,13 +201,49 @@ export async function fetchProgramas(): Promise<Programa[]> {
 
 export async function createProgramaDB(nombre: string, facultadId: string, coordinadorId?: string): Promise<Programa | null> {
   try {
-    const payload: any = { nombre, facultad_id: facultadId };
-    if (coordinadorId) payload.coordinador_id = coordinadorId;
+    let validFacultadId = isGuid(facultadId) ? facultadId : null;
+
+    // Si la facultad_id no es un UUID válido (ej. mock local 'f-1'), resolver/crear una facultad base en Supabase
+    if (!validFacultadId) {
+      const { data: facultadesExistentes } = await supabase.from('facultades').select('id').limit(1);
+      if (facultadesExistentes && facultadesExistentes.length > 0) {
+        validFacultadId = facultadesExistentes[0].id;
+      } else {
+        const nuevaFac = await createFacultadDB('Facultad General');
+        validFacultadId = nuevaFac?.id || null;
+      }
+    }
+
+    if (!validFacultadId) {
+      console.error('No se pudo asociar una facultad válida en Supabase.');
+      return null;
+    }
+
+    const payload: any = { nombre, facultad_id: validFacultadId };
+    if (coordinadorId && isGuid(coordinadorId)) payload.coordinador_id = coordinadorId;
+
     const { data, error } = await supabase.from('programas').insert(payload).select().single();
-    if (error) return null;
+    if (error) {
+      console.error('Supabase Error (createProgramaDB):', error);
+      return null;
+    }
     return data;
-  } catch {
+  } catch (err) {
+    console.error('Excepción (createProgramaDB):', err);
     return null;
+  }
+}
+
+export async function updateProgramaDB(programaId: string, coordinadorId?: string | null): Promise<boolean> {
+  try {
+    if (!isGuid(programaId)) return false;
+    const payload: any = { coordinador_id: isGuid(coordinadorId) ? coordinadorId : null };
+    const { error } = await supabase.from('programas').update(payload).eq('id', programaId);
+    if (error) console.error('Error actualizando programa en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción actualizando programa:', err);
+    return false;
   }
 }
 
@@ -178,7 +259,15 @@ export async function fetchProyectos(): Promise<ProyectoEspecial[]> {
 
 export async function createProyectoDB(proyecto: Omit<ProyectoEspecial, 'id'>): Promise<ProyectoEspecial | null> {
   try {
-    const { data, error } = await supabase.from('proyectos').insert(proyecto).select().single();
+    const payload: any = {
+      nombre: proyecto.nombre,
+      descripcion: proyecto.descripcion,
+      estado: proyecto.estado || 'En Proceso'
+    };
+    if (proyecto.area_id && isGuid(proyecto.area_id)) payload.area_id = proyecto.area_id;
+    if (proyecto.lider_id && isGuid(proyecto.lider_id)) payload.lider_id = proyecto.lider_id;
+
+    const { data, error } = await supabase.from('proyectos').insert(payload).select().single();
     if (error) return null;
     return data;
   } catch {
@@ -219,20 +308,59 @@ export async function fetchCursos(): Promise<CursoVirtual[]> {
 
 export async function createCursoDB(curso: Omit<CursoVirtual, 'id'>): Promise<CursoVirtual | null> {
   try {
-    const payload = {
+    let validProgramaId = isGuid(curso.programa_id) ? curso.programa_id : null;
+
+    // Si programa_id no es UUID válido, resolver/crear un programa base en Supabase
+    if (!validProgramaId) {
+      const { data: programasExistentes } = await supabase.from('programas').select('id').limit(1);
+      if (programasExistentes && programasExistentes.length > 0) {
+        validProgramaId = programasExistentes[0].id;
+      } else {
+        const nuevoProg = await createProgramaDB('Programa General', 'f-1');
+        validProgramaId = nuevoProg?.id || null;
+      }
+    }
+
+    if (!validProgramaId) {
+      console.error('No se pudo asociar un programa válido en Supabase para el curso.');
+      return null;
+    }
+
+    const payload: any = {
       nombre: curso.nombre,
       codigo: curso.codigo,
-      programa_id: curso.programa_id,
-      periodo: curso.periodo,
-      docente_id: curso.docente_id || null,
-      evaluador_id: curso.evaluador_id || null,
+      programa_id: validProgramaId,
+      periodo: curso.periodo || '2026-1',
+      docente_id: isGuid(curso.docente_id) ? curso.docente_id : null,
+      evaluador_id: isGuid(curso.evaluador_id) ? curso.evaluador_id : null,
       estado: curso.estado || 'En Diseño'
     };
     const { data, error } = await supabase.from('cursos').insert(payload).select().single();
-    if (error) return null;
+    if (error) {
+      console.error('Supabase Error (createCursoDB):', error);
+      return null;
+    }
     return data;
-  } catch {
+  } catch (err) {
+    console.error('Excepción (createCursoDB):', err);
     return null;
+  }
+}
+
+export async function updateCursoDB(cursoId: string, updates: Partial<{ docente_id: string | null; evaluador_id: string | null; estado: string }>): Promise<boolean> {
+  try {
+    if (!isGuid(cursoId)) return false;
+    const payload: any = {};
+    if (updates.docente_id !== undefined) payload.docente_id = isGuid(updates.docente_id) ? updates.docente_id : null;
+    if (updates.evaluador_id !== undefined) payload.evaluador_id = isGuid(updates.evaluador_id) ? updates.evaluador_id : null;
+    if (updates.estado !== undefined) payload.estado = updates.estado;
+
+    const { error } = await supabase.from('cursos').update(payload).eq('id', cursoId);
+    if (error) console.error('Error actualizando curso en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción actualizando curso:', err);
+    return false;
   }
 }
 

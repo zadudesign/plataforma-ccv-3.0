@@ -271,18 +271,19 @@ ALTER TABLE public.cursos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tareas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tarea_comentarios ENABLE ROW LEVEL SECURITY;
 
--- Políticas de lectura pública/autenticada
+-- Políticas de gestión general (Lectura e Inserción para todas las entidades académicas)
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.areas;
-CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.areas FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Permitir gestión de áreas" ON public.areas;
+CREATE POLICY "Permitir gestión de áreas" ON public.areas FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.roles;
-CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.permisos_def;
-CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.permisos_def FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.permisos_def FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.roles_permisos;
-CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles_permisos FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles_permisos FOR SELECT USING (true);
 
 -- Helper function para verificar rol Admin sin causar recursión infinita RLS
 CREATE OR REPLACE FUNCTION public.es_admin(p_user_id UUID)
@@ -298,18 +299,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- Políticas de lectura de perfiles
+-- Políticas de lectura y modificación de entidades
 DROP POLICY IF EXISTS "Permitir lectura de perfiles a usuarios autenticados" ON public.usuarios;
 DROP POLICY IF EXISTS "Permitir lectura de usuarios" ON public.usuarios;
 CREATE POLICY "Permitir lectura de usuarios" ON public.usuarios FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Permitir actualización de perfil propio o admin" ON public.usuarios;
-DROP POLICY IF EXISTS "Gestión total de usuarios exclusiva para Administrador" ON public.usuarios;
-
+DROP POLICY IF EXISTS "Permitir edición a dueño o admin" ON public.usuarios;
 CREATE POLICY "Permitir edición a dueño o admin" ON public.usuarios FOR UPDATE USING (
     auth.uid() = id OR public.es_admin(auth.uid())
 );
 
+DROP POLICY IF EXISTS "Permitir eliminación solo a admin" ON public.usuarios;
 CREATE POLICY "Permitir eliminación solo a admin" ON public.usuarios FOR DELETE USING (
     public.es_admin(auth.uid())
 );
@@ -319,40 +319,29 @@ CREATE POLICY "Permitir inserción de perfil propio al registrarse" ON public.us
 
 DROP POLICY IF EXISTS "Permitir lectura de facultades a usuarios autenticados" ON public.facultades;
 DROP POLICY IF EXISTS "Permitir lectura de facultades" ON public.facultades;
-CREATE POLICY "Permitir lectura de facultades" ON public.facultades FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Permitir gestión de facultades" ON public.facultades;
-CREATE POLICY "Permitir gestión de facultades" ON public.facultades FOR ALL USING (true);
+CREATE POLICY "Permitir gestión de facultades" ON public.facultades FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura de programas a usuarios autenticados" ON public.programas;
 DROP POLICY IF EXISTS "Permitir lectura de programas" ON public.programas;
-CREATE POLICY "Permitir lectura de programas" ON public.programas FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Permitir gestión de programas" ON public.programas;
-CREATE POLICY "Permitir gestión de programas" ON public.programas FOR ALL USING (true);
+CREATE POLICY "Permitir gestión de programas" ON public.programas FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura de proyectos a usuarios autenticados" ON public.proyectos;
 DROP POLICY IF EXISTS "Permitir lectura de proyectos" ON public.proyectos;
-CREATE POLICY "Permitir lectura de proyectos" ON public.proyectos FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Permitir gestión de proyectos" ON public.proyectos;
-CREATE POLICY "Permitir gestión de proyectos" ON public.proyectos FOR ALL USING (true);
+CREATE POLICY "Permitir gestión de proyectos" ON public.proyectos FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura de cursos a usuarios autenticados" ON public.cursos;
 DROP POLICY IF EXISTS "Permitir lectura de cursos" ON public.cursos;
-CREATE POLICY "Permitir lectura de cursos" ON public.cursos FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Permitir gestión de cursos" ON public.cursos;
-CREATE POLICY "Permitir gestión de cursos" ON public.cursos FOR ALL USING (true);
+CREATE POLICY "Permitir gestión de cursos" ON public.cursos FOR ALL USING (true) WITH CHECK (true);
 
 -- Política de Tareas
 DROP POLICY IF EXISTS "Visibilidad descendente de tareas por jerarquía de área" ON public.tareas;
 DROP POLICY IF EXISTS "Permitir lectura de tareas" ON public.tareas;
-CREATE POLICY "Permitir lectura de tareas" ON public.tareas FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Permitir modificación de tareas según jerarquía o responsabilidad" ON public.tareas;
 DROP POLICY IF EXISTS "Permitir gestión de tareas" ON public.tareas;
-CREATE POLICY "Permitir gestión de tareas" ON public.tareas FOR ALL USING (true);
+CREATE POLICY "Permitir gestión de tareas" ON public.tareas FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Lectura de comentarios por usuarios autenticados" ON public.tarea_comentarios;
 CREATE POLICY "Lectura de comentarios por usuarios autenticados" ON public.tarea_comentarios FOR SELECT TO authenticated USING (true);

@@ -23,9 +23,13 @@ import {
   fetchProgramas,
   fetchCursos,
   fetchProyectos,
+  createAreaDB,
   createFacultadDB,
+  updateFacultadDB,
   createProgramaDB,
+  updateProgramaDB,
   createCursoDB,
+  updateCursoDB,
   createProyectoDB
 } from '@/lib/supabaseService';
 
@@ -549,15 +553,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, [areas, facultades]);
 
-  const crearArea = (nombre: string, nivel: NivelArea, parentId?: string | null) => {
+  const crearArea = async (nombre: string, nivel: NivelArea, parentId?: string | null) => {
     const areaPadre = parentId ? areas.find(a => a.id === parentId) : null;
+    const dbItem = await createAreaDB(nombre.trim().toUpperCase(), Number(nivel), parentId);
     const nuevaArea: Area = {
-      id: `a-${Date.now()}`,
+      id: dbItem?.id || `a-${Date.now()}`,
       nombre: nombre.trim().toUpperCase(),
       nivel,
-      parent_id: parentId || null,
+      parent_id: dbItem?.parent_id || parentId || null,
       area_padre_nombre: areaPadre ? areaPadre.nombre : undefined,
-      created_at: new Date().toISOString()
+      created_at: dbItem?.created_at || new Date().toISOString()
     };
     setAreas(prev => [...prev, nuevaArea]);
 
@@ -629,7 +634,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nuevo: Programa = {
       id: dbItem?.id || `p-${Date.now()}`,
       nombre,
-      facultad_id: facultadId,
+      facultad_id: dbItem?.facultad_id || facultadId,
       facultad_nombre: facultad?.nombre || 'Facultad General',
       coordinador_id: coordinadorId,
       coordinador_nombre: coord?.nombre_completo || 'Sin Asignar',
@@ -682,40 +687,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProyectos(prev => [nuevo, ...prev]);
   };
 
-  const asignarDecano = (facultadId: string, decanoId: string) => {
+  const asignarDecano = async (facultadId: string, decanoId: string) => {
     const decano = usuarios.find(u => u.id === decanoId);
     setFacultades(prev => prev.map(f => f.id === facultadId ? {
       ...f,
       decano_id: decanoId,
       decano_nombre: decano?.nombre_completo || 'Sin Asignar'
     } : f));
+    await updateFacultadDB(facultadId, decanoId);
   };
 
-  const asignarCoordinador = (programaId: string, coordinadorId: string) => {
+  const asignarCoordinador = async (programaId: string, coordinadorId: string) => {
     const coord = usuarios.find(u => u.id === coordinadorId);
     setProgramas(prev => prev.map(p => p.id === programaId ? {
       ...p,
       coordinador_id: coordinadorId,
       coordinador_nombre: coord?.nombre_completo || 'Sin Asignar'
     } : p));
+    await updateProgramaDB(programaId, coordinadorId);
   };
 
-  const asignarDocenteCurso = (cursoId: string, docenteId: string) => {
+  const asignarDocenteCurso = async (cursoId: string, docenteId: string) => {
     const doc = usuarios.find(u => u.id === docenteId);
     setCursos(prev => prev.map(c => c.id === cursoId ? {
       ...c,
       docente_id: docenteId,
       docente_nombre: doc?.nombre_completo || 'Sin Asignar'
     } : c));
+    await updateCursoDB(cursoId, { docente_id: docenteId });
   };
 
-  const asignarEvaluadorCurso = (cursoId: string, evaluadorId: string) => {
+  const asignarEvaluadorCurso = async (cursoId: string, evaluadorId: string) => {
     const ev = usuarios.find(u => u.id === evaluadorId);
     setCursos(prev => prev.map(c => c.id === cursoId ? {
       ...c,
       evaluador_id: evaluadorId,
       evaluador_nombre: ev?.nombre_completo || 'Sin Asignar'
     } : c));
+    await updateCursoDB(cursoId, { evaluador_id: evaluadorId });
   };
 
   const asignarLiderProyecto = (proyectoId: string, liderId: string) => {
