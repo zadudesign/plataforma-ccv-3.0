@@ -26,11 +26,19 @@ import {
   createAreaDB,
   createFacultadDB,
   updateFacultadDB,
+  deleteFacultadDB,
+  updateFacultadFullDB,
   createProgramaDB,
   updateProgramaDB,
+  deleteProgramaDB,
+  updateProgramaFullDB,
   createCursoDB,
   updateCursoDB,
-  createProyectoDB
+  deleteCursoDB,
+  updateCursoFullDB,
+  createProyectoDB,
+  deleteProyectoDB,
+  updateProyectoFullDB
 } from '@/lib/supabaseService';
 
 interface AuthContextType {
@@ -74,9 +82,20 @@ interface AuthContextType {
 
   // Acciones de Creación de Entidades (Admin)
   crearFacultad: (nombre: string, decanoId?: string) => void;
+  editarFacultad: (id: string, nombre: string, decanoId?: string) => void;
+  eliminarFacultad: (id: string) => void;
+
   crearPrograma: (nombre: string, facultadId: string, coordinadorId?: string) => void;
+  editarPrograma: (id: string, nombre: string, facultadId: string, coordinadorId?: string) => void;
+  eliminarPrograma: (id: string) => void;
+
   crearCurso: (datos: Omit<CursoVirtual, 'id'>) => void;
+  editarCurso: (id: string, datos: Partial<CursoVirtual>) => void;
+  eliminarCurso: (id: string) => void;
+
   crearProyecto: (datos: Omit<ProyectoEspecial, 'id'>) => void;
+  editarProyecto: (id: string, datos: Partial<ProyectoEspecial>) => void;
+  eliminarProyecto: (id: string) => void;
 
   // Acciones de Asignación Académica
   asignarDecano: (facultadId: string, decanoId: string) => void;
@@ -591,6 +610,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProyectos(prev => [nuevo, ...prev]);
   };
 
+  const eliminarFacultad = async (id: string) => {
+    setFacultades(prev => prev.filter(f => f.id !== id));
+    await deleteFacultadDB(id);
+  };
+
+  const editarFacultad = async (id: string, nombre: string, decanoId?: string) => {
+    const decano = usuarios.find(u => u.id === decanoId);
+    setFacultades(prev => prev.map(f => f.id === id ? {
+      ...f,
+      nombre,
+      decano_id: decanoId,
+      decano_nombre: decano?.nombre_completo || 'Sin Asignar'
+    } : f));
+    await updateFacultadFullDB(id, nombre, decanoId);
+  };
+
+  const eliminarPrograma = async (id: string) => {
+    setProgramas(prev => prev.filter(p => p.id !== id));
+    await deleteProgramaDB(id);
+  };
+
+  const editarPrograma = async (id: string, nombre: string, facultadId: string, coordinadorId?: string) => {
+    const facultad = facultades.find(f => f.id === facultadId);
+    const coord = usuarios.find(u => u.id === coordinadorId);
+    setProgramas(prev => prev.map(p => p.id === id ? {
+      ...p,
+      nombre,
+      facultad_id: facultadId,
+      facultad_nombre: facultad?.nombre || p.facultad_nombre,
+      coordinador_id: coordinadorId,
+      coordinador_nombre: coord?.nombre_completo || 'Sin Asignar'
+    } : p));
+    await updateProgramaFullDB(id, nombre, facultadId, coordinadorId);
+  };
+
+  const eliminarCurso = async (id: string) => {
+    setCursos(prev => prev.filter(c => c.id !== id));
+    await deleteCursoDB(id);
+  };
+
+  const editarCurso = async (id: string, datos: Partial<CursoVirtual>) => {
+    const prog = datos.programa_id ? programas.find(p => p.id === datos.programa_id) : undefined;
+    const doc = datos.docente_id ? usuarios.find(u => u.id === datos.docente_id) : undefined;
+    const ev = datos.evaluador_id ? usuarios.find(u => u.id === datos.evaluador_id) : undefined;
+
+    setCursos(prev => prev.map(c => c.id === id ? {
+      ...c,
+      ...datos,
+      programa_nombre: prog?.nombre || c.programa_nombre,
+      facultad_nombre: prog?.facultad_nombre || c.facultad_nombre,
+      docente_nombre: doc ? doc.nombre_completo : (datos.docente_id === '' ? 'Sin Asignar' : c.docente_nombre),
+      evaluador_nombre: ev ? ev.nombre_completo : (datos.evaluador_id === '' ? 'Sin Asignar' : c.evaluador_nombre),
+    } : c));
+    await updateCursoFullDB(id, datos);
+  };
+
+  const eliminarProyecto = async (id: string) => {
+    setProyectos(prev => prev.filter(p => p.id !== id));
+    await deleteProyectoDB(id);
+  };
+
+  const editarProyecto = async (id: string, datos: Partial<ProyectoEspecial>) => {
+    const lid = datos.lider_id ? usuarios.find(u => u.id === datos.lider_id) : undefined;
+    setProyectos(prev => prev.map(p => p.id === id ? {
+      ...p,
+      ...datos,
+      lider_nombre: lid ? lid.nombre_completo : (datos.lider_id === '' ? 'Sin Asignar' : p.lider_nombre),
+    } : p));
+    await updateProyectoFullDB(id, datos);
+  };
+
   const asignarDecano = async (facultadId: string, decanoId: string) => {
     const decano = usuarios.find(u => u.id === decanoId);
     setFacultades(prev => prev.map(f => f.id === facultadId ? {
@@ -679,9 +769,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         eliminarArea,
         adminResetPassword,
         crearFacultad,
+        editarFacultad,
+        eliminarFacultad,
         crearPrograma,
+        editarPrograma,
+        eliminarPrograma,
         crearCurso,
+        editarCurso,
+        eliminarCurso,
         crearProyecto,
+        editarProyecto,
+        eliminarProyecto,
         asignarDecano,
         asignarCoordinador,
         asignarDocenteCurso,

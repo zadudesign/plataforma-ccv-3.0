@@ -8,49 +8,69 @@ export type TipoEntidad = 'facultad' | 'programa' | 'curso' | 'proyecto';
 
 interface CreateEntityModalProps {
   tipo: TipoEntidad;
+  initialData?: Facultad | Programa | CursoVirtual | ProyectoEspecial | null;
   facultades: Facultad[];
   programas: Programa[];
   areas: Area[];
   usuarios: Usuario[];
   onClose: () => void;
   onCrearFacultad: (nombre: string, decanoId?: string) => void;
+  onEditarFacultad?: (id: string, nombre: string, decanoId?: string) => void;
   onCrearPrograma: (nombre: string, facultadId: string, coordinadorId?: string) => void;
+  onEditarPrograma?: (id: string, nombre: string, facultadId: string, coordinadorId?: string) => void;
   onCrearCurso: (datos: Omit<CursoVirtual, 'id'>) => void;
+  onEditarCurso?: (id: string, datos: Partial<CursoVirtual>) => void;
   onCrearProyecto: (datos: Omit<ProyectoEspecial, 'id'>) => void;
+  onEditarProyecto?: (id: string, datos: Partial<ProyectoEspecial>) => void;
 }
 
 export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   tipo,
+  initialData,
   facultades,
   programas,
   areas,
   usuarios,
   onClose,
   onCrearFacultad,
+  onEditarFacultad,
   onCrearPrograma,
+  onEditarPrograma,
   onCrearCurso,
+  onEditarCurso,
   onCrearProyecto,
+  onEditarProyecto,
 }) => {
+  const isEditing = Boolean(initialData);
+
   // Campos genéricos
-  const [nombre, setNombre] = useState('');
+  const [nombre, setNombre] = useState(initialData?.nombre || '');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Campos específicos Facultad / Programa
-  const [facultadId, setFacultadId] = useState(facultades[0]?.id || '');
-  const [decanoId, setDecanoId] = useState('');
-  const [coordinadorId, setCoordinadorId] = useState('');
+  const [facultadId, setFacultadId] = useState(
+    (initialData as Programa)?.facultad_id || facultades[0]?.id || ''
+  );
+  const [decanoId, setDecanoId] = useState((initialData as Facultad)?.decano_id || '');
+  const [coordinadorId, setCoordinadorId] = useState((initialData as Programa)?.coordinador_id || '');
 
   // Campos específicos Curso
-  const [codigo, setCodigo] = useState('');
-  const [programaId, setProgramaId] = useState(programas[0]?.id || '');
-  const [periodo, setPeriodo] = useState('2026-1');
-  const [docenteId, setDocenteId] = useState('');
-  const [evaluadorId, setEvaluadorId] = useState('');
+  const [codigo, setCodigo] = useState((initialData as CursoVirtual)?.codigo || '');
+  const [programaId, setProgramaId] = useState(
+    (initialData as CursoVirtual)?.programa_id || programas[0]?.id || ''
+  );
+  const [periodo, setPeriodo] = useState((initialData as CursoVirtual)?.periodo || '2026-1');
+  const [docenteId, setDocenteId] = useState((initialData as CursoVirtual)?.docente_id || '');
+  const [evaluadorId, setEvaluadorId] = useState((initialData as CursoVirtual)?.evaluador_id || '');
 
   // Campos específicos Proyecto
-  const [descripcion, setDescripcion] = useState('');
-  const [areaId, setAreaId] = useState(areas.find(a => a.nombre === 'CMU')?.id || areas[0]?.id || '');
-  const [estadoProyecto, setEstadoProyecto] = useState<'Planificación' | 'En Proceso' | 'Completado' | 'Pausado'>('En Proceso');
+  const [descripcion, setDescripcion] = useState((initialData as ProyectoEspecial)?.descripcion || '');
+  const [areaId, setAreaId] = useState(
+    (initialData as ProyectoEspecial)?.area_id || areas.find(a => a.nombre === 'CMU')?.id || areas[0]?.id || ''
+  );
+  const [estadoProyecto, setEstadoProyecto] = useState<'Planificación' | 'En Proceso' | 'Completado' | 'Pausado'>(
+    (initialData as ProyectoEspecial)?.estado || 'En Proceso'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,37 +80,67 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     }
 
     if (tipo === 'facultad') {
-      onCrearFacultad(nombre, decanoId || undefined);
+      if (isEditing && initialData?.id && onEditarFacultad) {
+        onEditarFacultad(initialData.id, nombre, decanoId || undefined);
+      } else {
+        onCrearFacultad(nombre, decanoId || undefined);
+      }
     } else if (tipo === 'programa') {
       if (!facultadId) {
         setErrorMsg('Debes seleccionar una facultad.');
         return;
       }
-      onCrearPrograma(nombre, facultadId, coordinadorId || undefined);
+      if (isEditing && initialData?.id && onEditarPrograma) {
+        onEditarPrograma(initialData.id, nombre, facultadId, coordinadorId || undefined);
+      } else {
+        onCrearPrograma(nombre, facultadId, coordinadorId || undefined);
+      }
     } else if (tipo === 'curso') {
       if (!codigo.trim() || !programaId) {
         setErrorMsg('El código y el programa son requeridos.');
         return;
       }
       const prog = programas.find(p => p.id === programaId);
-      onCrearCurso({
-        nombre,
-        codigo,
-        programa_id: programaId,
-        programa_nombre: prog?.nombre,
-        facultad_nombre: prog?.facultad_nombre,
-        periodo,
-        docente_id: docenteId || undefined,
-        evaluador_id: evaluadorId || undefined,
-        estado: 'En Diseño',
-      });
+      if (isEditing && initialData?.id && onEditarCurso) {
+        onEditarCurso(initialData.id, {
+          nombre,
+          codigo,
+          programa_id: programaId,
+          programa_nombre: prog?.nombre,
+          facultad_nombre: prog?.facultad_nombre,
+          periodo,
+          docente_id: docenteId || undefined,
+          evaluador_id: evaluadorId || undefined,
+        });
+      } else {
+        onCrearCurso({
+          nombre,
+          codigo,
+          programa_id: programaId,
+          programa_nombre: prog?.nombre,
+          facultad_nombre: prog?.facultad_nombre,
+          periodo,
+          docente_id: docenteId || undefined,
+          evaluador_id: evaluadorId || undefined,
+          estado: 'En Diseño',
+        });
+      }
     } else if (tipo === 'proyecto') {
-      onCrearProyecto({
-        nombre,
-        descripcion,
-        area_id: areaId,
-        estado: estadoProyecto,
-      });
+      if (isEditing && initialData?.id && onEditarProyecto) {
+        onEditarProyecto(initialData.id, {
+          nombre,
+          descripcion,
+          area_id: areaId,
+          estado: estadoProyecto,
+        });
+      } else {
+        onCrearProyecto({
+          nombre,
+          descripcion,
+          area_id: areaId,
+          estado: estadoProyecto,
+        });
+      }
     }
 
     onClose();
@@ -101,26 +151,34 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       case 'facultad':
         return {
           icon: <Building2 className="w-5 h-5 text-sage-600" />,
-          title: 'Registrar Nueva Facultad',
-          subtitle: 'Crea una unidad académica e incluye su Decano a cargo.',
+          title: isEditing ? 'Editar Facultad' : 'Registrar Nueva Facultad',
+          subtitle: isEditing
+            ? 'Actualiza los datos de la facultad o su Decano.'
+            : 'Crea una unidad académica e incluye su Decano a cargo.',
         };
       case 'programa':
         return {
           icon: <GraduationCap className="w-5 h-5 text-sage-600" />,
-          title: 'Registrar Nuevo Programa Académico',
-          subtitle: 'Registra un programa o diplomado virtual y vincula su facultad.',
+          title: isEditing ? 'Editar Programa Académico' : 'Registrar Nuevo Programa Académico',
+          subtitle: isEditing
+            ? 'Modifica los datos del programa o su coordinador.'
+            : 'Registra un programa o diplomado virtual y vincula su facultad.',
         };
       case 'curso':
         return {
           icon: <BookOpen className="w-5 h-5 text-sage-600" />,
-          title: 'Registrar Nuevo Curso Virtual',
-          subtitle: 'Crea una asignatura virtual con su código institucional.',
+          title: isEditing ? 'Editar Curso Virtual' : 'Registrar Nuevo Curso Virtual',
+          subtitle: isEditing
+            ? 'Actualiza los datos del curso virtual.'
+            : 'Crea una asignatura virtual con su código institucional.',
         };
       case 'proyecto':
         return {
           icon: <Layers className="w-5 h-5 text-sage-600" />,
-          title: 'Registrar Nuevo Proyecto',
-          subtitle: 'Añade una iniciativa institucional estratégica del CCV.',
+          title: isEditing ? 'Editar Proyecto' : 'Registrar Nuevo Proyecto',
+          subtitle: isEditing
+            ? 'Modifica la información del proyecto institucional.'
+            : 'Añade una iniciativa institucional estratégica del CCV.',
         };
     }
   };

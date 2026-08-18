@@ -568,11 +568,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {facultades.map(fac => (
                 <div key={fac.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between">
-                  <div>
-                    <h4 className="font-extrabold text-charcoal-900 text-sm">{fac.nombre}</h4>
-                    <p className="text-xs text-charcoal-500 mt-1">
-                      Decano Actual: <strong className="text-sage-700">{fac.decano_nombre || 'Sin Asignar'}</strong>
-                    </p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-extrabold text-charcoal-900 text-sm">{fac.nombre}</h4>
+                      <p className="text-xs text-charcoal-500 mt-1">
+                        Decano Actual: <strong className="text-sage-700">{fac.decano_nombre || 'Sin Asignar'}</strong>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => setEntityToEdit({ tipo: 'facultad', data: fac })}
+                        title="Editar Facultad"
+                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-white transition-all"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleConfirmDeleteFacultad(fac)}
+                        title="Eliminar Facultad"
+                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-3">
                     <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Decano:</label>
@@ -611,11 +629,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {programas.map(prog => (
                 <div key={prog.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between">
-                  <div>
-                    <h4 className="font-extrabold text-charcoal-900 text-sm">{prog.nombre}</h4>
-                    <p className="text-xs text-charcoal-500 mt-1">
-                      Coordinador Actual: <strong className="text-sage-700">{prog.coordinador_nombre || 'Sin Asignar'}</strong>
-                    </p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-extrabold text-charcoal-900 text-sm">{prog.nombre}</h4>
+                      <p className="text-xs text-charcoal-500 mt-1">
+                        Coordinador Actual: <strong className="text-sage-700">{prog.coordinador_nombre || 'Sin Asignar'}</strong>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => setEntityToEdit({ tipo: 'programa', data: prog })}
+                        title="Editar Programa"
+                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-white transition-all"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleConfirmDeletePrograma(prog)}
+                        title="Eliminar Programa"
+                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-3">
                     <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Coordinador:</label>
@@ -646,7 +682,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <button
                 onClick={() => setCreateEntityType('curso')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" /> Agregar Curso
               </button>
@@ -656,10 +692,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div key={cur.id} className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs space-y-3">
                   <div>
                     <div className="flex justify-between items-start">
-                      <h4 className="font-extrabold text-charcoal-900 text-sm">{cur.nombre}</h4>
-                      <span className="font-mono text-[10px] bg-sage-100 text-sage-800 px-2 py-0.5 rounded font-bold">{cur.codigo}</span>
+                      <div>
+                        <h4 className="font-extrabold text-charcoal-900 text-sm">{cur.nombre}</h4>
+                        <p className="text-[11px] text-charcoal-500 mt-0.5">Programa: {cur.programa_nombre} • Periodo: {cur.periodo}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-mono text-[10px] bg-sage-100 text-sage-800 px-2 py-0.5 rounded font-bold">{cur.codigo}</span>
+                        <button
+                          onClick={() => setEntityToEdit({ tipo: 'curso', data: cur })}
+                          title="Editar Curso"
+                          className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-cream-50 transition-all"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleConfirmDeleteCurso(cur)}
+                          title="Eliminar Curso"
+                          className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-charcoal-500 mt-0.5">Programa: {cur.programa_nombre} • Periodo: {cur.periodo}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100">
@@ -715,15 +769,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div key={pry.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3">
                   <div>
                     <div className="flex justify-between items-start">
-                      <h4 className="font-extrabold text-charcoal-900 text-sm">{pry.nombre}</h4>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
-                        {pry.estado}
-                      </span>
+                      <div>
+                        <h4 className="font-extrabold text-charcoal-900 text-sm">{pry.nombre}</h4>
+                        <p className="text-xs text-charcoal-600 mt-1">{pry.descripcion}</p>
+                        <p className="text-xs text-charcoal-500 mt-1">
+                          Líder Responsable: <strong className="text-sage-700">{pry.lider_nombre || 'Sin Asignar'}</strong>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
+                          {pry.estado}
+                        </span>
+                        <button
+                          onClick={() => setEntityToEdit({ tipo: 'proyecto', data: pry })}
+                          title="Editar Proyecto"
+                          className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-white transition-all"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleConfirmDeleteProyecto(pry)}
+                          title="Eliminar Proyecto"
+                          className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-xs text-charcoal-600 mt-1">{pry.descripcion}</p>
-                    <p className="text-xs text-charcoal-500 mt-1">
-                      Líder Responsable: <strong className="text-sage-700">{pry.lider_nombre || 'Sin Asignar'}</strong>
-                    </p>
                   </div>
                   <div className="pt-2 border-t border-stone-200/60">
                     <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Líder de Proyecto:</label>
@@ -954,6 +1026,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onCrearPrograma={crearPrograma}
           onCrearCurso={crearCurso}
           onCrearProyecto={crearProyecto}
+        />
+      )}
+
+      {entityToEdit && (
+        <CreateEntityModal
+          tipo={entityToEdit.tipo}
+          initialData={entityToEdit.data}
+          facultades={facultades}
+          programas={programas}
+          areas={areas}
+          usuarios={usuarios}
+          onClose={() => setEntityToEdit(null)}
+          onCrearFacultad={crearFacultad}
+          onEditarFacultad={editarFacultad}
+          onCrearPrograma={crearPrograma}
+          onEditarPrograma={editarPrograma}
+          onCrearCurso={crearCurso}
+          onEditarCurso={editarCurso}
+          onCrearProyecto={crearProyecto}
+          onEditarProyecto={editarProyecto}
         />
       )}
 

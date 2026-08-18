@@ -365,6 +365,127 @@ export async function updateCursoDB(cursoId: string, updates: Partial<{ docente_
 }
 
 // ----------------------------------------------------------------------------
+// ELIMINACIÓN Y EDICIÓN COMPLETA DE ENTIDADES ACADÉMICAS
+// ----------------------------------------------------------------------------
+
+export async function deleteFacultadDB(id: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const { error } = await supabase.from('facultades').delete().eq('id', id);
+    if (error) console.error('Error al eliminar facultad en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al eliminar facultad:', err);
+    return false;
+  }
+}
+
+export async function updateFacultadFullDB(id: string, nombre: string, decanoId?: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload: any = { nombre };
+    payload.decano_id = isGuid(decanoId) ? decanoId : null;
+    const { error } = await supabase.from('facultades').update(payload).eq('id', id);
+    if (error) console.error('Error al actualizar facultad en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al actualizar facultad:', err);
+    return false;
+  }
+}
+
+export async function deleteProgramaDB(id: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const { error } = await supabase.from('programas').delete().eq('id', id);
+    if (error) console.error('Error al eliminar programa en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al eliminar programa:', err);
+    return false;
+  }
+}
+
+export async function updateProgramaFullDB(id: string, nombre: string, facultadId: string, coordinadorId?: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload: any = { nombre };
+    if (isGuid(facultadId)) payload.facultad_id = facultadId;
+    payload.coordinador_id = isGuid(coordinadorId) ? coordinadorId : null;
+    const { error } = await supabase.from('programas').update(payload).eq('id', id);
+    if (error) console.error('Error al actualizar programa en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al actualizar programa:', err);
+    return false;
+  }
+}
+
+export async function deleteCursoDB(id: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const { error } = await supabase.from('cursos').delete().eq('id', id);
+    if (error) console.error('Error al eliminar curso en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al eliminar curso:', err);
+    return false;
+  }
+}
+
+export async function updateCursoFullDB(id: string, datos: Partial<CursoVirtual>): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload: any = {};
+    if (datos.nombre) payload.nombre = datos.nombre;
+    if (datos.codigo) payload.codigo = datos.codigo;
+    if (datos.programa_id && isGuid(datos.programa_id)) payload.programa_id = datos.programa_id;
+    if (datos.periodo) payload.periodo = datos.periodo;
+    if (datos.docente_id !== undefined) payload.docente_id = isGuid(datos.docente_id) ? datos.docente_id : null;
+    if (datos.evaluador_id !== undefined) payload.evaluador_id = isGuid(datos.evaluador_id) ? datos.evaluador_id : null;
+    if (datos.estado) payload.estado = datos.estado;
+
+    const { error } = await supabase.from('cursos').update(payload).eq('id', id);
+    if (error) console.error('Error al actualizar curso en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al actualizar curso:', err);
+    return false;
+  }
+}
+
+export async function deleteProyectoDB(id: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const { error } = await supabase.from('proyectos').delete().eq('id', id);
+    if (error) console.error('Error al eliminar proyecto en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al eliminar proyecto:', err);
+    return false;
+  }
+}
+
+export async function updateProyectoFullDB(id: string, datos: Partial<ProyectoEspecial>): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload: any = {};
+    if (datos.nombre) payload.nombre = datos.nombre;
+    if (datos.descripcion !== undefined) payload.descripcion = datos.descripcion;
+    if (datos.area_id !== undefined) payload.area_id = isGuid(datos.area_id) ? datos.area_id : null;
+    if (datos.lider_id !== undefined) payload.lider_id = isGuid(datos.lider_id) ? datos.lider_id : null;
+    if (datos.estado) payload.estado = datos.estado;
+
+    const { error } = await supabase.from('proyectos').update(payload).eq('id', id);
+    if (error) console.error('Error al actualizar proyecto en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al actualizar proyecto:', err);
+    return false;
+  }
+}
+
+// ----------------------------------------------------------------------------
 // 3. TAREAS Y COMENTARIOS
 // ----------------------------------------------------------------------------
 
