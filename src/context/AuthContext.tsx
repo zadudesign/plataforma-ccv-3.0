@@ -498,61 +498,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
-  // Sincronización continua: Las Áreas de Nivel 3 (FACULTAD) se reflejan como Facultades y de Nivel 2 (PROGRAMA) como Programas
-  useEffect(() => {
-    if (!areas || areas.length === 0) return;
-
-    // 1. Áreas de Nivel 3 -> Facultades
-    const areasFacultad = areas.filter(a => Number(a.nivel) === 3);
-    setFacultades(prevFacultades => {
-      let updated = [...prevFacultades];
-      let hasChanges = false;
-
-      areasFacultad.forEach(a => {
-        const isIncluded = updated.some(f => f.id === a.id || f.nombre.trim().toUpperCase() === a.nombre.trim().toUpperCase());
-        if (!isIncluded) {
-          updated.push({
-            id: a.id,
-            nombre: a.nombre,
-            decano_nombre: 'Sin Asignar',
-            created_at: a.created_at || new Date().toISOString()
-          });
-          hasChanges = true;
-        }
-      });
-
-      return hasChanges ? updated : prevFacultades;
-    });
-
-    // 2. Áreas de Nivel 2 -> Programas
-    const areasPrograma = areas.filter(a => Number(a.nivel) === 2);
-    setProgramas(prevProgramas => {
-      let updated = [...prevProgramas];
-      let hasChanges = false;
-
-      areasPrograma.forEach(a => {
-        const isIncluded = updated.some(p => p.id === a.id || p.nombre.trim().toUpperCase() === a.nombre.trim().toUpperCase());
-        if (!isIncluded) {
-          const parentFac = facultades.find(f => f.id === a.parent_id || f.nombre.toUpperCase() === a.area_padre_nombre?.toUpperCase());
-          const facId = parentFac ? parentFac.id : (facultades[0]?.id || 'f-1');
-          const facNombre = parentFac ? parentFac.nombre : (facultades[0]?.nombre || 'Facultad General');
-
-          updated.push({
-            id: a.id,
-            nombre: a.nombre,
-            facultad_id: facId,
-            facultad_nombre: facNombre,
-            coordinador_nombre: 'Sin Asignar',
-            created_at: a.created_at || new Date().toISOString()
-          });
-          hasChanges = true;
-        }
-      });
-
-      return hasChanges ? updated : prevProgramas;
-    });
-  }, [areas, facultades]);
-
   const crearArea = async (nombre: string, nivel: NivelArea, parentId?: string | null) => {
     const areaPadre = parentId ? areas.find(a => a.id === parentId) : null;
     const dbItem = await createAreaDB(nombre.trim().toUpperCase(), Number(nivel), parentId);
@@ -565,15 +510,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setAreas(prev => [...prev, nuevaArea]);
-
-    // Sincronizar automáticamente la creación con la pestaña de Asignaciones Académicas
-    if (Number(nivel) === 3) {
-      crearFacultad(nuevaArea.nombre);
-    } else if (Number(nivel) === 2) {
-      const parentFac = facultades.find(f => f.id === parentId || f.nombre.toUpperCase() === areaPadre?.nombre.toUpperCase());
-      const facId = parentFac ? parentFac.id : (facultades[0]?.id || 'f-1');
-      crearPrograma(nuevaArea.nombre, facId);
-    }
   };
 
   const eliminarArea = (areaId: string) => {
@@ -610,21 +546,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setFacultades(prev => [nueva, ...prev]);
-
-    setAreas(prev => {
-      const exists = prev.some(a => a.nombre.trim().toUpperCase() === nombre.trim().toUpperCase());
-      if (exists) return prev;
-      return [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          nombre: nombre.trim().toUpperCase(),
-          nivel: 3,
-          parent_id: null,
-          created_at: new Date().toISOString()
-        }
-      ];
-    });
   };
 
   const crearPrograma = async (nombre: string, facultadId: string, coordinadorId?: string) => {
@@ -641,23 +562,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setProgramas(prev => [nuevo, ...prev]);
-
-    setAreas(prev => {
-      const exists = prev.some(a => a.nombre.trim().toUpperCase() === nombre.trim().toUpperCase());
-      if (exists) return prev;
-      const parentArea = prev.find(a => a.nombre.trim().toUpperCase() === (facultad?.nombre || '').trim().toUpperCase());
-      return [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          nombre: nombre.trim().toUpperCase(),
-          nivel: 2,
-          parent_id: parentArea ? parentArea.id : null,
-          area_padre_nombre: parentArea ? parentArea.nombre : facultad?.nombre,
-          created_at: new Date().toISOString()
-        }
-      ];
-    });
   };
 
   const crearCurso = async (datos: Omit<CursoVirtual, 'id'>) => {
