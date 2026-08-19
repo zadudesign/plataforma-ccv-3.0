@@ -211,6 +211,7 @@ export default function Home() {
   // 3. Proyectos Visibles por Rol
   const proyectosVisiblesPorRol = proyectos.filter(p => {
     if (nivelArea >= 5) return true;
+    if (p.lider_id === usuarioActual.id) return true;
     return tareasVisiblesPorRol.some(t => t.proyecto_id === p.id);
   });
 
@@ -218,12 +219,19 @@ export default function Home() {
   const programasVisiblesPorRol = programas.filter(p => {
     if (nivelArea >= 5) return true;
     const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
-    if (decanoFacultad && p.facultad_id === decanoFacultad.id) return true;
+    if (decanoFacultad && (p.facultad_id === decanoFacultad.id || p.facultad_nombre === decanoFacultad.nombre)) return true;
     if (p.coordinador_id === usuarioActual.id) return true;
-    return cursosVisiblesPorRol.some(c => c.programa_id === p.id);
+    return cursosVisiblesPorRol.some(c => c.programa_id === p.id || c.programa_nombre === p.nombre);
   });
 
-  // 5. Comentarios Visibles por Rol
+  // 5. Facultades Visibles por Rol
+  const facultadesVisiblesPorRol = facultades.filter(f => {
+    if (nivelArea >= 5) return true;
+    if (f.decano_id === usuarioActual.id) return true;
+    return programasVisiblesPorRol.some(p => p.facultad_id === f.id || p.facultad_nombre === f.nombre);
+  });
+
+  // 6. Comentarios Visibles por Rol
   const comentariosVisiblesPorRol = comentarios.filter(com => {
     if (nivelArea >= 5) return true;
     return tareasVisiblesPorRol.some(t => t.id === com.tarea_id);
@@ -265,10 +273,10 @@ export default function Home() {
 
         {vistaActual === 'academic' && (
           <AcademicTree
-            facultades={facultades}
-            programas={programas}
-            cursos={cursos}
-            proyectos={proyectos}
+            facultades={facultadesVisiblesPorRol}
+            programas={programasVisiblesPorRol}
+            cursos={cursosVisiblesPorRol}
+            proyectos={proyectosVisiblesPorRol}
             areas={areas}
             tareas={tareasFiltradas}
             busqueda={busqueda}

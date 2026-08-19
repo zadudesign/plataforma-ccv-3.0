@@ -254,129 +254,141 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
 
       {/* Faculties Accordion Tree */}
       <div className="space-y-4">
-        {facultades.map((facultad) => {
-          const progsFacultad = programas.filter(p => p.facultad_id === facultad.id);
-          const isOpen = facultadesAbiertas[facultad.id];
-
-          return (
-            <div key={facultad.id} className="ccv-card overflow-hidden">
-              {/* Faculty Accordion Header */}
-              <div 
-                onClick={() => toggleFacultad(facultad.id)}
-                className="p-5 flex items-center justify-between cursor-pointer bg-stone-50/50 hover:bg-cream-100/70 transition-colors border-b border-stone-100"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-sage-100 text-sage-700 flex items-center justify-center font-bold">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-charcoal-900">{facultad.nombre}</h3>
-                    <p className="text-xs text-charcoal-500 flex items-center gap-1 mt-0.5">
-                      <User className="w-3.5 h-3.5" /> Decano: {facultad.decano_nombre || 'No asignado'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-charcoal-600 bg-white px-3 py-1 rounded-full border border-stone-200">
-                    {progsFacultad.length} Programas
-                  </span>
-                  {isOpen ? <ChevronDown className="w-5 h-5 text-charcoal-500" /> : <ChevronRight className="w-5 h-5 text-charcoal-500" />}
-                </div>
-              </div>
-
-              {/* Programs and Courses Accordion Body */}
-              {isOpen && (
-                <div className="p-5 space-y-5 bg-white">
-                  {progsFacultad.map((prog) => {
-                    const cursosProg = cursos.filter(c => c.programa_id === prog.id);
-                    return (
-                      <div 
-                        key={prog.id} 
-                        className="p-5 bg-gradient-to-b from-stone-50/90 to-white rounded-3xl border border-stone-200 shadow-sm space-y-4 border-l-4 border-l-sage-600"
-                      >
-                        {/* Program Header Banner */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200/80">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-sage-600 text-white flex items-center justify-center shadow-xs shrink-0">
-                              <GraduationCap className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-sage-100 text-sage-800">
-                                  Programa Académico
-                                </span>
-                              </div>
-                              <h4 className="font-black text-charcoal-900 text-base leading-tight mt-0.5">
-                                {prog.nombre}
-                              </h4>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 flex-wrap shrink-0">
-                            <span className="text-xs font-bold text-charcoal-700 bg-white px-3 py-1 rounded-full border border-stone-200 shadow-2xs flex items-center gap-1.5">
-                              <User className="w-3.5 h-3.5 text-sage-600" />
-                              Coord: <strong className="text-charcoal-900">{prog.coordinador_nombre}</strong>
-                            </span>
-                            <span className="text-xs font-black text-sage-800 bg-sage-100 px-3 py-1 rounded-full border border-sage-200 shadow-2xs">
-                              {cursosProg.length} Cursos
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Courses Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                          {cursosProg.map((curso) => {
-                            const tareasCurso = tareas.filter(t => t.curso_id === curso.id);
-                            const completadasCurso = tareasCurso.filter(t => t.estado === 'Completada').length;
-                            const pctCurso = tareasCurso.length > 0 ? Math.round((completadasCurso / tareasCurso.length) * 100) : 0;
-
-                            return (
-                              <div
-                                key={curso.id}
-                                onClick={() => onOpenProgreso ? onOpenProgreso(curso, 'curso') : onSelectCurso(curso)}
-                                className="p-4 bg-white rounded-xl border border-stone-200 hover:border-sage-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3"
-                              >
-                                <div>
-                                  <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[11px] font-mono font-bold bg-sage-50 text-sage-700 px-2 py-0.5 rounded">
-                                      {curso.codigo}
-                                    </span>
-                                    {getEstadoBadge(curso.estado)}
-                                  </div>
-                                  <h5 className="font-extrabold text-charcoal-900 text-sm line-clamp-2">{curso.nombre}</h5>
-                                </div>
-
-                                {/* Mini Progress Bar */}
-                                <div className="space-y-1">
-                                  <div className="flex justify-between items-center text-[10px] font-bold">
-                                    <span className="text-charcoal-500 uppercase">Avance</span>
-                                    <span className="text-sage-700">{pctCurso}%</span>
-                                  </div>
-                                  <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-                                    <div className="bg-sage-600 h-full rounded-full transition-all" style={{ width: `${pctCurso}%` }} />
-                                  </div>
-                                </div>
-
-                                <div className="pt-2 border-t border-stone-100 text-xs text-charcoal-500 space-y-1">
-                                  <p className="truncate"><span className="font-semibold text-charcoal-700">Docente:</span> {curso.docente_nombre}</p>
-                                  <div className="flex justify-between items-center pt-1 font-semibold text-sage-700 text-[11px]">
-                                    <span>Periodo: {curso.periodo}</span>
-                                    <span>{completadasCurso}/{tareasCurso.length} Tareas</span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+        {facultades.length === 0 ? (
+          <div className="ccv-card p-10 text-center space-y-3 bg-white">
+            <div className="w-12 h-12 rounded-full bg-sage-50 text-sage-600 flex items-center justify-center mx-auto shadow-xs">
+              <GraduationCap className="w-6 h-6" />
             </div>
-          );
-        })}
+            <h3 className="text-base font-extrabold text-charcoal-900">Sin Facultades o Cursos Asignados</h3>
+            <p className="text-xs text-charcoal-500 max-w-md mx-auto leading-relaxed">
+              No posees facultades, programas o cursos asignados bajo tu nivel jerárquico actual en el sistema.
+            </p>
+          </div>
+        ) : (
+          facultades.map((facultad) => {
+            const progsFacultad = programas.filter(p => p.facultad_id === facultad.id);
+            const isOpen = facultadesAbiertas[facultad.id];
+
+            return (
+              <div key={facultad.id} className="ccv-card overflow-hidden">
+                {/* Faculty Accordion Header */}
+                <div 
+                  onClick={() => toggleFacultad(facultad.id)}
+                  className="p-5 flex items-center justify-between cursor-pointer bg-stone-50/50 hover:bg-cream-100/70 transition-colors border-b border-stone-100"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-sage-100 text-sage-700 flex items-center justify-center font-bold">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-extrabold text-charcoal-900">{facultad.nombre}</h3>
+                      <p className="text-xs text-charcoal-500 flex items-center gap-1 mt-0.5">
+                        <User className="w-3.5 h-3.5" /> Decano: {facultad.decano_nombre || 'No asignado'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-charcoal-600 bg-white px-3 py-1 rounded-full border border-stone-200">
+                      {progsFacultad.length} Programas
+                    </span>
+                    {isOpen ? <ChevronDown className="w-5 h-5 text-charcoal-500" /> : <ChevronRight className="w-5 h-5 text-charcoal-500" />}
+                  </div>
+                </div>
+
+                {/* Programs and Courses Accordion Body */}
+                {isOpen && (
+                  <div className="p-5 space-y-5 bg-white">
+                    {progsFacultad.map((prog) => {
+                      const cursosProg = cursos.filter(c => c.programa_id === prog.id);
+                      return (
+                        <div 
+                          key={prog.id} 
+                          className="p-5 bg-gradient-to-b from-stone-50/90 to-white rounded-3xl border border-stone-200 shadow-sm space-y-4 border-l-4 border-l-sage-600"
+                        >
+                          {/* Program Header Banner */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200/80">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-2xl bg-sage-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                                <GraduationCap className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-sage-100 text-sage-800">
+                                    Programa Académico
+                                  </span>
+                                </div>
+                                <h4 className="font-black text-charcoal-900 text-base leading-tight mt-0.5">
+                                  {prog.nombre}
+                                </h4>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap shrink-0">
+                              <span className="text-xs font-bold text-charcoal-700 bg-white px-3 py-1 rounded-full border border-stone-200 shadow-2xs flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-sage-600" />
+                                Coord: <strong className="text-charcoal-900">{prog.coordinador_nombre}</strong>
+                              </span>
+                              <span className="text-xs font-black text-sage-800 bg-sage-100 px-3 py-1 rounded-full border border-sage-200 shadow-2xs">
+                                {cursosProg.length} Cursos
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Courses Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                            {cursosProg.map((curso) => {
+                              const tareasCurso = tareas.filter(t => t.curso_id === curso.id);
+                              const completadasCurso = tareasCurso.filter(t => t.estado === 'Completada').length;
+                              const pctCurso = tareasCurso.length > 0 ? Math.round((completadasCurso / tareasCurso.length) * 100) : 0;
+
+                              return (
+                                <div
+                                  key={curso.id}
+                                  onClick={() => onOpenProgreso ? onOpenProgreso(curso, 'curso') : onSelectCurso(curso)}
+                                  className="p-4 bg-white rounded-xl border border-stone-200 hover:border-sage-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3"
+                                >
+                                  <div>
+                                    <div className="flex justify-between items-start mb-2">
+                                      <span className="text-[11px] font-mono font-bold bg-sage-50 text-sage-700 px-2 py-0.5 rounded">
+                                        {curso.codigo}
+                                      </span>
+                                      {getEstadoBadge(curso.estado)}
+                                    </div>
+                                    <h5 className="font-extrabold text-charcoal-900 text-sm line-clamp-2">{curso.nombre}</h5>
+                                  </div>
+
+                                  {/* Mini Progress Bar */}
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between items-center text-[10px] font-bold">
+                                      <span className="text-charcoal-500 uppercase">Avance</span>
+                                      <span className="text-sage-700">{pctCurso}%</span>
+                                    </div>
+                                    <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                                      <div className="bg-sage-600 h-full rounded-full transition-all" style={{ width: `${pctCurso}%` }} />
+                                    </div>
+                                  </div>
+
+                                  <div className="pt-2 border-t border-stone-100 text-xs text-charcoal-500 space-y-1">
+                                    <p className="truncate"><span className="font-semibold text-charcoal-700">Docente:</span> {curso.docente_nombre}</p>
+                                    <div className="flex justify-between items-center pt-1 font-semibold text-sage-700 text-[11px]">
+                                      <span>Periodo: {curso.periodo}</span>
+                                      <span>{completadasCurso}/{tareasCurso.length} Tareas</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
