@@ -13,6 +13,7 @@ import { TaskDetailModal } from '@/components/tasks/TaskDetailModal';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { DevRoleSimulatorModal } from '@/components/auth/DevRoleSimulatorModal';
+import { DigitalSignatureModal } from '@/components/auth/DigitalSignatureModal';
 import { useAuth } from '@/context/AuthContext';
 
 import { 
@@ -55,12 +56,16 @@ export default function Home() {
   // Modal states
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
 
-  // Por defecto al ingresar a cada perfil se ingresa directamente al Dashboard como página principal
+  // Por defecto al ingresar a cada perfil se ingresa directamente al Dashboard como página principal y se requiere firma si está pendiente
   useEffect(() => {
     if (usuarioActual) {
       setVistaActual('dashboard');
+      if (!usuarioActual.firma_digital || usuarioActual.firma_digital.trim() === '') {
+        setIsSignatureModalOpen(true);
+      }
     }
   }, [usuarioActual?.id]);
 
@@ -239,6 +244,7 @@ export default function Home() {
           onOpenCreateTask={() => setIsCreateTaskOpen(true)}
           busqueda={busqueda}
           setBusqueda={setBusqueda}
+          onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
         />
 
         {/* View Switcher */}
@@ -374,6 +380,10 @@ export default function Home() {
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onUpdateStatus={handleUpdateStatus}
           />
+        )}
+        {/* Digital Signature Modal */}
+        {isSignatureModalOpen && (
+          <DigitalSignatureModal onClose={() => setIsSignatureModalOpen(false)} />
         )}
       </main>
     </div>

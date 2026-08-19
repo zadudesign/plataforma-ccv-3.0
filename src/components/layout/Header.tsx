@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Bell, Plus, Shield, Sparkles } from 'lucide-react';
+import { Search, Bell, Plus, Shield, Sparkles, FileSignature } from 'lucide-react';
 import { Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -10,6 +10,7 @@ interface HeaderProps {
   onOpenCreateTask: () => void;
   busqueda: string;
   setBusqueda: (val: string) => void;
+  onOpenSignatureModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCreateTask,
   busqueda,
   setBusqueda,
+  onOpenSignatureModal,
 }) => {
   const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin } = useAuth();
   const usuarioActual = propsUsuario || contextUsuario;
@@ -51,6 +53,22 @@ export const Header: React.FC<HeaderProps> = ({
             <Shield className="w-3.5 h-3.5 text-sage-600" />
             <span>Simulador: {usuarioActual.rol_nombre || 'Docente'} (Nivel {nivelArea})</span>
             <Sparkles className="w-3 h-3 text-amber-500 ml-0.5" />
+          </button>
+        )}
+
+        {/* Digital Signature Badge Button */}
+        {onOpenSignatureModal && (
+          <button
+            onClick={onOpenSignatureModal}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition-all shadow-xs ${
+              usuarioActual.firma_digital
+                ? 'bg-white hover:bg-sage-50 text-sage-800 border-stone-200 hover:border-sage-300'
+                : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-sm animate-pulse'
+            }`}
+            title={usuarioActual.firma_digital ? "Firma Digital Registrada. Haz clic para actualizar." : "Firma Digital Pendiente. Haz clic para registrar."}
+          >
+            <FileSignature className={`w-3.5 h-3.5 ${usuarioActual.firma_digital ? 'text-amber-600' : 'text-white'}`} />
+            <span>{usuarioActual.firma_digital ? 'Firma Registrada' : 'Registrar Firma'}</span>
           </button>
         )}
 

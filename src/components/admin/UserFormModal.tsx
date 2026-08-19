@@ -41,6 +41,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   const [telefono, setTelefono] = useState(usuarioEditar?.telefono || '');
   const [activo, setActivo] = useState(usuarioEditar?.activo !== false);
   const [avatarUrl, setAvatarUrl] = useState(usuarioEditar?.avatar_url || '');
+  const [firmaDigital, setFirmaDigital] = useState(usuarioEditar?.firma_digital || '');
   const [isDragging, setIsDragging] = useState(false);
   
   // Campos de contraseña para la creación inicial
@@ -161,6 +162,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
       telefono,
       activo,
       avatar_url: avatarUrl || undefined,
+      firma_digital: firmaDigital || undefined,
       ...(usuarioEditar ? {} : { password }),
     });
     onClose();
@@ -385,6 +387,38 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
                 className="w-full pl-9 pr-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
               />
             </div>
+          </div>
+
+          {/* Firma Digital Status en Perfil */}
+          <div className="p-3 bg-cream-50 rounded-2xl border border-stone-200/80 flex items-center justify-between">
+            <div>
+              <span className="block text-xs font-bold text-charcoal-800 uppercase tracking-wider">
+                Firma Digital Oficial
+              </span>
+              <span className="text-[10px] text-charcoal-500">
+                {firmaDigital ? 'Firma registrada y lista para documentos.' : 'Sin firma registrada.'}
+              </span>
+            </div>
+            {firmaDigital ? (
+              <div className="flex items-center gap-2">
+                <img
+                  src={firmaDigital}
+                  alt="Firma Digital"
+                  className="h-7 max-w-24 object-contain border border-stone-200 bg-white p-1 rounded shadow-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFirmaDigital('')}
+                  className="text-[10px] text-coral-600 hover:text-coral-800 font-bold underline"
+                >
+                  Quitar
+                </button>
+              </div>
+            ) : (
+              <span className="text-[10px] text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full font-bold border border-amber-200">
+                Pendiente de registro
+              </span>
+            )}
           </div>
 
           {usuarioEditar && (
