@@ -234,6 +234,100 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
   );
 };
 
+interface InfoConexion {
+  texto: string;
+  subtexto?: string;
+  fechaCompleta?: string;
+  esReciente: boolean;
+  badgeClass: string;
+}
+
+const formatUltimaConexion = (timestamp?: string): InfoConexion => {
+  if (!timestamp) {
+    return {
+      texto: 'Sin registro',
+      subtexto: 'Nunca ha ingresado',
+      esReciente: false,
+      badgeClass: 'text-stone-400 bg-stone-50 border-stone-200'
+    };
+  }
+
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) {
+    return {
+      texto: 'Fecha no válida',
+      esReciente: false,
+      badgeClass: 'text-stone-400 bg-stone-50 border-stone-200'
+    };
+  }
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  const horaStr = date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const fechaCompleta = date.toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  if (diffMin < 2) {
+    return {
+      texto: 'En línea',
+      subtexto: 'Ahora mismo',
+      fechaCompleta,
+      esReciente: true,
+      badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-300 font-extrabold'
+    };
+  } else if (diffMin < 60) {
+    return {
+      texto: `Hace ${diffMin} min`,
+      subtexto: horaStr,
+      fechaCompleta,
+      esReciente: true,
+      badgeClass: 'text-emerald-700 bg-emerald-50/90 border-emerald-200 font-bold'
+    };
+  } else if (diffHours < 24 && date.getDate() === now.getDate()) {
+    return {
+      texto: `Hoy, ${horaStr}`,
+      subtexto: `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`,
+      fechaCompleta,
+      esReciente: diffHours < 3,
+      badgeClass: diffHours < 3 ? 'text-sage-800 bg-sage-50 border-sage-200 font-bold' : 'text-charcoal-700 bg-cream-50 border-stone-200'
+    };
+  } else if (diffDays === 1 || (diffHours < 48 && date.getDate() === now.getDate() - 1)) {
+    return {
+      texto: `Ayer, ${horaStr}`,
+      subtexto: '1 día atrás',
+      fechaCompleta,
+      esReciente: false,
+      badgeClass: 'text-charcoal-700 bg-stone-100/80 border-stone-200'
+    };
+  } else if (diffDays < 7) {
+    return {
+      texto: `Hace ${diffDays} días`,
+      subtexto: horaStr,
+      fechaCompleta,
+      esReciente: false,
+      badgeClass: 'text-charcoal-600 bg-stone-50 border-stone-200'
+    };
+  } else {
+    const fechaCorta = date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    return {
+      texto: `${fechaCorta}, ${horaStr}`,
+      subtexto: `Hace ${diffDays} días`,
+      fechaCompleta,
+      esReciente: false,
+      badgeClass: 'text-stone-500 bg-stone-50 border-stone-200'
+    };
+  }
+};
+
 interface AdminDashboardProps {
   areas: Area[];
   roles: Rol[];
