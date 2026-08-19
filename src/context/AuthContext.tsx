@@ -16,6 +16,8 @@ import {
   fetchProgramas,
   fetchCursos,
   fetchProyectos,
+  updateUsuarioDB,
+  deleteUsuarioDB,
   createAreaDB,
   createFacultadDB,
   updateFacultadDB,
@@ -409,6 +411,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             nombre_completo: nuevo.nombre_completo,
             rol_id: nuevo.rol_id,
             telefono: nuevo.telefono,
+            avatar_url: nuevo.avatar_url,
           }),
         });
 
@@ -433,6 +436,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: nuevo.email,
           rol_id: nuevo.rol_id,
           telefono: nuevo.telefono,
+          avatar_url: nuevo.avatar_url || null,
           activo: nuevo.activo !== false
         });
       } catch (e) {
@@ -479,7 +483,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const actualizarUsuario = (id: string, datos: Partial<Usuario>) => {
+  const actualizarUsuario = async (id: string, datos: Partial<Usuario>) => {
     setUsuarios(prev => prev.map(u => {
       if (u.id === id) {
         const rolActualizado = datos.rol_id ? roles.find(r => r.id === datos.rol_id) : undefined;
@@ -497,10 +501,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (usuarioActual && usuarioActual.id === id) {
       setUsuarioActual(prev => prev ? { ...prev, ...datos } : null);
     }
+    if (usuarioReal && usuarioReal.id === id) {
+      setUsuarioReal(prev => prev ? { ...prev, ...datos } : null);
+    }
+
+    // Persistir directamente en Supabase (public.usuarios -> avatar_url y demás datos)
+    try {
+      await updateUsuarioDB(id, datos);
+    } catch (e) {
+      console.warn('Error sincronizando usuario con Supabase:', e);
+    }
   };
 
-  const eliminarUsuario = (id: string) => {
+  const eliminarUsuario = async (id: string) => {
     setUsuarios(prev => prev.filter(u => u.id !== id));
+    try {
+      await deleteUsuarioDB(id);
+    } catch (e) {
+      console.warn('Error eliminando usuario de Supabase:', e);
+    }
   };
 
   const actualizarPermisosRol = (rolId: string, permisos: string[]) => {

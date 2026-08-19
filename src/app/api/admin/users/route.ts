@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, nombre_completo, rol_id, telefono } = body;
+    const { email, password, nombre_completo, rol_id, telefono, avatar_url } = body;
 
     if (!email || !password || !nombre_completo) {
       return NextResponse.json(
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
           nombre_completo,
           rol_id,
           telefono,
+          avatar_url,
         },
       });
     }
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
         nombre_completo,
         telefono,
         rol_id,
+        avatar_url,
       },
     });
 
@@ -64,6 +66,7 @@ export async function POST(request: Request) {
         email,
         rol_id,
         telefono,
+        avatar_url: avatar_url || null,
         activo: true,
       });
 

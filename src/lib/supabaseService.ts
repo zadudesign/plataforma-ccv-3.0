@@ -95,6 +95,50 @@ export function isGuid(id?: string | null): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
+export async function updateUsuarioDB(id: string, datos: Partial<Usuario>): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return false;
+
+    const payload: any = {};
+    if (datos.nombre_completo !== undefined) payload.nombre_completo = datos.nombre_completo;
+    if (datos.email !== undefined) payload.email = datos.email;
+    if (datos.rol_id !== undefined && isGuid(datos.rol_id)) payload.rol_id = datos.rol_id;
+    if (datos.telefono !== undefined) payload.telefono = datos.telefono;
+    if (datos.activo !== undefined) payload.activo = datos.activo;
+    if (datos.avatar_url !== undefined) payload.avatar_url = datos.avatar_url;
+    if (datos.firma_digital !== undefined) payload.firma_digital = datos.firma_digital;
+
+    const { error } = await supabase
+      .from('usuarios')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error al actualizar usuario en Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción al actualizar usuario en Supabase:', err);
+    return false;
+  }
+}
+
+export async function deleteUsuarioDB(id: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return false;
+    const { error } = await supabase.from('usuarios').delete().eq('id', id);
+    if (error) {
+      console.error('Error al eliminar usuario en Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción al eliminar usuario en Supabase:', err);
+    return false;
+  }
+}
+
 export async function createAreaDB(nombre: string, nivel: number, parentId?: string | null): Promise<Area | null> {
   try {
     const payload: any = { nombre, nivel };

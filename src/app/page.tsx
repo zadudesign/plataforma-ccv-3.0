@@ -57,6 +57,13 @@ export default function Home() {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
 
+  // Por defecto al ingresar a cada perfil se ingresa directamente al Dashboard como página principal
+  useEffect(() => {
+    if (usuarioActual) {
+      setVistaActual('dashboard');
+    }
+  }, [usuarioActual?.id]);
+
   // Cargar tareas iniciales desde Supabase DB
   useEffect(() => {
     const loadTareas = async () => {
