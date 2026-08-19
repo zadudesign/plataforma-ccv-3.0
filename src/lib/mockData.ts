@@ -67,6 +67,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 300 000 0001',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // Hace 5 minutos
     firma_digital: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><path d="M 10 40 Q 50 10 90 40 T 170 30" stroke="%233A5A40" stroke-width="3" fill="none"/></svg>'
   },
   {
@@ -79,6 +80,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 300 111 2233',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 25 * 60 * 1000).toISOString(), // Hace 25 minutos
   },
   {
     id: 'u-diseno',
@@ -90,6 +92,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 300 123 4567',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 3 * 3600 * 1000).toISOString(), // Hace 3 horas
     firma_digital: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><path d="M 10 40 Q 50 10 90 40 T 170 30" stroke="%233A5A40" stroke-width="3" fill="none"/></svg>'
   },
   {
@@ -102,6 +105,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 301 987 6543',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 6 * 3600 * 1000).toISOString(), // Hace 6 horas
   },
   {
     id: 'u-soporte',
@@ -113,6 +117,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 302 444 5566',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), // Ayer
   },
   {
     id: 'u-decano',
@@ -124,6 +129,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 303 777 8899',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(), // Hace 2 días
   },
   {
     id: 'u-coord',
@@ -135,6 +141,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 304 222 3344',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(), // Hace 4 días
   },
   {
     id: 'u-docente',
@@ -146,6 +153,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 305 555 6677',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // Hace 10 minutos
   },
   {
     id: 'u-par',
@@ -157,6 +165,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 306 888 9900',
     activo: true,
+    ultima_conexion: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), // Hace 1 semana
   }
 ];
 

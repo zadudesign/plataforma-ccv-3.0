@@ -34,6 +34,7 @@ export interface Usuario {
   avatar_url?: string;
   telefono?: string;
   activo?: boolean;
+  ultima_conexion?: string;
   created_at?: string;
 }
 

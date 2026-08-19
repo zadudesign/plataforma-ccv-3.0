@@ -22,7 +22,11 @@ import {
   DollarSign,
   GitMerge,
   CornerDownRight,
-  Briefcase
+  Briefcase,
+  Filter,
+  RotateCcw,
+  Clock,
+  Activity
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -289,6 +293,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas'>('usuarios');
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
+  const [filtroRol, setFiltroRol] = useState<string>('todos');
+  const [filtroArea, setFiltroArea] = useState<string>('todos');
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activos' | 'inactivos'>('todos');
   
   // Modals state
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -317,13 +324,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setAreaAEliminar(area);
   };
 
-  // Filter users by search box
-  const usuariosFiltrados = usuarios.filter(u =>
-    u.nombre_completo.toLowerCase().includes(busquedaUsuario.toLowerCase()) ||
-    u.email.toLowerCase().includes(busquedaUsuario.toLowerCase()) ||
-    u.rol_nombre?.toLowerCase().includes(busquedaUsuario.toLowerCase()) ||
-    u.area_nombre?.toLowerCase().includes(busquedaUsuario.toLowerCase())
-  );
+  // Filter users by search box, role, area/hierarchy, and status
+  const usuariosFiltrados = usuarios.filter(u => {
+    const query = busquedaUsuario.toLowerCase().trim();
+    const matchBusqueda = !query ||
+      u.nombre_completo.toLowerCase().includes(query) ||
+      u.email.toLowerCase().includes(query) ||
+      u.rol_nombre?.toLowerCase().includes(query) ||
+      u.area_nombre?.toLowerCase().includes(query);
+
+    const matchRol = !filtroRol || filtroRol === 'todos' || u.rol_id === filtroRol || u.rol_nombre === filtroRol;
+
+    let matchArea = true;
+    if (filtroArea && filtroArea !== 'todos') {
+      if (filtroArea.startsWith('nivel:')) {
+        const nivel = parseInt(filtroArea.replace('nivel:', ''), 10);
+        const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+        matchArea = areaObj?.nivel === nivel;
+      } else {
+        matchArea = u.area_nombre?.toLowerCase() === filtroArea.toLowerCase() ||
+                    areas.some(a => a.id === filtroArea && a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+      }
+    }
+
+    const matchEstado = filtroEstado === 'todos' ||
+      (filtroEstado === 'activos' && u.activo !== false) ||
+      (filtroEstado === 'inactivos' && u.activo === false);
+
+    return matchBusqueda && matchRol && matchArea && matchEstado;
+  });
+
+  const hayFiltrosActivos = busquedaUsuario !== '' || filtroRol !== 'todos' || filtroArea !== 'todos' || filtroEstado !== 'todos';
+
+  const limpiarFiltros = () => {
+    setBusquedaUsuario('');
+    setFiltroRol('todos');
+    setFiltroArea('todos');
+    setFiltroEstado('todos');
+  };
 
   // Handlers for assignments
   const handleAssignDecano = (facultadId: string, decanoId: string) => {
@@ -427,132 +465,335 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Users Tab */}
       {pestana === 'usuarios' && (
-        <div className="ccv-card p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="ccv-card p-6 space-y-5">
+          {/* Header de la pestaña */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
             <div className="flex items-center gap-3">
-              <h3 className="text-lg font-bold text-charcoal-900">Gestión de Perfiles, Áreas & Roles de Integrantes</h3>
+              <div>
+                <h3 className="text-lg font-extrabold text-charcoal-900 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-sage-600" />
+                  Gestión de Perfiles, Áreas & Roles de Integrantes
+                </h3>
+                <p className="text-xs text-charcoal-500 mt-0.5">
+                  Visualiza, audita y administra las cuentas de usuario, sus roles RBAC adscritos y su actividad de conexión.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
               {isRealAdmin() && (
                 <button
                   onClick={() => setIsDevSimulatorOpen(true)}
-                  className="hidden lg:flex items-center gap-1 px-3 py-1 bg-coral-50 hover:bg-coral-100 text-coral-700 text-xs font-extrabold rounded-full border border-coral-200"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-coral-50 hover:bg-coral-100 text-coral-700 text-xs font-extrabold rounded-full border border-coral-200 shadow-xs transition-all"
+                  title="Simular la vista de otro usuario del sistema"
                 >
                   <Sparkles className="w-3.5 h-3.5" /> Cambiar Perfil Activo
                 </button>
               )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-charcoal-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={busquedaUsuario}
-                  onChange={e => setBusquedaUsuario(e.target.value)}
-                  placeholder="Buscar usuario o correo..."
-                  className="pl-8 pr-3 py-1.5 bg-cream-50 border border-stone-200 rounded-full text-xs font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500 w-48 sm:w-64"
-                />
-              </div>
-
               <button
                 onClick={handleOpenCreateUser}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow shrink-0 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm shrink-0 transition-all"
               >
                 <Plus className="w-4 h-4" /> Crear / Invitar Usuario
               </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Barra de Filtros Multifactorial (Hybrid Design) */}
+          <div className="p-4 bg-cream-50/70 rounded-2xl border border-stone-200/80 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-extrabold text-charcoal-700 flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-sage-600" />
+                Filtros de Búsqueda & Jerarquía
+              </span>
+              {hayFiltrosActivos && (
+                <button
+                  onClick={limpiarFiltros}
+                  className="text-xs font-bold text-coral-600 hover:text-coral-800 flex items-center gap-1 transition-colors px-2 py-0.5 rounded-lg hover:bg-coral-50"
+                >
+                  <RotateCcw className="w-3 h-3" /> Limpiar filtros
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Buscador de texto */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-charcoal-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  value={busquedaUsuario}
+                  onChange={e => setBusquedaUsuario(e.target.value)}
+                  placeholder="Buscar nombre o correo..."
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs"
+                />
+              </div>
+
+              {/* Filtro por Rol */}
+              <div className="relative">
+                <select
+                  value={filtroRol}
+                  onChange={e => setFiltroRol(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
+                >
+                  <option value="todos">🎭 Todos los roles ({usuarios.length})</option>
+                  {roles.map(r => {
+                    const count = usuarios.filter(u => u.rol_id === r.id || u.rol_nombre === r.nombre).length;
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {r.nombre} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+                <div className="absolute right-3 top-2.5 pointer-events-none text-charcoal-400 text-[10px] font-bold">
+                  ▼
+                </div>
+              </div>
+
+              {/* Filtro por Área o Jerarquía */}
+              <div className="relative">
+                <select
+                  value={filtroArea}
+                  onChange={e => setFiltroArea(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
+                >
+                  <option value="todos">🏛️ Todas las áreas & jerarquías</option>
+                  <optgroup label="── Por Nivel Jerárquico RLS ──">
+                    <option value="nivel:6">Nivel 6: ADMIN ({usuarios.filter(u => {
+                      const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+                      return areaObj?.nivel === 6;
+                    }).length})</option>
+                    <option value="nivel:5">Nivel 5: CMU ({usuarios.filter(u => {
+                      const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+                      return areaObj?.nivel === 5;
+                    }).length})</option>
+                    <option value="nivel:4">Nivel 4: DEPARTAMENTO ({usuarios.filter(u => {
+                      const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+                      return areaObj?.nivel === 4;
+                    }).length})</option>
+                    <option value="nivel:3">Nivel 3: FACULTAD ({usuarios.filter(u => {
+                      const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+                      return areaObj?.nivel === 3;
+                    }).length})</option>
+                    <option value="nivel:2">Nivel 2: PROGRAMA ({usuarios.filter(u => {
+                      const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+                      return areaObj?.nivel === 2;
+                    }).length})</option>
+                    <option value="nivel:1">Nivel 1: CURSO ({usuarios.filter(u => {
+                      const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+                      return areaObj?.nivel === 1 || !areaObj;
+                    }).length})</option>
+                  </optgroup>
+                  <optgroup label="── Por Área Específica ──">
+                    {areas.map(a => {
+                      const count = usuarios.filter(u => u.area_nombre?.toLowerCase() === a.nombre.toLowerCase()).length;
+                      return (
+                        <option key={a.id} value={a.nombre}>
+                          Área: {a.nombre} (Nivel {a.nivel}) — {count}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                </select>
+                <div className="absolute right-3 top-2.5 pointer-events-none text-charcoal-400 text-[10px] font-bold">
+                  ▼
+                </div>
+              </div>
+
+              {/* Filtro por Estado de Cuenta */}
+              <div className="relative">
+                <select
+                  value={filtroEstado}
+                  onChange={e => setFiltroEstado(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
+                >
+                  <option value="todos">🟢 Todos los estados</option>
+                  <option value="activos">
+                    ✅ Solo Activos ({usuarios.filter(u => u.activo !== false).length})
+                  </option>
+                  <option value="inactivos">
+                    ⛔ Solo Inactivos ({usuarios.filter(u => u.activo === false).length})
+                  </option>
+                </select>
+                <div className="absolute right-3 top-2.5 pointer-events-none text-charcoal-400 text-[10px] font-bold">
+                  ▼
+                </div>
+              </div>
+            </div>
+
+            {/* Resumen de resultados & Chips activos */}
+            <div className="flex items-center justify-between text-xs text-charcoal-500 pt-1 flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-charcoal-700 bg-white px-2.5 py-1 rounded-lg border border-stone-200 shadow-2xs">
+                  Mostrando <strong className="text-sage-700 font-extrabold">{usuariosFiltrados.length}</strong> de {usuarios.length} usuarios
+                </span>
+                {filtroRol !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 text-[11px] font-bold">
+                    Rol: {roles.find(r => r.id === filtroRol)?.nombre || filtroRol}
+                    <button onClick={() => setFiltroRol('todos')} className="hover:text-coral-600 font-extrabold ml-1">×</button>
+                  </span>
+                )}
+                {filtroArea !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cream-200 text-charcoal-800 text-[11px] font-bold">
+                    Área/Nivel: {filtroArea}
+                    <button onClick={() => setFiltroArea('todos')} className="hover:text-coral-600 font-extrabold ml-1">×</button>
+                  </span>
+                )}
+                {filtroEstado !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-stone-200 text-charcoal-800 text-[11px] font-bold">
+                    Estado: {filtroEstado === 'activos' ? 'Activos' : 'Inactivos'}
+                    <button onClick={() => setFiltroEstado('todos')} className="hover:text-coral-600 font-extrabold ml-1">×</button>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tabla de Usuarios con Columna de Última Conexión */}
+          <div className="overflow-x-auto rounded-2xl border border-stone-200/90 shadow-2xs">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-stone-200 text-charcoal-500 font-extrabold uppercase tracking-wider">
-                  <th className="py-3 px-4">Usuario</th>
-                  <th className="py-3 px-4">Correo Electrónico</th>
-                  <th className="py-3 px-4">Rol Asignado</th>
-                  <th className="py-3 px-4">Área & Jerarquía</th>
-                  <th className="py-3 px-4">Estado</th>
-                  <th className="py-3 px-4">Firma Digital</th>
-                  <th className="py-3 px-4 text-right">Acciones</th>
+                <tr className="bg-cream-100/70 border-b border-stone-200 text-charcoal-600 font-extrabold uppercase tracking-wider">
+                  <th className="py-3.5 px-4">Usuario</th>
+                  <th className="py-3.5 px-4">Correo Electrónico</th>
+                  <th className="py-3.5 px-4">Rol Asignado</th>
+                  <th className="py-3.5 px-4">Área & Jerarquía</th>
+                  <th className="py-3.5 px-4">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-sage-600" />
+                      Última Conexión
+                    </span>
+                  </th>
+                  <th className="py-3.5 px-4">Estado</th>
+                  <th className="py-3.5 px-4">Firma Digital</th>
+                  <th className="py-3.5 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100 text-charcoal-800">
-                {usuariosFiltrados.map((usr) => {
-                  const isCurrentSession = usuarioActual?.id === usr.id;
-                  return (
-                    <tr key={usr.id} className="hover:bg-cream-50 transition-colors">
-                      <td className="py-3 px-4 font-bold flex items-center gap-3">
-                        <img
-                          src={usr.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-                          alt={usr.nombre_completo}
-                          className="w-8 h-8 rounded-full object-cover border border-stone-200"
-                        />
-                        <div className="flex flex-col">
-                          <span className="flex items-center gap-1.5">
-                            {usr.nombre_completo}
-                            {isCurrentSession && (
-                              <span className="bg-sage-600 text-white text-[9px] px-1.5 py-0.2 rounded font-extrabold">TÚ</span>
-                            )}
-                          </span>
-                          <span className="text-[10px] text-charcoal-400 font-normal">{usr.telefono || 'Sin teléfono'}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-charcoal-600 font-medium">{usr.email}</td>
-                      <td className="py-3 px-4">
-                        <span className="bg-sage-100 text-sage-800 font-bold px-2.5 py-1 rounded-full border border-sage-200">
-                          {usr.rol_nombre || 'Docente'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-extrabold text-charcoal-900 bg-cream-100 px-2 py-0.5 rounded border border-stone-200/60">
-                          {usr.area_nombre || 'CURSO'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {usr.activo !== false ? (
-                          <span className="text-sage-700 bg-sage-50 border border-sage-200 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
-                            <UserCheck className="w-3 h-3" /> Activo
-                          </span>
-                        ) : (
-                          <span className="text-coral-700 bg-coral-50 border border-coral-200 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
-                            <UserX className="w-3 h-3" /> Inactivo
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {usr.firma_digital ? (
-                          <span className="text-sage-600 flex items-center gap-1 font-bold">
-                            <CheckCircle className="w-3.5 h-3.5" /> Registrada
-                          </span>
-                        ) : (
-                          <span className="text-charcoal-400">Pendiente</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-1">
+              <tbody className="divide-y divide-stone-100 text-charcoal-800 bg-white">
+                {usuariosFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-charcoal-500">
+                      <div className="max-w-xs mx-auto space-y-3">
+                        <Users className="w-10 h-10 text-stone-300 mx-auto" />
+                        <p className="font-bold text-sm text-charcoal-800">No se encontraron usuarios</p>
+                        <p className="text-xs text-charcoal-500">
+                          Ningún usuario coincide con los filtros de rol, área o texto ingresados.
+                        </p>
                         <button
-                          onClick={() => setUsuarioResetPassword(usr)}
-                          className="p-1.5 text-charcoal-500 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-all"
-                          title="Restablecer Contraseña"
+                          onClick={limpiarFiltros}
+                          className="px-4 py-1.5 bg-cream-100 hover:bg-cream-200 text-charcoal-800 font-bold rounded-full text-xs border border-stone-200 transition-all inline-flex items-center gap-1.5"
                         >
-                          <KeyRound className="w-4 h-4" />
+                          <RotateCcw className="w-3.5 h-3.5" /> Restablecer Filtros
                         </button>
-                        <button
-                          onClick={() => handleOpenEditUser(usr)}
-                          className="p-1.5 text-charcoal-500 hover:text-sage-600 hover:bg-cream-100 rounded-full transition-all"
-                          title="Editar Perfil"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(usr)}
-                          className="p-1.5 text-charcoal-500 hover:text-coral-600 hover:bg-coral-50 rounded-full transition-all"
-                          title="Eliminar Usuario"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  usuariosFiltrados.map((usr) => {
+                    const isCurrentSession = usuarioActual?.id === usr.id;
+                    const infoConexion = formatUltimaConexion(usr.ultima_conexion);
+
+                    return (
+                      <tr key={usr.id} className="hover:bg-cream-50/80 transition-colors">
+                        <td className="py-3 px-4 font-bold flex items-center gap-3">
+                          <img
+                            src={usr.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                            alt={usr.nombre_completo}
+                            className="w-8 h-8 rounded-full object-cover border border-stone-200 shrink-0"
+                          />
+                          <div className="flex flex-col">
+                            <span className="flex items-center gap-1.5 font-bold text-charcoal-900">
+                              {usr.nombre_completo}
+                              {isCurrentSession && (
+                                <span className="bg-sage-600 text-white text-[9px] px-1.5 py-0.2 rounded font-black tracking-wider">TÚ</span>
+                              )}
+                            </span>
+                            <span className="text-[10px] text-charcoal-400 font-normal">{usr.telefono || 'Sin teléfono'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-charcoal-600 font-medium">{usr.email}</td>
+                        <td className="py-3 px-4">
+                          <span className="bg-sage-100 text-sage-800 font-bold px-2.5 py-1 rounded-full border border-sage-200 inline-block">
+                            {usr.rol_nombre || 'Docente'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-extrabold text-charcoal-900 bg-cream-100 px-2 py-0.5 rounded border border-stone-200/60 inline-block">
+                            {usr.area_nombre || 'CURSO'}
+                          </span>
+                        </td>
+                        {/* Nueva Columna: Última Conexión */}
+                        <td className="py-3 px-4">
+                          <div 
+                            className="flex items-center gap-2"
+                            title={infoConexion.fechaCompleta ? `Último ingreso: ${infoConexion.fechaCompleta}` : undefined}
+                          >
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              {infoConexion.esReciente && (
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              )}
+                              <span className={`relative inline-flex rounded-full h-2 w-2 ${infoConexion.esReciente ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
+                            </span>
+                            <div className="flex flex-col">
+                              <span className={`text-[11px] px-2 py-0.5 rounded-md border w-fit font-bold ${infoConexion.badgeClass}`}>
+                                {infoConexion.texto}
+                              </span>
+                              {infoConexion.subtexto && (
+                                <span className="text-[9px] text-charcoal-400 mt-0.5 font-medium pl-0.5">
+                                  {infoConexion.subtexto}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {usr.activo !== false ? (
+                            <span className="text-sage-700 bg-sage-50 border border-sage-200 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                              <UserCheck className="w-3 h-3" /> Activo
+                            </span>
+                          ) : (
+                            <span className="text-coral-700 bg-coral-50 border border-coral-200 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                              <UserX className="w-3 h-3" /> Inactivo
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {usr.firma_digital ? (
+                            <span className="text-sage-600 flex items-center gap-1 font-bold">
+                              <CheckCircle className="w-3.5 h-3.5" /> Registrada
+                            </span>
+                          ) : (
+                            <span className="text-charcoal-400">Pendiente</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                          <button
+                            onClick={() => setUsuarioResetPassword(usr)}
+                            className="p-1.5 text-charcoal-500 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-all"
+                            title="Restablecer Contraseña"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditUser(usr)}
+                            className="p-1.5 text-charcoal-500 hover:text-sage-600 hover:bg-cream-100 rounded-full transition-all"
+                            title="Editar Perfil"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(usr)}
+                            className="p-1.5 text-charcoal-500 hover:text-coral-600 hover:bg-coral-50 rounded-full transition-all"
+                            title="Eliminar Usuario"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

@@ -57,9 +57,13 @@ CREATE TABLE IF NOT EXISTS public.usuarios (
     avatar_url TEXT,
     telefono TEXT,
     activo BOOLEAN DEFAULT true,
+    ultima_conexion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_usuarios_ultima_conexion ON public.usuarios(ultima_conexion DESC);
+COMMENT ON COLUMN public.usuarios.ultima_conexion IS 'Fecha y hora de última conexión o actividad del usuario en la plataforma';
 
 -- ----------------------------------------------------------------------------
 -- 2. FASE 2: ESTRUCTURA ACADÉMICA E INSTITUCIONAL (ENTIDADES BASE)

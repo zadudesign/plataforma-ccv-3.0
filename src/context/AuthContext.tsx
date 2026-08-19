@@ -16,6 +16,7 @@ import {
   fetchProgramas,
   fetchCursos,
   fetchProyectos,
+  isGuid,
   updateUsuarioDB,
   deleteUsuarioDB,
   createAreaDB,
@@ -211,9 +212,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const cambiarUsuarioSimulado = (usuarioId: string) => {
+    const ahora = new Date().toISOString();
+    setUsuarios(prev => prev.map(u => u.id === usuarioId ? { ...u, ultima_conexion: ahora } : u));
     const usr = usuarios.find(u => u.id === usuarioId);
     if (usr) {
-      setUsuarioActual(usr);
+      setUsuarioActual({ ...usr, ultima_conexion: ahora });
     }
   };
 
@@ -231,12 +234,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUsuarios(freshUsers);
         }
 
+        const nowIso = new Date().toISOString();
         const sessionEmail = (data.user.email || email).toLowerCase().trim();
         const usr = freshUsers.find(u => u.email?.toLowerCase().trim() === sessionEmail) 
           || usuarios.find(u => u.email?.toLowerCase().trim() === sessionEmail);
 
         if (usr) {
-          establecerUsuarioAutenticado(usr);
+          const userWithConnection = { ...usr, ultima_conexion: nowIso };
+          setUsuarios(prev => prev.map(u => u.id === usr.id ? userWithConnection : u));
+          establecerUsuarioAutenticado(userWithConnection);
+          if (isGuid(usr.id)) {
+            supabase.from('usuarios').update({ ultima_conexion: nowIso }).eq('id', usr.id).then();
+          }
         } else {
           // Consultar perfil de usuario individual en Supabase
           const { data: dbUser } = await supabase
@@ -257,9 +266,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               avatar_url: dbUser.avatar_url,
               telefono: dbUser.telefono,
               activo: dbUser.activo,
+              ultima_conexion: nowIso,
               created_at: dbUser.created_at
             };
             establecerUsuarioAutenticado(parsedUser);
+            if (isGuid(dbUser.id)) {
+              supabase.from('usuarios').update({ ultima_conexion: nowIso }).eq('id', dbUser.id).then();
+            }
           } else {
             establecerUsuarioAutenticado({
               id: data.user.id,
@@ -268,7 +281,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               rol_id: data.user.user_metadata?.rol_id || '',
               rol_nombre: 'Docente',
               area_nombre: 'CURSO',
-              activo: true
+              activo: true,
+              ultima_conexion: nowIso
             });
           }
         }

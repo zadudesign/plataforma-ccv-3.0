@@ -82,6 +82,7 @@ export async function fetchUsuarios(): Promise<Usuario[]> {
       avatar_url: u.avatar_url,
       telefono: u.telefono,
       activo: u.activo,
+      ultima_conexion: u.ultima_conexion || u.updated_at || u.created_at,
       created_at: u.created_at
     }));
   } catch {
@@ -107,6 +108,7 @@ export async function updateUsuarioDB(id: string, datos: Partial<Usuario>): Prom
     if (datos.activo !== undefined) payload.activo = datos.activo;
     if (datos.avatar_url !== undefined) payload.avatar_url = datos.avatar_url;
     if (datos.firma_digital !== undefined) payload.firma_digital = datos.firma_digital;
+    if (datos.ultima_conexion !== undefined) payload.ultima_conexion = datos.ultima_conexion;
 
     const { error } = await supabase
       .from('usuarios')
