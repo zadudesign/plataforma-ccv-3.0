@@ -33,7 +33,6 @@ import { CreateEntityModal, TipoEntidad } from './CreateEntityModal';
 import { CreateRoleModal } from './CreateRoleModal';
 import { CreateAreaModal } from './CreateAreaModal';
 import { ConfirmDeleteAreaModal } from './ConfirmDeleteAreaModal';
-import { INITIAL_CURSOS } from '@/lib/mockData';
 
 interface AreaHierarchyNodeProps {
   area: Area;

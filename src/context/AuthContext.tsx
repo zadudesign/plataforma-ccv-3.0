@@ -3,15 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto } from '@/types';
 import { 
-  INITIAL_USUARIOS, 
-  INITIAL_ROLES, 
-  INITIAL_AREAS, 
   INITIAL_PERMISOS, 
   ROLES_PERMISOS_MAP,
-  INITIAL_FACULTADES,
-  INITIAL_PROGRAMAS,
-  INITIAL_CURSOS,
-  INITIAL_PROYECTOS,
   INITIAL_TARIFAS_PROYECTO
 } from '@/lib/mockData';
 import { supabase } from '@/lib/supabaseClient';
@@ -110,17 +103,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(INITIAL_USUARIOS);
-  const [roles, setRoles] = useState<Rol[]>(INITIAL_ROLES);
-  const [areas, setAreas] = useState<Area[]>(INITIAL_AREAS);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [permisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
   const [rolesPermisosMap, setRolesPermisosMap] = useState<Record<string, string[]>>(ROLES_PERMISOS_MAP);
   
   // Entidades Académicas y Proyectos en Estado Global
-  const [facultades, setFacultades] = useState<Facultad[]>(INITIAL_FACULTADES);
-  const [programas, setProgramas] = useState<Programa[]>(INITIAL_PROGRAMAS);
-  const [cursos, setCursos] = useState<CursoVirtual[]>(INITIAL_CURSOS);
-  const [proyectos, setProyectos] = useState<ProyectoEspecial[]>(INITIAL_PROYECTOS);
+  const [facultades, setFacultades] = useState<Facultad[]>([]);
+  const [programas, setProgramas] = useState<Programa[]>([]);
+  const [cursos, setCursos] = useState<CursoVirtual[]>([]);
+  const [proyectos, setProyectos] = useState<ProyectoEspecial[]>([]);
   const [tarifasProyecto, setTarifasProyecto] = useState<ConfiguracionTarifa[]>(INITIAL_TARIFAS_PROYECTO);
   
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
@@ -165,13 +158,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchProyectos()
       ]);
 
-      if (dbAreas.length > 0) setAreas(dbAreas);
-      if (dbRoles.length > 0) setRoles(dbRoles);
-      if (dbUsuarios.length > 0) setUsuarios(dbUsuarios);
-      if (dbFacultades.length > 0) setFacultades(dbFacultades);
-      if (dbProgramas.length > 0) setProgramas(dbProgramas);
-      if (dbCursos.length > 0) setCursos(dbCursos);
-      if (dbProyectos.length > 0) setProyectos(dbProyectos);
+      setAreas(dbAreas);
+      setRoles(dbRoles);
+      setUsuarios(dbUsuarios);
+      setFacultades(dbFacultades);
+      setProgramas(dbProgramas);
+      setCursos(dbCursos);
+      setProyectos(dbProyectos);
 
       // Verificar sesión de Supabase Auth
       const { data: { session } } = await supabase.auth.getSession();
@@ -227,14 +220,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // Si es entorno local sin backend Supabase activo o falló la conexión ("Failed to fetch"), intentar login simulado por email
-        const usuarioEncontrado = usuarios.find(u => u.email?.toLowerCase().trim() === emailLower)
-          || INITIAL_USUARIOS.find(u => u.email?.toLowerCase().trim() === emailLower);
-        if (usuarioEncontrado) {
-          establecerUsuarioAutenticado(usuarioEncontrado);
-          return { success: true };
-        }
-        return { success: false, error: 'Credenciales inválidas o usuario no registrado.' };
+        return { success: false, error: error.message || 'Credenciales inválidas.' };
       }
       if (data.user) {
         // Cargar usuarios actualizados desde Supabase con la sesión activa
@@ -245,8 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const sessionEmail = (data.user.email || email).toLowerCase().trim();
         const usr = freshUsers.find(u => u.email?.toLowerCase().trim() === sessionEmail) 
-          || usuarios.find(u => u.email?.toLowerCase().trim() === sessionEmail)
-          || INITIAL_USUARIOS.find(u => u.email?.toLowerCase().trim() === sessionEmail);
+          || usuarios.find(u => u.email?.toLowerCase().trim() === sessionEmail);
 
         if (usr) {
           establecerUsuarioAutenticado(usr);
@@ -264,8 +249,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               nombre_completo: dbUser.nombre_completo || data.user.email || 'Usuario CCV',
               email: dbUser.email || email,
               rol_id: dbUser.rol_id,
-              rol_nombre: dbUser.roles?.nombre || 'Administrador',
-              area_nombre: dbUser.roles?.areas?.nombre || 'ADMIN',
+              rol_nombre: dbUser.roles?.nombre || 'Docente',
+              area_nombre: dbUser.roles?.areas?.nombre || 'CURSO',
               firma_digital: dbUser.firma_digital,
               avatar_url: dbUser.avatar_url,
               telefono: dbUser.telefono,
@@ -274,15 +259,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             establecerUsuarioAutenticado(parsedUser);
           } else {
-            // Asignar rol de Administrador si coincide la cuenta principal
-            const adminRol = roles.find(r => r.nombre === 'Administrador');
             establecerUsuarioAutenticado({
               id: data.user.id,
               nombre_completo: data.user.user_metadata?.nombre_completo || data.user.email || 'Usuario CCV',
               email: data.user.email || email,
-              rol_id: adminRol?.id || 'r-1',
-              rol_nombre: adminRol?.nombre || 'Administrador',
-              area_nombre: adminRol?.area_nombre || 'ADMIN',
+              rol_id: data.user.user_metadata?.rol_id || '',
+              rol_nombre: 'Docente',
+              area_nombre: 'CURSO',
               activo: true
             });
           }
@@ -291,14 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { success: false, error: 'No se pudo obtener la información de usuario.' };
     } catch (err: any) {
-      // Fallback para usuarios simulados si Supabase arroja Failed to fetch o excepción de red
-      const usuarioEncontrado = usuarios.find(u => u.email?.toLowerCase().trim() === emailLower)
-        || INITIAL_USUARIOS.find(u => u.email?.toLowerCase().trim() === emailLower);
-      if (usuarioEncontrado) {
-        establecerUsuarioAutenticado(usuarioEncontrado);
-        return { success: true };
-      }
-      return { success: false, error: 'Usuario no encontrado o error de conexión.' };
+      return { success: false, error: err?.message || 'Error al iniciar sesión' };
     }
   };
 

@@ -14,18 +14,7 @@ import {
   EstadoTarea,
   TipoTarea
 } from '@/types';
-import {
-  INITIAL_AREAS,
-  INITIAL_ROLES,
-  INITIAL_PERMISOS,
-  INITIAL_USUARIOS,
-  INITIAL_FACULTADES,
-  INITIAL_PROGRAMAS,
-  INITIAL_CURSOS,
-  INITIAL_PROYECTOS,
-  INITIAL_TAREAS,
-  INITIAL_REGISTRO_HORAS
-} from './mockData';
+
 
 // Helper para determinar si Supabase responde adecuadamente
 export async function testSupabaseConnection(): Promise<boolean> {
@@ -45,7 +34,7 @@ export async function testSupabaseConnection(): Promise<boolean> {
 export async function fetchAreas(): Promise<Area[]> {
   try {
     const { data, error } = await supabase.from('areas').select('*').order('nivel', { ascending: false });
-    if (error || !data || data.length === 0) return INITIAL_AREAS;
+    if (error || !data) return [];
     return data.map((item: any) => ({
       id: item.id,
       nombre: item.nombre,
@@ -54,7 +43,7 @@ export async function fetchAreas(): Promise<Area[]> {
       created_at: item.created_at
     }));
   } catch {
-    return INITIAL_AREAS;
+    return [];
   }
 }
 
@@ -63,7 +52,7 @@ export async function fetchRoles(): Promise<Rol[]> {
     const { data, error } = await supabase
       .from('roles')
       .select('*, areas(nombre)');
-    if (error || !data || data.length === 0) return INITIAL_ROLES;
+    if (error || !data) return [];
     return data.map((item: any) => ({
       id: item.id,
       nombre: item.nombre,
@@ -72,7 +61,7 @@ export async function fetchRoles(): Promise<Rol[]> {
       created_at: item.created_at
     }));
   } catch {
-    return INITIAL_ROLES;
+    return [];
   }
 }
 
@@ -81,7 +70,7 @@ export async function fetchUsuarios(): Promise<Usuario[]> {
     const { data, error } = await supabase
       .from('usuarios')
       .select('*, roles(nombre, areas(nombre))');
-    if (error || !data || data.length === 0) return INITIAL_USUARIOS;
+    if (error || !data) return [];
     return data.map((u: any) => ({
       id: u.id,
       nombre_completo: u.nombre_completo,
@@ -96,7 +85,7 @@ export async function fetchUsuarios(): Promise<Usuario[]> {
       created_at: u.created_at
     }));
   } catch {
-    return INITIAL_USUARIOS;
+    return [];
   }
 }
 
@@ -137,7 +126,7 @@ export async function fetchFacultades(): Promise<Facultad[]> {
     const { data, error } = await supabase
       .from('facultades')
       .select('*, decano:usuarios!decano_id(nombre_completo)');
-    if (error || !data || data.length === 0) return INITIAL_FACULTADES;
+    if (error || !data) return [];
     return data.map((f: any) => ({
       id: f.id,
       nombre: f.nombre,
@@ -146,7 +135,7 @@ export async function fetchFacultades(): Promise<Facultad[]> {
       created_at: f.created_at
     }));
   } catch {
-    return INITIAL_FACULTADES;
+    return [];
   }
 }
 
@@ -184,7 +173,7 @@ export async function fetchProgramas(): Promise<Programa[]> {
     const { data, error } = await supabase
       .from('programas')
       .select('*, facultades(nombre), coordinador:usuarios!coordinador_id(nombre_completo)');
-    if (error || !data || data.length === 0) return INITIAL_PROGRAMAS;
+    if (error || !data) return [];
     return data.map((p: any) => ({
       id: p.id,
       nombre: p.nombre,
@@ -195,7 +184,7 @@ export async function fetchProgramas(): Promise<Programa[]> {
       created_at: p.created_at
     }));
   } catch {
-    return INITIAL_PROGRAMAS;
+    return [];
   }
 }
 
@@ -250,10 +239,10 @@ export async function updateProgramaDB(programaId: string, coordinadorId?: strin
 export async function fetchProyectos(): Promise<ProyectoEspecial[]> {
   try {
     const { data, error } = await supabase.from('proyectos').select('*');
-    if (error || !data || data.length === 0) return INITIAL_PROYECTOS;
+    if (error || !data) return [];
     return data;
   } catch {
-    return INITIAL_PROYECTOS;
+    return [];
   }
 }
 
@@ -285,7 +274,7 @@ export async function fetchCursos(): Promise<CursoVirtual[]> {
         docente:usuarios!docente_id(nombre_completo),
         evaluador:usuarios!evaluador_id(nombre_completo)
       `);
-    if (error || !data || data.length === 0) return INITIAL_CURSOS;
+    if (error || !data) return [];
     return data.map((c: any) => ({
       id: c.id,
       nombre: c.nombre,
@@ -302,7 +291,7 @@ export async function fetchCursos(): Promise<CursoVirtual[]> {
       created_at: c.created_at
     }));
   } catch {
-    return INITIAL_CURSOS;
+    return [];
   }
 }
 
@@ -502,7 +491,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       `)
       .order('orden_tarea', { ascending: true });
 
-    if (error || !data || data.length === 0) return INITIAL_TAREAS;
+    if (error || !data) return [];
 
     return data.map((t: any) => ({
       id: t.id,
@@ -529,7 +518,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       created_at: t.created_at
     }));
   } catch {
-    return INITIAL_TAREAS;
+    return [];
   }
 }
 
@@ -633,7 +622,7 @@ export async function fetchRegistroHorasDB(): Promise<RegistroHoras[]> {
       .select('*, tarea:tareas(titulo), usuario:usuarios(nombre_completo)')
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) return INITIAL_REGISTRO_HORAS;
+    if (error || !data) return [];
     return data.map((r: any) => ({
       id: r.id,
       tarea_id: r.tarea_id,
@@ -647,7 +636,7 @@ export async function fetchRegistroHorasDB(): Promise<RegistroHoras[]> {
       created_at: r.created_at
     }));
   } catch {
-    return INITIAL_REGISTRO_HORAS;
+    return [];
   }
 }
 
