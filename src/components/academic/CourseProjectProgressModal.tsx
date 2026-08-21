@@ -64,6 +64,19 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const horasEstimadas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_estimado || 0), 0);
   const horasInvertidas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_invertido || 0), 0);
 
+  // Cálculos Financieros Exclusivos para Proyectos
+  const costoTotalProyecto = tareasEntidad.reduce((sum, t) => {
+    const tarifa = t.tarifa_tarea !== undefined 
+      ? t.tarifa_tarea 
+      : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_estimado || 0) : 0);
+    return sum + tarifa;
+  }, 0);
+
+  const costoEjecutadoProyecto = tareasEntidad.reduce((sum, t) => {
+    const tarifaHora = t.tarifa_hora || 0;
+    return sum + (tarifaHora * (t.tiempo_invertido || 0));
+  }, 0);
+
   // Filtrar según pestaña seleccionada
   const tareasMostrar = tareasEntidad.filter(t => {
     if (filtroEstado === 'completadas') return t.estado === 'Completada';
@@ -138,14 +151,30 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
               {esCurso ? <BookOpen className="w-6 h-6" /> : <FolderKanban className="w-6 h-6" />}
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 tracking-wider">
+                <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider ${
+                  esCurso ? 'bg-sage-100 text-sage-800' : 'bg-amber-100 text-amber-800'
+                }`}>
                   {esCurso ? `Curso Virtual • ${curso?.codigo}` : `Proyecto CCV`}
                 </span>
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-200 text-charcoal-700">
                   {entidad.estado}
                 </span>
+
+                {/* Badge Financiero Destacado para Proyectos */}
+                {!esCurso && (
+                  <>
+                    <span className="text-xs font-black px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                      Presupuesto: ${costoTotalProyecto.toLocaleString('es-CO')} COP
+                    </span>
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-200 text-charcoal-700 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-amber-600" />
+                      {horasInvertidas}h / {horasEstimadas}h est.
+                    </span>
+                  </>
+                )}
               </div>
               <h2 className="text-xl font-black text-charcoal-900 leading-tight">
                 {entidad.nombre}
@@ -159,7 +188,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                   </>
                 )}
                 {!esCurso && (
-                  <span>{proyecto?.descripcion || 'Sin descripción adicional'}</span>
+                  <span>{proyecto?.descripcion || 'Iniciativa institucional y proyecto especial CCV'}</span>
                 )}
               </p>
             </div>
@@ -252,44 +281,100 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
                 {/* KPI Cards (4 grid) */}
                 <div className="md:col-span-2 grid grid-cols-2 gap-3">
-                  <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between">
-                    <div className="flex justify-between items-center text-charcoal-500">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Tareas Totales</span>
-                      <CheckSquare className="w-4 h-4 text-sage-600" />
-                    </div>
-                    <span className="text-2xl font-black text-charcoal-900 mt-2">{totalTareas}</span>
-                    <span className="text-[10px] text-charcoal-400 font-medium">Registradas en CCV</span>
-                  </div>
+                  {!esCurso ? (
+                    <>
+                      {/* KPI Proyecto 1: Presupuesto Financiero Total */}
+                      <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-emerald-800">
+                          <span className="text-[11px] font-black uppercase tracking-wider">Presupuesto Total</span>
+                          <DollarSign className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <span className="text-xl font-black text-emerald-950 mt-1">
+                          ${costoTotalProyecto.toLocaleString('es-CO')} <span className="text-xs font-bold text-emerald-700">COP</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-700 font-medium">Tarifas estimadas CCV</span>
+                      </div>
 
-                  <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 shadow-xs flex flex-col justify-between">
-                    <div className="flex justify-between items-center text-emerald-700">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Completadas</span>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    </div>
-                    <span className="text-2xl font-black text-emerald-900 mt-2">{completadas}</span>
-                    <span className="text-[10px] text-emerald-700 font-medium">100% Finalizadas</span>
-                  </div>
+                      {/* KPI Proyecto 2: Costo Ejecutado */}
+                      <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-blue-800">
+                          <span className="text-[11px] font-black uppercase tracking-wider">Costo Ejecutado</span>
+                          <TrendingUp className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <span className="text-xl font-black text-blue-950 mt-1">
+                          ${costoEjecutadoProyecto.toLocaleString('es-CO')} <span className="text-xs font-bold text-blue-700">COP</span>
+                        </span>
+                        <span className="text-[10px] text-blue-700 font-medium">Según {horasInvertidas}h invertidas</span>
+                      </div>
 
-                  <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 shadow-xs flex flex-col justify-between">
-                    <div className="flex justify-between items-center text-amber-700">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">En Proceso / Revisión</span>
-                      <Clock className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <span className="text-2xl font-black text-amber-900 mt-2">{enProceso}</span>
-                    <span className="text-[10px] text-amber-700 font-medium">En desarrollo activo</span>
-                  </div>
+                      {/* KPI Proyecto 3: Horas Estimadas vs Reales */}
+                      <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-amber-800">
+                          <span className="text-[11px] font-black uppercase tracking-wider">Tiempo Invertido</span>
+                          <Timer className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div className="mt-1 flex items-baseline gap-1">
+                          <span className="text-xl font-black text-amber-950">{horasInvertidas}h</span>
+                          <span className="text-xs font-semibold text-amber-700">/ {horasEstimadas}h est.</span>
+                        </div>
+                        <span className="text-[10px] text-amber-700 font-medium">Inversión de horas</span>
+                      </div>
 
-                  <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200/80 shadow-xs flex flex-col justify-between">
-                    <div className="flex justify-between items-center text-purple-700">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Horas Estimadas vs Reales</span>
-                      <Timer className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-xl font-black text-purple-950">{horasInvertidas}h</span>
-                      <span className="text-xs font-semibold text-purple-700">/ {horasEstimadas}h est.</span>
-                    </div>
-                    <span className="text-[10px] text-purple-700 font-medium">Inversión de tiempo</span>
-                  </div>
+                      {/* KPI Proyecto 4: Tareas del Proyecto */}
+                      <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-charcoal-600">
+                          <span className="text-[11px] font-black uppercase tracking-wider">Tareas Totales</span>
+                          <CheckSquare className="w-4 h-4 text-sage-600" />
+                        </div>
+                        <div className="mt-1 flex items-baseline gap-1">
+                          <span className="text-xl font-black text-charcoal-900">{completadas}</span>
+                          <span className="text-xs font-semibold text-charcoal-500">/ {totalTareas} completadas</span>
+                        </div>
+                        <span className="text-[10px] text-charcoal-400 font-medium">Flujo de trabajo CCV</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-charcoal-500">
+                          <span className="text-[11px] font-bold uppercase tracking-wider">Tareas Totales</span>
+                          <CheckSquare className="w-4 h-4 text-sage-600" />
+                        </div>
+                        <span className="text-2xl font-black text-charcoal-900 mt-2">{totalTareas}</span>
+                        <span className="text-[10px] text-charcoal-400 font-medium">Registradas en CCV</span>
+                      </div>
+
+                      <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-emerald-700">
+                          <span className="text-[11px] font-bold uppercase tracking-wider">Completadas</span>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <span className="text-2xl font-black text-emerald-900 mt-2">{completadas}</span>
+                        <span className="text-[10px] text-emerald-700 font-medium">100% Finalizadas</span>
+                      </div>
+
+                      <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-amber-700">
+                          <span className="text-[11px] font-bold uppercase tracking-wider">En Proceso / Revisión</span>
+                          <Clock className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <span className="text-2xl font-black text-amber-900 mt-2">{enProceso}</span>
+                        <span className="text-[10px] text-amber-700 font-medium">En desarrollo activo</span>
+                      </div>
+
+                      <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200/80 shadow-xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-purple-700">
+                          <span className="text-[11px] font-bold uppercase tracking-wider">Horas Estimadas vs Reales</span>
+                          <Timer className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div className="mt-1 flex items-baseline gap-1">
+                          <span className="text-xl font-black text-purple-950">{horasInvertidas}h</span>
+                          <span className="text-xs font-semibold text-purple-700">/ {horasEstimadas}h est.</span>
+                        </div>
+                        <span className="text-[10px] text-purple-700 font-medium">Inversión de tiempo</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -335,6 +420,9 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                   <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                     {tareasMostrar.map((t) => {
                       const isDone = t.estado === 'Completada';
+                      const costoTarea = t.tarifa_tarea !== undefined 
+                        ? t.tarifa_tarea 
+                        : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_estimado || 0) : undefined);
 
                       return (
                         <div
@@ -372,7 +460,12 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                               <div className="flex items-center gap-3 text-[11px] text-charcoal-600 mt-1 flex-wrap">
                                 <span>Responsable: <strong className="text-charcoal-900 font-bold">{t.responsable_nombre || 'Sin Asignar'}</strong></span>
                                 <span>• Vence: {t.fecha_vencimiento}</span>
-                                {t.tiempo_estimado > 0 && <span>• Est: {t.tiempo_estimado}h</span>}
+                                {t.tiempo_estimado > 0 && <span>• {t.tiempo_invertido || 0}h / {t.tiempo_estimado}h est.</span>}
+                                {costoTarea !== undefined && costoTarea > 0 && (
+                                  <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
+                                    ${costoTarea.toLocaleString('es-CO')} COP
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

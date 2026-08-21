@@ -15,7 +15,9 @@ import {
   Filter,
   Layers,
   Sparkles,
-  Palette
+  Palette,
+  DollarSign,
+  Timer
 } from 'lucide-react';
 import { Facultad, Programa, CursoVirtual, ProyectoEspecial, TareaCCV, Area } from '@/types';
 import { getFacultyTheme } from '@/lib/facultyThemes';
@@ -218,24 +220,63 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                             const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
                             const completadasProy = tareasProy.filter(t => t.estado === 'Completada').length;
                             const pctProy = tareasProy.length > 0 ? Math.round((completadasProy / tareasProy.length) * 100) : 0;
+                            
+                            // Cálculos Financieros y de Tiempo para el Proyecto
+                            const horasEstimadasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_estimado || 0), 0);
+                            const horasInvertidasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0), 0);
+                            const costoTotalProy = tareasProy.reduce((sum, t) => {
+                              const tarifa = t.tarifa_tarea !== undefined 
+                                ? t.tarifa_tarea 
+                                : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_estimado || 0) : 0);
+                              return sum + tarifa;
+                            }, 0);
 
                             return (
                               <div
                                 key={proy.id}
                                 onClick={() => onOpenProgreso && onOpenProgreso(proy, 'proyecto')}
-                                className="p-4 bg-white rounded-xl border border-stone-200 hover:border-amber-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3"
+                                className="p-4 bg-white rounded-2xl border border-stone-200 hover:border-amber-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3.5 group"
                               >
-                                <div>
-                                  <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[11px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded">
-                                      PROYECTO
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-start gap-2">
+                                    <span className="text-[10px] font-mono font-black bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md">
+                                      PROYECTO CCV
                                     </span>
                                     {getEstadoBadge(proy.estado)}
                                   </div>
-                                  <h5 className="font-extrabold text-charcoal-900 text-sm line-clamp-2">{proy.nombre}</h5>
+                                  <h5 className="font-extrabold text-charcoal-900 text-sm group-hover:text-amber-700 transition-colors line-clamp-2 leading-snug">
+                                    {proy.nombre}
+                                  </h5>
                                   {proy.descripcion && (
-                                    <p className="text-xs text-charcoal-500 mt-1 line-clamp-2">{proy.descripcion}</p>
+                                    <p className="text-xs text-charcoal-500 line-clamp-2 leading-relaxed">
+                                      {proy.descripcion}
+                                    </p>
                                   )}
+                                </div>
+
+                                {/* Bloque de Resumen Financiero y Tiempos */}
+                                <div className="grid grid-cols-2 gap-2 p-2.5 bg-amber-50/50 rounded-xl border border-amber-100">
+                                  {/* Tiempo Total */}
+                                  <div className="space-y-0.5">
+                                    <span className="text-[10px] font-extrabold uppercase text-amber-800 flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-amber-600" />
+                                      Tiempo
+                                    </span>
+                                    <p className="text-xs font-black text-charcoal-900">
+                                      {horasInvertidasProy}h <span className="text-[10px] font-medium text-charcoal-500">/ {horasEstimadasProy}h</span>
+                                    </p>
+                                  </div>
+
+                                  {/* Costo Total */}
+                                  <div className="space-y-0.5 text-right">
+                                    <span className="text-[10px] font-extrabold uppercase text-amber-800 flex items-center justify-end gap-1">
+                                      <DollarSign className="w-3 h-3 text-emerald-600" />
+                                      Costo Total
+                                    </span>
+                                    <p className="text-xs font-black text-emerald-800">
+                                      ${costoTotalProy.toLocaleString('es-CO')} <span className="text-[9px] font-bold text-emerald-600">COP</span>
+                                    </p>
+                                  </div>
                                 </div>
 
                                 {/* Mini Progress Bar */}
@@ -245,13 +286,15 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                     <span className="text-amber-700">{pctProy}%</span>
                                   </div>
                                   <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-                                    <div className="bg-amber-500 h-full rounded-full transition-all" style={{ width: `${pctProy}%` }} />
+                                    <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${pctProy}%` }} />
                                   </div>
                                 </div>
 
                                 <div className="pt-2 border-t border-stone-100 text-xs text-charcoal-500 flex justify-between items-center font-semibold text-amber-800 text-[11px]">
-                                  <span>{completadasProy}/{tareasProy.length} Tareas Completadas</span>
-                                  <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded text-charcoal-600">Ver flujo</span>
+                                  <span>{completadasProy}/{tareasProy.length} Tareas</span>
+                                  <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-lg text-charcoal-600 group-hover:bg-amber-100 group-hover:text-amber-800 transition-colors">
+                                    Ver desglose financiero →
+                                  </span>
                                 </div>
                               </div>
                             );
