@@ -8,7 +8,6 @@ import {
   Calendar as CalendarIcon, 
   User, 
   CheckCircle2, 
-  ShieldCheck, 
   MessageSquare, 
   Send,
   Building2,
@@ -39,7 +38,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onOpenCursoOProyecto,
 }) => {
   const [nuevoComentario, setNuevoComentario] = useState('');
-  const [firmaVerificada, setFirmaVerificada] = useState(true);
 
   if (!tarea) return null;
 
@@ -162,28 +160,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 )}
               </div>
             )}
-          </div>
-
-          {/* Digital Signature & Deliverable Validation Section */}
-          <div className="p-4 bg-sage-50/60 rounded-2xl border border-sage-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-sage-600 text-white flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <h5 className="font-extrabold text-charcoal-900 text-sm">Firma Digital & Validez Institucional</h5>
-                <p className="text-xs text-charcoal-600">Entregables firmados criptográficamente por el docente y el CCV.</p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setFirmaVerificada(!firmaVerificada)}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${
-                firmaVerificada ? 'bg-sage-600 text-white' : 'bg-white border border-stone-300 text-charcoal-700'
-              }`}
-            >
-              {firmaVerificada ? 'Firma Aprobada ✓' : 'Firmar Entregable'}
-            </button>
           </div>
 
           {/* Estado Selector */}
