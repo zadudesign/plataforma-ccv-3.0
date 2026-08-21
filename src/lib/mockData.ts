@@ -170,9 +170,30 @@ export const INITIAL_USUARIOS: Usuario[] = [
 ];
 
 export const INITIAL_FACULTADES: Facultad[] = [
-  { id: 'f-1', nombre: 'Facultad de Ingeniería y Ciencias Aplicadas', decano_id: 'u-decano', decano_nombre: 'Dra. Elena Rostova' },
-  { id: 'f-2', nombre: 'Facultad de Ciencias de la Salud', decano_id: 'u-par', decano_nombre: 'Dr. Roberto Gómez' },
-  { id: 'f-3', nombre: 'Facultad de Ciencias Empresariales y Economía', decano_id: 'u-diseno', decano_nombre: 'Lic. Carlic Bolomboy' },
+  { 
+    id: 'f-1', 
+    nombre: 'Facultad de Ingeniería y Ciencias Aplicadas', 
+    color: 'blue', 
+    icono: 'Cpu', 
+    decano_id: 'u-decano', 
+    decano_nombre: 'Dra. Elena Rostova' 
+  },
+  { 
+    id: 'f-2', 
+    nombre: 'Facultad de Ciencias de la Salud', 
+    color: 'rose', 
+    icono: 'HeartPulse', 
+    decano_id: 'u-par', 
+    decano_nombre: 'Dr. Roberto Gómez' 
+  },
+  { 
+    id: 'f-3', 
+    nombre: 'Facultad de Ciencias Empresariales y Economía', 
+    color: 'amber', 
+    icono: 'Briefcase', 
+    decano_id: 'u-diseno', 
+    decano_nombre: 'Lic. Carlic Bolomboy' 
+  },
 ];
 
 export const INITIAL_PROGRAMAS: Programa[] = [

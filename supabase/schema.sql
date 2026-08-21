@@ -73,6 +73,8 @@ COMMENT ON COLUMN public.usuarios.ultima_conexion IS 'Fecha y hora de última co
 CREATE TABLE IF NOT EXISTS public.facultades (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre TEXT NOT NULL,
+    color TEXT DEFAULT 'emerald', -- Color distintivo (emerald, blue, purple, amber, rose, cyan, etc.)
+    icono TEXT DEFAULT 'Building2', -- Nombre del icono de Lucide React
     decano_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

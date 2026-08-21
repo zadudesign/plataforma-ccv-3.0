@@ -14,8 +14,8 @@ interface CreateEntityModalProps {
   areas: Area[];
   usuarios: Usuario[];
   onClose: () => void;
-  onCrearFacultad: (nombre: string, decanoId?: string) => void;
-  onEditarFacultad?: (id: string, nombre: string, decanoId?: string) => void;
+  onCrearFacultad: (nombre: string, decanoId?: string, color?: string, icono?: string) => void;
+  onEditarFacultad?: (id: string, nombre: string, decanoId?: string, color?: string, icono?: string) => void;
   onCrearPrograma: (nombre: string, facultadId: string, coordinadorId?: string) => void;
   onEditarPrograma?: (id: string, nombre: string, facultadId: string, coordinadorId?: string) => void;
   onCrearCurso: (datos: Omit<CursoVirtual, 'id'>) => void;
@@ -52,6 +52,8 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     (initialData as Programa)?.facultad_id || facultades[0]?.id || ''
   );
   const [decanoId, setDecanoId] = useState((initialData as Facultad)?.decano_id || '');
+  const [facultadColor, setFacultadColor] = useState((initialData as Facultad)?.color || 'emerald');
+  const [facultadIcono, setFacultadIcono] = useState((initialData as Facultad)?.icono || 'Building2');
   const [coordinadorId, setCoordinadorId] = useState((initialData as Programa)?.coordinador_id || '');
 
   // Campos específicos Curso
@@ -81,9 +83,9 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
 
     if (tipo === 'facultad') {
       if (isEditing && initialData?.id && onEditarFacultad) {
-        onEditarFacultad(initialData.id, nombre, decanoId || undefined);
+        onEditarFacultad(initialData.id, nombre, decanoId || undefined, facultadColor, facultadIcono);
       } else {
-        onCrearFacultad(nombre, decanoId || undefined);
+        onCrearFacultad(nombre, decanoId || undefined, facultadColor, facultadIcono);
       }
     } else if (tipo === 'programa') {
       if (!facultadId) {

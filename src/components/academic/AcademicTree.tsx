@@ -14,9 +14,14 @@ import {
   Plus,
   Filter,
   Layers,
-  Sparkles
+  Sparkles,
+  Palette
 } from 'lucide-react';
 import { Facultad, Programa, CursoVirtual, ProyectoEspecial, TareaCCV, Area } from '@/types';
+import { getFacultyTheme } from '@/lib/facultyThemes';
+import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
+import { FacultyIdentityModal } from '@/components/academic/FacultyIdentityModal';
+import { useAuth } from '@/context/AuthContext';
 
 interface AcademicTreeProps {
   facultades: Facultad[];
@@ -41,6 +46,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   onSelectCurso,
   onOpenProgreso,
 }) => {
+  const { actualizarIdentidadFacultad } = useAuth();
   const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
   const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
   const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({
@@ -48,6 +54,9 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
     'f-2': true,
     'f-3': true,
   });
+
+  // Estado para el modal de personalización de identidad
+  const [facultadParaIdentidad, setFacultadParaIdentidad] = useState<Facultad | null>(null);
 
   const toggleFacultad = (id: string) => {
     setFacultadesAbiertas(prev => ({ ...prev, [id]: !prev[id] }));
@@ -58,6 +67,10 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
       ...prev, 
       [areaId]: prev[areaId] === undefined ? false : !prev[areaId] 
     }));
+  };
+
+  const handleGuardarIdentidad = async (facultadId: string, color: string, icono: string) => {
+    await actualizarIdentidadFacultad(facultadId, color, icono);
   };
 
   const getEstadoBadge = (estado: CursoVirtual['estado'] | ProyectoEspecial['estado']) => {
@@ -199,44 +212,46 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
 
                     {/* Grilla de Proyectos del Departamento */}
                     {isAreaOpen && (
-                      <div className="p-4 bg-white">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-stone-50/40">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           {grupo.proyectos.map((proy) => {
                             const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
                             const completadasProy = tareasProy.filter(t => t.estado === 'Completada').length;
                             const pctProy = tareasProy.length > 0 ? Math.round((completadasProy / tareasProy.length) * 100) : 0;
 
                             return (
-                              <div 
-                                key={proy.id} 
+                              <div
+                                key={proy.id}
                                 onClick={() => onOpenProgreso && onOpenProgreso(proy, 'proyecto')}
-                                className="p-4 bg-cream-50/80 rounded-2xl border border-stone-200/80 hover:border-amber-500 hover:shadow-md transition-all cursor-pointer space-y-3"
+                                className="p-4 bg-white rounded-xl border border-stone-200 hover:border-amber-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3"
                               >
-                                <div className="flex justify-between items-start gap-2">
-                                  <h5 className="font-extrabold text-charcoal-900 text-sm leading-snug">{proy.nombre}</h5>
-                                  {getEstadoBadge(proy.estado)}
-                                </div>
-                                
-                                {proy.descripcion && (
-                                  <p className="text-xs text-charcoal-500 line-clamp-2 leading-relaxed">{proy.descripcion}</p>
-                                )}
-
-                                {/* Progress Bar & Percentage */}
-                                <div className="space-y-1 pt-1">
-                                  <div className="flex justify-between items-center text-[11px] font-bold">
-                                    <span className="text-charcoal-600">Avance del Proyecto</span>
-                                    <span className="text-amber-800 font-extrabold">{pctProy}%</span>
+                                <div>
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-[11px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded">
+                                      PROYECTO
+                                    </span>
+                                    {getEstadoBadge(proy.estado)}
                                   </div>
-                                  <div className="w-full bg-stone-200/80 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-amber-600 h-full rounded-full transition-all" style={{ width: `${pctProy}%` }} />
-                                  </div>
+                                  <h5 className="font-extrabold text-charcoal-900 text-sm line-clamp-2">{proy.nombre}</h5>
+                                  {proy.descripcion && (
+                                    <p className="text-xs text-charcoal-500 mt-1 line-clamp-2">{proy.descripcion}</p>
+                                  )}
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs text-charcoal-600 pt-2 border-t border-stone-200/50">
-                                  <span className="font-medium text-[11px] text-amber-900 bg-amber-100/60 px-2 py-0.5 rounded truncate max-w-[200px]" title={grupo.departamentoNombre}>
-                                    Dpto: {grupo.departamentoNombre}
-                                  </span>
-                                  <span className="font-semibold text-charcoal-700 shrink-0">{completadasProy}/{tareasProy.length} Tareas</span>
+                                {/* Mini Progress Bar */}
+                                <div className="space-y-1">
+                                  <div className="flex justify-between items-center text-[10px] font-bold">
+                                    <span className="text-charcoal-500 uppercase">Avance Tareas</span>
+                                    <span className="text-amber-700">{pctProy}%</span>
+                                  </div>
+                                  <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-amber-500 h-full rounded-full transition-all" style={{ width: `${pctProy}%` }} />
+                                  </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-stone-100 text-xs text-charcoal-500 flex justify-between items-center font-semibold text-amber-800 text-[11px]">
+                                  <span>{completadasProy}/{tareasProy.length} Tareas Completadas</span>
+                                  <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded text-charcoal-600">Ver flujo</span>
                                 </div>
                               </div>
                             );
@@ -268,121 +283,165 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
           facultades.map((facultad) => {
             const progsFacultad = programas.filter(p => p.facultad_id === facultad.id);
             const isOpen = facultadesAbiertas[facultad.id];
+            const theme = getFacultyTheme(facultad.color);
+            const iconoFacultad = facultad.icono || 'Building2';
 
             return (
-              <div key={facultad.id} className="ccv-card overflow-hidden">
+              <div key={facultad.id} className="ccv-card overflow-hidden shadow-sm">
                 {/* Faculty Accordion Header */}
                 <div 
-                  onClick={() => toggleFacultad(facultad.id)}
-                  className="p-5 flex items-center justify-between cursor-pointer bg-stone-50/50 hover:bg-cream-100/70 transition-colors border-b border-stone-100"
+                  className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer bg-stone-50/50 ${theme.bgLightHover} transition-colors border-b border-stone-100`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-sage-100 text-sage-700 flex items-center justify-center font-bold">
-                      <Building2 className="w-5 h-5" />
+                  <div 
+                    onClick={() => toggleFacultad(facultad.id)}
+                    className="flex items-center gap-3 flex-1"
+                  >
+                    <div className={`w-10 h-10 rounded-2xl ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-2xs shrink-0`}>
+                      <DynamicLucideIcon name={iconoFacultad} className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="text-base font-extrabold text-charcoal-900">{facultad.nombre}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-extrabold text-charcoal-900">{facultad.nombre}</h3>
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
+                          Facultad
+                        </span>
+                      </div>
                       <p className="text-xs text-charcoal-500 flex items-center gap-1 mt-0.5">
-                        <User className="w-3.5 h-3.5" /> Decano: {facultad.decano_nombre || 'No asignado'}
+                        <User className="w-3.5 h-3.5 text-charcoal-400" /> Decano: <span className="font-semibold text-charcoal-700">{facultad.decano_nombre || 'No asignado'}</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold text-charcoal-600 bg-white px-3 py-1 rounded-full border border-stone-200">
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                    {/* Botón Personalizar Identidad de la Facultad */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFacultadParaIdentidad(facultad);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder} hover:scale-102`}
+                      title="Personalizar color e ícono de esta facultad"
+                    >
+                      <Palette className="w-3.5 h-3.5" />
+                      <span>Identidad Visual</span>
+                    </button>
+
+                    <span className="text-xs font-semibold text-charcoal-600 bg-white px-3 py-1.5 rounded-xl border border-stone-200 shadow-2xs">
                       {progsFacultad.length} Programas
                     </span>
-                    {isOpen ? <ChevronDown className="w-5 h-5 text-charcoal-500" /> : <ChevronRight className="w-5 h-5 text-charcoal-500" />}
+
+                    <button
+                      type="button"
+                      onClick={() => toggleFacultad(facultad.id)}
+                      className="p-1 text-charcoal-400 hover:text-charcoal-700 transition-colors"
+                    >
+                      {isOpen ? <ChevronDown className="w-5 h-5 text-charcoal-500" /> : <ChevronRight className="w-5 h-5 text-charcoal-500" />}
+                    </button>
                   </div>
                 </div>
 
                 {/* Programs and Courses Accordion Body */}
                 {isOpen && (
                   <div className="p-5 space-y-5 bg-white">
-                    {progsFacultad.map((prog) => {
-                      const cursosProg = cursos.filter(c => c.programa_id === prog.id);
-                      return (
-                        <div 
-                          key={prog.id} 
-                          className="p-5 bg-gradient-to-b from-stone-50/90 to-white rounded-3xl border border-stone-200 shadow-sm space-y-4 border-l-4 border-l-sage-600"
-                        >
-                          {/* Program Header Banner */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200/80">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-2xl bg-sage-600 text-white flex items-center justify-center shadow-xs shrink-0">
-                                <GraduationCap className="w-5 h-5" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-sage-100 text-sage-800">
-                                    Programa Académico
-                                  </span>
+                    {progsFacultad.length === 0 ? (
+                      <div className="p-6 text-center rounded-2xl border border-dashed border-stone-200 bg-stone-50/50">
+                        <p className="text-xs font-semibold text-charcoal-500">
+                          Esta facultad aún no tiene programas académicos registrados.
+                        </p>
+                      </div>
+                    ) : (
+                      progsFacultad.map((prog) => {
+                        const cursosProg = cursos.filter(c => c.programa_id === prog.id);
+                        return (
+                          <div 
+                            key={prog.id} 
+                            className={`p-5 bg-gradient-to-b from-stone-50/80 to-white rounded-3xl border border-stone-200 shadow-xs space-y-4 border-l-4 ${theme.borderLeft}`}
+                          >
+                            {/* Program Header Banner */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200/80">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-2xl ${theme.bgPrimary} text-white flex items-center justify-center shadow-xs shrink-0`}>
+                                  <DynamicLucideIcon name={iconoFacultad} fallbackName="GraduationCap" className="w-5 h-5" />
                                 </div>
-                                <h4 className="font-black text-charcoal-900 text-base leading-tight mt-0.5">
-                                  {prog.nombre}
-                                </h4>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${theme.badgeBg} ${theme.badgeText}`}>
+                                      Programa Académico
+                                    </span>
+                                  </div>
+                                  <h4 className="font-black text-charcoal-900 text-base leading-tight mt-0.5">
+                                    {prog.nombre}
+                                  </h4>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 flex-wrap shrink-0">
+                                <span className="text-xs font-bold text-charcoal-700 bg-white px-3 py-1 rounded-full border border-stone-200 shadow-2xs flex items-center gap-1.5">
+                                  <User className={`w-3.5 h-3.5 ${theme.textPrimary}`} />
+                                  Coord: <strong className="text-charcoal-900">{prog.coordinador_nombre || 'Sin Asignar'}</strong>
+                                </span>
+                                <span className={`text-xs font-black px-3 py-1 rounded-full border shadow-2xs ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
+                                  {cursosProg.length} Cursos
+                                </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 flex-wrap shrink-0">
-                              <span className="text-xs font-bold text-charcoal-700 bg-white px-3 py-1 rounded-full border border-stone-200 shadow-2xs flex items-center gap-1.5">
-                                <User className="w-3.5 h-3.5 text-sage-600" />
-                                Coord: <strong className="text-charcoal-900">{prog.coordinador_nombre}</strong>
-                              </span>
-                              <span className="text-xs font-black text-sage-800 bg-sage-100 px-3 py-1 rounded-full border border-sage-200 shadow-2xs">
-                                {cursosProg.length} Cursos
-                              </span>
+                            {/* Courses Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                              {cursosProg.length === 0 ? (
+                                <div className="col-span-full p-4 text-center rounded-xl border border-dashed border-stone-200 text-xs text-charcoal-400">
+                                  Sin cursos virtuales asignados a este programa
+                                </div>
+                              ) : (
+                                cursosProg.map((curso) => {
+                                  const tareasCurso = tareas.filter(t => t.curso_id === curso.id);
+                                  const completadasCurso = tareasCurso.filter(t => t.estado === 'Completada').length;
+                                  const pctCurso = tareasCurso.length > 0 ? Math.round((completadasCurso / tareasCurso.length) * 100) : 0;
+
+                                  return (
+                                    <div
+                                      key={curso.id}
+                                      onClick={() => onOpenProgreso ? onOpenProgreso(curso, 'curso') : onSelectCurso(curso)}
+                                      className={`p-4 bg-white rounded-xl border border-stone-200 hover:${theme.borderPrimary} hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3`}
+                                    >
+                                      <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                          <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded ${theme.badgeBg} ${theme.badgeText}`}>
+                                            {curso.codigo}
+                                          </span>
+                                          {getEstadoBadge(curso.estado)}
+                                        </div>
+                                        <h5 className="font-extrabold text-charcoal-900 text-sm line-clamp-2">{curso.nombre}</h5>
+                                      </div>
+
+                                      {/* Mini Progress Bar */}
+                                      <div className="space-y-1">
+                                        <div className="flex justify-between items-center text-[10px] font-bold">
+                                          <span className="text-charcoal-500 uppercase">Avance</span>
+                                          <span className={theme.textPrimary}>{pctCurso}%</span>
+                                        </div>
+                                        <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                                          <div className={`h-full rounded-full transition-all ${theme.progressFill}`} style={{ width: `${pctCurso}%` }} />
+                                        </div>
+                                      </div>
+
+                                      <div className="pt-2 border-t border-stone-100 text-xs text-charcoal-500 space-y-1">
+                                        <p className="truncate"><span className="font-semibold text-charcoal-700">Docente:</span> {curso.docente_nombre}</p>
+                                        <div className={`flex justify-between items-center pt-1 font-semibold text-[11px] ${theme.textPrimary}`}>
+                                          <span>Periodo: {curso.periodo}</span>
+                                          <span>{completadasCurso}/{tareasCurso.length} Tareas</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
                             </div>
                           </div>
-
-                          {/* Courses Grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                            {cursosProg.map((curso) => {
-                              const tareasCurso = tareas.filter(t => t.curso_id === curso.id);
-                              const completadasCurso = tareasCurso.filter(t => t.estado === 'Completada').length;
-                              const pctCurso = tareasCurso.length > 0 ? Math.round((completadasCurso / tareasCurso.length) * 100) : 0;
-
-                              return (
-                                <div
-                                  key={curso.id}
-                                  onClick={() => onOpenProgreso ? onOpenProgreso(curso, 'curso') : onSelectCurso(curso)}
-                                  className="p-4 bg-white rounded-xl border border-stone-200 hover:border-sage-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3"
-                                >
-                                  <div>
-                                    <div className="flex justify-between items-start mb-2">
-                                      <span className="text-[11px] font-mono font-bold bg-sage-50 text-sage-700 px-2 py-0.5 rounded">
-                                        {curso.codigo}
-                                      </span>
-                                      {getEstadoBadge(curso.estado)}
-                                    </div>
-                                    <h5 className="font-extrabold text-charcoal-900 text-sm line-clamp-2">{curso.nombre}</h5>
-                                  </div>
-
-                                  {/* Mini Progress Bar */}
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between items-center text-[10px] font-bold">
-                                      <span className="text-charcoal-500 uppercase">Avance</span>
-                                      <span className="text-sage-700">{pctCurso}%</span>
-                                    </div>
-                                    <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-                                      <div className="bg-sage-600 h-full rounded-full transition-all" style={{ width: `${pctCurso}%` }} />
-                                    </div>
-                                  </div>
-
-                                  <div className="pt-2 border-t border-stone-100 text-xs text-charcoal-500 space-y-1">
-                                    <p className="truncate"><span className="font-semibold text-charcoal-700">Docente:</span> {curso.docente_nombre}</p>
-                                    <div className="flex justify-between items-center pt-1 font-semibold text-sage-700 text-[11px]">
-                                      <span>Periodo: {curso.periodo}</span>
-                                      <span>{completadasCurso}/{tareasCurso.length} Tareas</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
                 )}
               </div>
@@ -390,6 +449,14 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
           })
         )}
       </div>
+
+      {/* Modal de Personalización de Identidad Visual */}
+      <FacultyIdentityModal
+        isOpen={!!facultadParaIdentidad}
+        onClose={() => setFacultadParaIdentidad(null)}
+        facultad={facultadParaIdentidad}
+        onSave={handleGuardarIdentidad}
+      />
     </div>
   );
 };

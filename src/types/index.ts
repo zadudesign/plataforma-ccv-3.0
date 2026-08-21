@@ -41,6 +41,8 @@ export interface Usuario {
 export interface Facultad {
   id: string;
   nombre: string;
+  color?: string;
+  icono?: string;
   decano_id?: string;
   decano_nombre?: string;
   created_at?: string;

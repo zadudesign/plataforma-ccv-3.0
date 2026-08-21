@@ -24,6 +24,7 @@ import {
   updateFacultadDB,
   deleteFacultadDB,
   updateFacultadFullDB,
+  updateFacultadIdentidadDB,
   createProgramaDB,
   updateProgramaDB,
   deleteProgramaDB,
@@ -79,8 +80,9 @@ interface AuthContextType {
   adminResetPassword: (userId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 
   // Acciones de Creación de Entidades (Admin)
-  crearFacultad: (nombre: string, decanoId?: string) => void;
-  editarFacultad: (id: string, nombre: string, decanoId?: string) => void;
+  crearFacultad: (nombre: string, decanoId?: string, color?: string, icono?: string) => void;
+  editarFacultad: (id: string, nombre: string, decanoId?: string, color?: string, icono?: string) => void;
+  actualizarIdentidadFacultad: (facultadId: string, color: string, icono: string) => Promise<void>;
   eliminarFacultad: (id: string) => void;
 
   crearPrograma: (nombre: string, facultadId: string, coordinadorId?: string) => void;
@@ -596,17 +598,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const crearFacultad = async (nombre: string, decanoId?: string) => {
-    const dbItem = await createFacultadDB(nombre, decanoId);
+  const crearFacultad = async (nombre: string, decanoId?: string, color: string = 'emerald', icono: string = 'Building2') => {
+    const dbItem = await createFacultadDB(nombre, decanoId, color, icono);
     const decano = usuarios.find(u => u.id === decanoId);
     const nueva: Facultad = {
       id: dbItem?.id || `f-${Date.now()}`,
       nombre,
+      color: color || 'emerald',
+      icono: icono || 'Building2',
       decano_id: decanoId,
       decano_nombre: decano?.nombre_completo || 'Sin Asignar',
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setFacultades(prev => [nueva, ...prev]);
+  };
+
+  const editarFacultad = async (id: string, nombre: string, decanoId?: string, color?: string, icono?: string) => {
+    const decano = usuarios.find(u => u.id === decanoId);
+    setFacultades(prev => prev.map(f => f.id === id ? {
+      ...f,
+      nombre,
+      color: color || f.color || 'emerald',
+      icono: icono || f.icono || 'Building2',
+      decano_id: decanoId,
+      decano_nombre: decano?.nombre_completo || 'Sin Asignar'
+    } : f));
+    await updateFacultadFullDB(id, nombre, decanoId, color, icono);
+  };
+
+  const actualizarIdentidadFacultad = async (facultadId: string, color: string, icono: string) => {
+    // Actualización inmediata en estado local
+    setFacultades(prev => prev.map(f => f.id === facultadId ? {
+      ...f,
+      color,
+      icono
+    } : f));
+    // Sincronización en Supabase
+    await updateFacultadIdentidadDB(facultadId, color, icono);
+  };
+
+  const eliminarFacultad = async (id: string) => {
+    setFacultades(prev => prev.filter(f => f.id !== id));
+    await deleteFacultadDB(id);
   };
 
   const crearPrograma = async (nombre: string, facultadId: string, coordinadorId?: string) => {
@@ -650,22 +683,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setProyectos(prev => [nuevo, ...prev]);
-  };
-
-  const eliminarFacultad = async (id: string) => {
-    setFacultades(prev => prev.filter(f => f.id !== id));
-    await deleteFacultadDB(id);
-  };
-
-  const editarFacultad = async (id: string, nombre: string, decanoId?: string) => {
-    const decano = usuarios.find(u => u.id === decanoId);
-    setFacultades(prev => prev.map(f => f.id === id ? {
-      ...f,
-      nombre,
-      decano_id: decanoId,
-      decano_nombre: decano?.nombre_completo || 'Sin Asignar'
-    } : f));
-    await updateFacultadFullDB(id, nombre, decanoId);
   };
 
   const eliminarPrograma = async (id: string) => {
@@ -814,6 +831,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminResetPassword,
         crearFacultad,
         editarFacultad,
+        actualizarIdentidadFacultad,
         eliminarFacultad,
         crearPrograma,
         editarPrograma,

@@ -176,6 +176,8 @@ export async function fetchFacultades(): Promise<Facultad[]> {
     return data.map((f: any) => ({
       id: f.id,
       nombre: f.nombre,
+      color: f.color || 'emerald',
+      icono: f.icono || 'Building2',
       decano_id: f.decano_id,
       decano_nombre: f.decano?.nombre_completo,
       created_at: f.created_at
@@ -185,9 +187,18 @@ export async function fetchFacultades(): Promise<Facultad[]> {
   }
 }
 
-export async function createFacultadDB(nombre: string, decanoId?: string): Promise<Facultad | null> {
+export async function createFacultadDB(
+  nombre: string, 
+  decanoId?: string,
+  color: string = 'emerald',
+  icono: string = 'Building2'
+): Promise<Facultad | null> {
   try {
-    const payload: any = { nombre };
+    const payload: any = { 
+      nombre, 
+      color: color || 'emerald', 
+      icono: icono || 'Building2' 
+    };
     if (decanoId && isGuid(decanoId)) payload.decano_id = decanoId;
     const { data, error } = await supabase.from('facultades').insert(payload).select().single();
     if (error) {
@@ -415,16 +426,44 @@ export async function deleteFacultadDB(id: string): Promise<boolean> {
   }
 }
 
-export async function updateFacultadFullDB(id: string, nombre: string, decanoId?: string): Promise<boolean> {
+export async function updateFacultadFullDB(
+  id: string, 
+  nombre: string, 
+  decanoId?: string,
+  color?: string,
+  icono?: string
+): Promise<boolean> {
   try {
     if (!isGuid(id)) return true;
     const payload: any = { nombre };
+    if (color) payload.color = color;
+    if (icono) payload.icono = icono;
     payload.decano_id = isGuid(decanoId) ? decanoId : null;
     const { error } = await supabase.from('facultades').update(payload).eq('id', id);
     if (error) console.error('Error al actualizar facultad en Supabase:', error);
     return !error;
   } catch (err) {
     console.error('Excepción al actualizar facultad:', err);
+    return false;
+  }
+}
+
+export async function updateFacultadIdentidadDB(
+  id: string, 
+  color: string, 
+  icono: string
+): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload = { color, icono };
+    const { error } = await supabase.from('facultades').update(payload).eq('id', id);
+    if (error) {
+      console.error('Error al actualizar identidad de facultad en Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción al actualizar identidad de facultad:', err);
     return false;
   }
 }
