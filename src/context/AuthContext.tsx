@@ -35,7 +35,11 @@ import {
   updateCursoFullDB,
   createProyectoDB,
   deleteProyectoDB,
-  updateProyectoFullDB
+  updateProyectoFullDB,
+  createRoleDB,
+  fetchRolesPermisosMapDB,
+  updateRolPermisosDB,
+  fetchPermisosDefDB
 } from '@/lib/supabaseService';
 
 interface AuthContextType {
@@ -111,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
-  const [permisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
+  const [permisosDef, setPermisosDef] = useState<PermisoDef[]>(INITIAL_PERMISOS);
   const [rolesPermisosMap, setRolesPermisosMap] = useState<Record<string, string[]>>(ROLES_PERMISOS_MAP);
   
   // Entidades Académicas y Proyectos en Estado Global
@@ -153,23 +157,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Cargar datos iniciales desde Supabase o Fallback
   useEffect(() => {
     const loadInitialData = async () => {
-      const [dbAreas, dbRoles, dbUsuarios, dbFacultades, dbProgramas, dbCursos, dbProyectos] = await Promise.all([
+      const [dbAreas, dbRoles, dbUsuarios, dbFacultades, dbProgramas, dbCursos, dbProyectos, dbPermisosMap, dbPermisosDef] = await Promise.all([
         fetchAreas(),
         fetchRoles(),
         fetchUsuarios(),
         fetchFacultades(),
         fetchProgramas(),
         fetchCursos(),
-        fetchProyectos()
+        fetchProyectos(),
+        fetchRolesPermisosMapDB(),
+        fetchPermisosDefDB()
       ]);
 
-      setAreas(dbAreas);
-      setRoles(dbRoles);
-      setUsuarios(dbUsuarios);
-      setFacultades(dbFacultades);
-      setProgramas(dbProgramas);
-      setCursos(dbCursos);
-      setProyectos(dbProyectos);
+      if (dbAreas.length > 0) setAreas(dbAreas);
+      if (dbRoles.length > 0) setRoles(dbRoles);
+      if (dbUsuarios.length > 0) setUsuarios(dbUsuarios);
+      if (dbFacultades.length > 0) setFacultades(dbFacultades);
+      if (dbProgramas.length > 0) setProgramas(dbProgramas);
+      if (dbCursos.length > 0) setCursos(dbCursos);
+      if (dbProyectos.length > 0) setProyectos(dbProyectos);
+      if (Object.keys(dbPermisosMap).length > 0) {
+        setRolesPermisosMap(prev => ({ ...prev, ...dbPermisosMap }));
+      }
+      if (dbPermisosDef.length > 0) {
+        setPermisosDef(dbPermisosDef);
+      }
 
       // Verificar sesión de Supabase Auth
       const { data: { session } } = await supabase.auth.getSession();
@@ -538,27 +550,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const actualizarPermisosRol = (rolId: string, permisos: string[]) => {
+  const actualizarPermisosRol = async (rolId: string, permisos: string[]) => {
     setRolesPermisosMap(prev => ({
       ...prev,
       [rolId]: permisos
     }));
+    if (isGuid(rolId)) {
+      await updateRolPermisosDB(rolId, permisos);
+    }
   };
 
-  const crearRol = (nombre: string, areaId: string, permisos: string[] = ['registro:ver']) => {
-    const areaObj = areas.find(a => a.id === areaId);
-    const nuevoRol: Rol = {
-      id: `r-${Date.now()}`,
-      nombre: nombre.trim(),
-      area_id: areaId,
-      area_nombre: areaObj?.nombre || 'CMU',
-      created_at: new Date().toISOString()
-    };
-    setRoles(prev => [...prev, nuevoRol]);
-    setRolesPermisosMap(prev => ({
-      ...prev,
-      [nuevoRol.id]: permisos
-    }));
+  const crearRol = async (nombre: string, areaId: string, permisos: string[] = ['registro:ver']) => {
+    const res = await createRoleDB(nombre, areaId, permisos);
+    if (res) {
+      setRoles(prev => [...prev, res.rol]);
+      setRolesPermisosMap(prev => ({
+        ...prev,
+        [res.rol.id]: res.permisos
+      }));
+    } else {
+      const areaObj = areas.find(a => a.id === areaId);
+      const nuevoRol: Rol = {
+        id: `r-${Date.now()}`,
+        nombre: nombre.trim(),
+        area_id: areaId,
+        area_nombre: areaObj?.nombre || 'CMU',
+        created_at: new Date().toISOString()
+      };
+      setRoles(prev => [...prev, nuevoRol]);
+      setRolesPermisosMap(prev => ({
+        ...prev,
+        [nuevoRol.id]: permisos
+      }));
+    }
   };
 
   const crearArea = async (nombre: string, nivel: NivelArea, parentId?: string | null) => {

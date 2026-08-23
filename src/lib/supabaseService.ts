@@ -65,6 +65,139 @@ export async function fetchRoles(): Promise<Rol[]> {
   }
 }
 
+export async function fetchPermisosDefDB(): Promise<PermisoDef[]> {
+  try {
+    const { data, error } = await supabase.from('permisos_def').select('*');
+    if (error || !data) return [];
+    return data.map((p: any) => ({
+      id: p.id,
+      clave: p.clave,
+      descripcion: p.descripcion,
+      created_at: p.created_at
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRolesPermisosMapDB(): Promise<Record<string, string[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('roles_permisos')
+      .select('rol_id, permisos_def(clave)');
+    if (error || !data) return {};
+
+    const map: Record<string, string[]> = {};
+    data.forEach((item: any) => {
+      const rolId = item.rol_id;
+      const clave = item.permisos_def?.clave;
+      if (rolId && clave) {
+        if (!map[rolId]) map[rolId] = [];
+        if (!map[rolId].includes(clave)) {
+          map[rolId].push(clave);
+        }
+      }
+    });
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+export async function createRoleDB(
+  nombre: string,
+  areaId: string,
+  permisos: string[] = ['registro:ver']
+): Promise<{ rol: Rol; permisos: string[] } | null> {
+  try {
+    let validAreaId = isGuid(areaId) ? areaId : null;
+
+    if (!validAreaId) {
+      const { data: areaFound } = await supabase.from('areas').select('id').eq('id', areaId).maybeSingle();
+      if (areaFound) {
+        validAreaId = areaFound.id;
+      } else {
+        const { data: areaDefecto } = await supabase.from('areas').select('id').limit(1);
+        if (areaDefecto && areaDefecto.length > 0) {
+          validAreaId = areaDefecto[0].id;
+        }
+      }
+    }
+
+    if (!validAreaId) {
+      console.error('No se encontró un area_id válida en Supabase para registrar el nuevo rol.');
+      return null;
+    }
+
+    const { data: nuevoRolData, error: rolError } = await supabase
+      .from('roles')
+      .insert({ nombre: nombre.trim(), area_id: validAreaId })
+      .select('*, areas(nombre)')
+      .single();
+
+    if (rolError || !nuevoRolData) {
+      console.error('Error insertando rol en Supabase:', rolError);
+      return null;
+    }
+
+    const nuevoRol: Rol = {
+      id: nuevoRolData.id,
+      nombre: nuevoRolData.nombre,
+      area_id: nuevoRolData.area_id,
+      area_nombre: nuevoRolData.areas?.nombre || 'General',
+      created_at: nuevoRolData.created_at
+    };
+
+    if (permisos.length > 0) {
+      const { data: defs } = await supabase
+        .from('permisos_def')
+        .select('id, clave')
+        .in('clave', permisos);
+
+      if (defs && defs.length > 0) {
+        const payloadPermisos = defs.map(p => ({
+          rol_id: nuevoRolData.id,
+          permiso_id: p.id
+        }));
+        await supabase.from('roles_permisos').insert(payloadPermisos);
+      }
+    }
+
+    return { rol: nuevoRol, permisos };
+  } catch (err) {
+    console.error('Excepción al crear rol en Supabase:', err);
+    return null;
+  }
+}
+
+export async function updateRolPermisosDB(rolId: string, permisos: string[]): Promise<boolean> {
+  try {
+    if (!isGuid(rolId)) return false;
+
+    await supabase.from('roles_permisos').delete().eq('rol_id', rolId);
+
+    if (permisos.length > 0) {
+      const { data: defs } = await supabase
+        .from('permisos_def')
+        .select('id, clave')
+        .in('clave', permisos);
+
+      if (defs && defs.length > 0) {
+        const payload = defs.map(p => ({
+          rol_id: rolId,
+          permiso_id: p.id
+        }));
+        await supabase.from('roles_permisos').insert(payload);
+      }
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción al actualizar permisos del rol en Supabase:', err);
+    return false;
+  }
+}
+
+
 export async function fetchUsuarios(): Promise<Usuario[]> {
   try {
     const { data, error } = await supabase
