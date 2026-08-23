@@ -283,13 +283,16 @@ DROP POLICY IF EXISTS "Permitir gestión de áreas" ON public.areas;
 CREATE POLICY "Permitir gestión de áreas" ON public.areas FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.roles;
-CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir gestión de roles" ON public.roles;
+CREATE POLICY "Permitir gestión de roles" ON public.roles FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.permisos_def;
-CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.permisos_def FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir gestión de permisos_def" ON public.permisos_def;
+CREATE POLICY "Permitir gestión de permisos_def" ON public.permisos_def FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.roles_permisos;
-CREATE POLICY "Permitir lectura a usuarios autenticados" ON public.roles_permisos FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir gestión de roles_permisos" ON public.roles_permisos;
+CREATE POLICY "Permitir gestión de roles_permisos" ON public.roles_permisos FOR ALL USING (true) WITH CHECK (true);
 
 -- Helper function para verificar rol Admin sin causar recursión infinita RLS
 CREATE OR REPLACE FUNCTION public.es_admin(p_user_id UUID)
