@@ -51,24 +51,53 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   const { actualizarIdentidadFacultad } = useAuth();
   const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
   const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
-  const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({
-    'f-1': true,
-    'f-2': true,
-    'f-3': true,
-  });
+  const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({});
 
   // Estado para el modal de personalización de identidad
   const [facultadParaIdentidad, setFacultadParaIdentidad] = useState<Facultad | null>(null);
 
   const toggleFacultad = (id: string) => {
-    setFacultadesAbiertas(prev => ({ ...prev, [id]: !prev[id] }));
+    setFacultadesAbiertas(prev => ({ 
+      ...prev, 
+      [id]: prev[id] === false ? true : false 
+    }));
   };
 
   const toggleAreaProyecto = (areaId: string) => {
     setAreasProyectosAbiertas(prev => ({ 
       ...prev, 
-      [areaId]: prev[areaId] === undefined ? false : !prev[areaId] 
+      [areaId]: prev[areaId] === false ? true : false 
     }));
+  };
+
+  const expandirTodo = () => {
+    setProyectosAbiertos(true);
+    const newAreas: Record<string, boolean> = {};
+    proyectosPorDepartamento.forEach(d => {
+      newAreas[d.departamentoId] = true;
+    });
+    setAreasProyectosAbiertas(newAreas);
+
+    const newFacs: Record<string, boolean> = {};
+    facultades.forEach(f => {
+      newFacs[f.id] = true;
+    });
+    setFacultadesAbiertas(newFacs);
+  };
+
+  const colapsarTodo = () => {
+    setProyectosAbiertos(false);
+    const newAreas: Record<string, boolean> = {};
+    proyectosPorDepartamento.forEach(d => {
+      newAreas[d.departamentoId] = false;
+    });
+    setAreasProyectosAbiertas(newAreas);
+
+    const newFacs: Record<string, boolean> = {};
+    facultades.forEach(f => {
+      newFacs[f.id] = false;
+    });
+    setFacultadesAbiertas(newFacs);
   };
 
   const handleGuardarIdentidad = async (facultadId: string, color: string, icono: string) => {
@@ -136,6 +165,24 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
           <p className="text-sm text-charcoal-500 mt-1">
             Organización jerárquica de Facultades, Programas y Proyectos clasificados por sus Departamentos asignados.
           </p>
+        </div>
+        <div className="flex items-center gap-2 self-start md:self-center shrink-0">
+          <button
+            type="button"
+            onClick={expandirTodo}
+            className="px-3.5 py-2 rounded-xl border border-sage-200 bg-sage-50 hover:bg-sage-100 text-sage-800 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+            title="Desplegar todas las facultades y departamentos"
+          >
+            Expandir todo
+          </button>
+          <button
+            type="button"
+            onClick={colapsarTodo}
+            className="px-3.5 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-charcoal-600 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5"
+            title="Plegar todas las secciones"
+          >
+            Colapsar todo
+          </button>
         </div>
       </div>
 
@@ -325,7 +372,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
         ) : (
           facultades.map((facultad) => {
             const progsFacultad = programas.filter(p => p.facultad_id === facultad.id);
-            const isOpen = facultadesAbiertas[facultad.id];
+            const isOpen = facultadesAbiertas[facultad.id] !== false;
             const theme = getFacultyTheme(facultad.color);
             const iconoFacultad = facultad.icono || 'Building2';
 
