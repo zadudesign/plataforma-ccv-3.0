@@ -61,6 +61,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       responsable_id: responsableId,
       responsable_nombre: resp?.nombre_completo || 'Usuario',
       responsable_avatar: resp?.avatar_url,
+      rol_destino: resp?.rol_nombre || (tipoTarea === 'Proyecto' ? categoriaProyecto : 'General'),
       orden_tarea: 1,
       estado: 'Pendiente',
       fecha_vencimiento: fechaVencimiento,

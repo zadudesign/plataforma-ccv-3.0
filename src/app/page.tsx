@@ -167,20 +167,64 @@ export default function Home() {
   };
 
   // ---------------------------------------------------------------------------
-  // REGLAS DE SEGURIDAD Y VISIBILIDAD DESCENDENTE (RLS POR NIVEL Y ROL)
+  // ---------------------------------------------------------------------------
+  // REGLAS DE SEGURIDAD Y VISIBILIDAD DE TAREAS POR ROL & JERARQUÍA
   // ---------------------------------------------------------------------------
 
-  // 1. Tareas Visibles por Rol y Nivel Jerárquico (Nivel 6 ADMIN & 5 CMU ven 100%)
-  const tareasVisiblesPorRol = tareas.filter(t => {
-    if (nivelArea >= 5) return true; // ADMIN (6) y CMU (5) ven todo
-    if (t.responsable_id === usuarioActual.id) return true; // Asignado a este usuario
-    
-    // Mapear área de la tarea a su nivel
-    const areaTareaNombre = t.area_nombre || 'CURSO';
-    const areaTareaDef = areas.find(a => a.nombre === areaTareaNombre);
-    const nivelTarea = areaTareaDef?.nivel || 1;
+  const rolNombre = usuarioActual.rol_nombre || roles.find(r => r.id === usuarioActual.rol_id)?.nombre || '';
+  const isSupervisorGlobal = nivelArea === 6 || rolNombre === 'Administrador' || rolNombre === 'Jefe';
 
-    return nivelArea >= nivelTarea;
+  // 1. Tareas Visibles por Rol:
+  // - Administrador (Nivel 6) y Jefe CCV: Visión global y supervisión de todas las tareas.
+  // - Decano: Tareas asociadas a cursos/proyectos de su facultad o asignadas a él/su rol.
+  // - Coordinador: Tareas asociadas a cursos de su programa o asignadas a él/su rol.
+  // - Roles operativos y específicos (Diseño, Multimedia, Soporte, Docente, Par Evaluador y nuevos roles):
+  //   Únicamente ven las tareas asignadas específicamente a su ROL (rol_destino) o asignadas directamente a su usuario (responsable_id).
+  const tareasVisiblesPorRol = tareas.filter(t => {
+    // 1. Administrador y Jefe CCV ven todas las tareas
+    if (isSupervisorGlobal) return true;
+
+    // 2. Asignado directamente al usuario actual
+    if (t.responsable_id === usuarioActual.id) return true;
+
+    // 3. Coincidencia exacta de Rol Destino con el Rol del usuario
+    if (t.rol_destino && rolNombre && t.rol_destino.toLowerCase().trim() === rolNombre.toLowerCase().trim()) {
+      return true;
+    }
+
+    // 4. Decano: Tareas asociadas a cursos o proyectos de su facultad
+    const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
+    if (decanoFacultad) {
+      if (t.curso_id && cursos.some(c => c.id === t.curso_id && c.facultad_nombre === decanoFacultad.nombre)) {
+        return true;
+      }
+      if (t.proyecto_id && proyectos.some(p => p.id === t.proyecto_id)) {
+        return true;
+      }
+    }
+
+    // 5. Coordinador: Tareas asociadas a cursos de su programa
+    const coordPrograma = programas.find(p => p.coordinador_id === usuarioActual.id);
+    if (coordPrograma) {
+      if (t.curso_id && cursos.some(c => c.id === t.curso_id && c.programa_id === coordPrograma.id)) {
+        return true;
+      }
+    }
+
+    // 6. Docente / Evaluador asignado al curso de la tarea
+    if (t.curso_id) {
+      const cursoDeTarea = cursos.find(c => c.id === t.curso_id);
+      if (cursoDeTarea) {
+        if (cursoDeTarea.docente_id === usuarioActual.id && (rolNombre === 'Docente' || !t.rol_destino || t.rol_destino === 'Docente')) {
+          return true;
+        }
+        if (cursoDeTarea.evaluador_id === usuarioActual.id && (rolNombre === 'Par Evaluador' || !t.rol_destino || t.rol_destino === 'Par Evaluador')) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   });
 
   // Filter tasks by search query
