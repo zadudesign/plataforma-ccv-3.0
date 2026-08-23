@@ -311,16 +311,16 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                               <div
                                 key={proy.id}
                                 onClick={() => onOpenProgreso && onOpenProgreso(proy, 'proyecto')}
-                                className="p-4 bg-white rounded-2xl border border-stone-200 hover:border-amber-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3.5 group"
+                                className={`p-4 bg-white rounded-2xl border border-stone-200 ${theme.hoverBorder} hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3.5 group`}
                               >
                                 <div className="space-y-2">
                                   <div className="flex justify-between items-start gap-2">
-                                    <span className="text-[10px] font-mono font-black bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md">
+                                    <span className={`text-[10px] font-mono font-black border px-2 py-0.5 rounded-md ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
                                       PROYECTO CCV
                                     </span>
                                     {getEstadoBadge(proy.estado)}
                                   </div>
-                                  <h5 className="font-extrabold text-charcoal-900 text-sm group-hover:text-amber-700 transition-colors line-clamp-2 leading-snug">
+                                  <h5 className={`font-extrabold text-charcoal-900 text-sm group-hover:${theme.textPrimary} transition-colors line-clamp-2 leading-snug`}>
                                     {proy.nombre}
                                   </h5>
                                   {proy.descripcion && (
@@ -331,11 +331,11 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                 </div>
 
                                 {/* Bloque de Resumen Financiero y Tiempos */}
-                                <div className="grid grid-cols-2 gap-2 p-2.5 bg-amber-50/50 rounded-xl border border-amber-100">
+                                <div className={`grid grid-cols-2 gap-2 p-2.5 rounded-xl border ${theme.bgLight} ${theme.borderLight}`}>
                                   {/* Tiempo Total */}
                                   <div className="space-y-0.5">
-                                    <span className="text-[10px] font-extrabold uppercase text-amber-800 flex items-center gap-1">
-                                      <Clock className="w-3 h-3 text-amber-600" />
+                                    <span className={`text-[10px] font-extrabold uppercase flex items-center gap-1 ${theme.textDark}`}>
+                                      <Clock className={`w-3 h-3 ${theme.textPrimary}`} />
                                       Tiempo
                                     </span>
                                     <p className="text-xs font-black text-charcoal-900">
@@ -345,7 +345,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
 
                                   {/* Costo Total */}
                                   <div className="space-y-0.5 text-right">
-                                    <span className="text-[10px] font-extrabold uppercase text-amber-800 flex items-center justify-end gap-1">
+                                    <span className={`text-[10px] font-extrabold uppercase flex items-center justify-end gap-1 ${theme.textDark}`}>
                                       <DollarSign className="w-3 h-3 text-emerald-600" />
                                       Costo Total
                                     </span>
@@ -359,16 +359,16 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                 <div className="space-y-1">
                                   <div className="flex justify-between items-center text-[10px] font-bold">
                                     <span className="text-charcoal-500 uppercase">Avance Tareas</span>
-                                    <span className="text-amber-700">{pctProy}%</span>
+                                    <span className={theme.textPrimary}>{pctProy}%</span>
                                   </div>
                                   <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-                                    <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${pctProy}%` }} />
+                                    <div className={`h-full rounded-full transition-all duration-500 ${theme.progressFill}`} style={{ width: `${pctProy}%` }} />
                                   </div>
                                 </div>
 
-                                <div className="pt-2 border-t border-stone-100 text-xs text-charcoal-500 flex justify-between items-center font-semibold text-amber-800 text-[11px]">
+                                <div className={`pt-2 border-t border-stone-100 text-xs text-charcoal-500 flex justify-between items-center font-semibold ${theme.textDark} text-[11px]`}>
                                   <span>{completadasProy}/{tareasProy.length} Tareas</span>
-                                  <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-lg text-charcoal-600 group-hover:bg-amber-100 group-hover:text-amber-800 transition-colors">
+                                  <span className={`text-[10px] bg-stone-100 px-2 py-0.5 rounded-lg text-charcoal-600 group-hover:${theme.badgeBg} group-hover:${theme.badgeText} transition-colors`}>
                                     Ver desglose financiero →
                                   </span>
                                 </div>
