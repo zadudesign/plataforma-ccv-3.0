@@ -48,13 +48,14 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   onSelectCurso,
   onOpenProgreso,
 }) => {
-  const { actualizarIdentidadFacultad } = useAuth();
+  const { actualizarIdentidadFacultad, actualizarIdentidadArea } = useAuth();
   const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
   const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
   const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({});
 
-  // Estado para el modal de personalización de identidad
+  // Estado para los modales de personalización de identidad
   const [facultadParaIdentidad, setFacultadParaIdentidad] = useState<Facultad | null>(null);
+  const [departamentoParaIdentidad, setDepartamentoParaIdentidad] = useState<Area | null>(null);
 
   const toggleFacultad = (id: string) => {
     setFacultadesAbiertas(prev => ({ 
@@ -128,7 +129,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
 
   // Agrupar proyectos por Departamento (Subáreas del área DEPARTAMENTO)
   const proyectosPorDepartamento = React.useMemo(() => {
-    const mapa: Record<string, { departamentoNombre: string; proyectos: ProyectoEspecial[] }> = {};
+    const mapa: Record<string, { departamentoNombre: string; areaObj?: Area; proyectos: ProyectoEspecial[] }> = {};
 
     proyectos.forEach(proy => {
       const areaObj = areas.find(a => a.id === proy.area_id);
@@ -140,6 +141,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
       if (!mapa[areaKey]) {
         mapa[areaKey] = {
           departamentoNombre,
+          areaObj,
           proyectos: []
         };
       }
@@ -149,6 +151,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
     return Object.entries(mapa).map(([departamentoId, data]) => ({
       departamentoId,
       departamentoNombre: data.departamentoNombre,
+      areaObj: data.areaObj,
       proyectos: data.proyectos
     }));
   }, [proyectos, areas]);
@@ -229,20 +232,25 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
             ) : (
               proyectosPorDepartamento.map(grupo => {
                 const isAreaOpen = areasProyectosAbiertas[grupo.departamentoId] !== false; // Abierto por defecto
+                const deptColor = grupo.areaObj?.color || 'amber';
+                const deptIcono = grupo.areaObj?.icono || 'FolderKanban';
+                const theme = getFacultyTheme(deptColor);
 
                 return (
-                  <div key={grupo.departamentoId} className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden border-l-4 border-l-amber-500">
+                  <div key={grupo.departamentoId} className={`bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden border-l-4 ${theme.borderLeft}`}>
                     {/* Header del Departamento de Proyectos */}
                     <div 
-                      onClick={() => toggleAreaProyecto(grupo.departamentoId)}
-                      className="p-4 bg-gradient-to-r from-amber-50/50 via-white to-white flex items-center justify-between cursor-pointer border-b border-stone-100 hover:bg-amber-50/30 transition-colors"
+                      className={`p-4 bg-gradient-to-r ${theme.bgLight} via-white to-white flex items-center justify-between border-b border-stone-100 transition-colors`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold shadow-2xs">
-                          <Layers className="w-4 h-4" />
+                      <div 
+                        onClick={() => toggleAreaProyecto(grupo.departamentoId)}
+                        className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+                      >
+                        <div className={`w-8 h-8 rounded-lg ${theme.bgPrimary} text-white flex items-center justify-center font-bold shadow-2xs shrink-0`}>
+                          <DynamicLucideIcon name={deptIcono} className="w-4 h-4" />
                         </div>
-                        <div>
-                          <h4 className="font-extrabold text-charcoal-900 text-sm flex items-center gap-2">
+                        <div className="min-w-0">
+                          <h4 className="font-extrabold text-charcoal-900 text-sm flex items-center gap-2 truncate">
                             Departamento: {grupo.departamentoNombre}
                           </h4>
                           <span className="text-[11px] text-charcoal-500">
@@ -251,11 +259,32 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                      <div className="flex items-center gap-2 shrink-0">
+                        {grupo.areaObj && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDepartamentoParaIdentidad(grupo.areaObj || null);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-charcoal-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+                            title="Personalizar color e icono de este departamento"
+                          >
+                            <Palette className="w-3.5 h-3.5 text-sage-600" />
+                            <span className="hidden sm:inline">Identidad</span>
+                          </button>
+                        )}
+
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
                           {grupo.proyectos.length} Proyectos
                         </span>
-                        {isAreaOpen ? <ChevronDown className="w-4 h-4 text-charcoal-500" /> : <ChevronRight className="w-4 h-4 text-charcoal-500" />}
+                        <button
+                          type="button"
+                          onClick={() => toggleAreaProyecto(grupo.departamentoId)}
+                          className="p-1 hover:bg-stone-100 rounded-lg text-charcoal-500"
+                        >
+                          {isAreaOpen ? <ChevronDown className="w-4 h-4 text-charcoal-500" /> : <ChevronRight className="w-4 h-4 text-charcoal-500" />}
+                        </button>
                       </div>
                     </div>
 
@@ -540,12 +569,24 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
         )}
       </div>
 
-      {/* Modal de Personalización de Identidad Visual */}
+      {/* Modal de Personalización de Identidad Visual para Facultades */}
       <FacultyIdentityModal
         isOpen={!!facultadParaIdentidad}
         onClose={() => setFacultadParaIdentidad(null)}
         facultad={facultadParaIdentidad}
+        tipo="facultad"
         onSave={handleGuardarIdentidad}
+      />
+
+      {/* Modal de Personalización de Identidad Visual para Departamentos */}
+      <FacultyIdentityModal
+        isOpen={!!departamentoParaIdentidad}
+        onClose={() => setDepartamentoParaIdentidad(null)}
+        area={departamentoParaIdentidad}
+        tipo="departamento"
+        onSave={async (areaId, color, icono) => {
+          await actualizarIdentidadArea(areaId, color, icono);
+        }}
       />
     </div>
   );

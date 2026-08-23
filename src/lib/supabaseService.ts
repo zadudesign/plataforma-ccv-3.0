@@ -40,6 +40,8 @@ export async function fetchAreas(): Promise<Area[]> {
       nombre: item.nombre,
       nivel: item.nivel,
       parent_id: item.parent_id,
+      color: item.color || 'amber',
+      icono: item.icono || 'FolderKanban',
       created_at: item.created_at
     }));
   } catch {
@@ -274,9 +276,15 @@ export async function deleteUsuarioDB(id: string): Promise<boolean> {
   }
 }
 
-export async function createAreaDB(nombre: string, nivel: number, parentId?: string | null): Promise<Area | null> {
+export async function createAreaDB(
+  nombre: string, 
+  nivel: number, 
+  parentId?: string | null,
+  color: string = 'amber',
+  icono: string = 'FolderKanban'
+): Promise<Area | null> {
   try {
-    const payload: any = { nombre, nivel };
+    const payload: any = { nombre, nivel, color: color || 'amber', icono: icono || 'FolderKanban' };
     if (parentId && isGuid(parentId)) payload.parent_id = parentId;
     const { data, error } = await supabase.from('areas').insert(payload).select().single();
     if (error) {
@@ -288,11 +296,33 @@ export async function createAreaDB(nombre: string, nivel: number, parentId?: str
       nombre: data.nombre,
       nivel: data.nivel,
       parent_id: data.parent_id,
+      color: data.color || color,
+      icono: data.icono || icono,
       created_at: data.created_at
     };
   } catch (err) {
     console.error('Excepción (createAreaDB):', err);
     return null;
+  }
+}
+
+export async function updateAreaIdentidadDB(
+  id: string, 
+  color: string, 
+  icono: string
+): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload = { color, icono };
+    const { error } = await supabase.from('areas').update(payload).eq('id', id);
+    if (error) {
+      console.error('Error al actualizar identidad del área en Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción al actualizar identidad del área:', err);
+    return false;
   }
 }
 

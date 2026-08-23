@@ -9,33 +9,40 @@ import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
 interface FacultyIdentityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  facultad: Facultad | null;
-  onSave: (facultadId: string, color: string, icono: string) => Promise<void> | void;
+  facultad?: Facultad | null;
+  area?: Area | null;
+  tipo?: 'facultad' | 'departamento';
+  onSave: (id: string, color: string, icono: string) => Promise<void> | void;
 }
 
 export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
   isOpen,
   onClose,
   facultad,
+  area,
+  tipo = facultad ? 'facultad' : 'departamento',
   onSave,
 }) => {
-  const [selectedColor, setSelectedColor] = useState<string>(facultad?.color || 'emerald');
-  const [selectedIcon, setSelectedIcon] = useState<string>(facultad?.icono || 'Building2');
+  const entidadActual = facultad || area;
+  const esDepartamento = tipo === 'departamento' || (!facultad && !!area);
+
+  const [selectedColor, setSelectedColor] = useState<string>(entidadActual?.color || (esDepartamento ? 'amber' : 'emerald'));
+  const [selectedIcon, setSelectedIcon] = useState<string>(entidadActual?.icono || (esDepartamento ? 'FolderKanban' : 'Building2'));
   const [busquedaIcono, setBusquedaIcono] = useState<string>('');
   const [categoriaActiva, setCategoriaActiva] = useState<string>('todas');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sincronizar cuando cambia la facultad seleccionada
+  // Sincronizar cuando cambia la entidad seleccionada
   React.useEffect(() => {
-    if (facultad) {
-      setSelectedColor(facultad.color || 'emerald');
-      setSelectedIcon(facultad.icono || 'Building2');
+    if (entidadActual) {
+      setSelectedColor(entidadActual.color || (esDepartamento ? 'amber' : 'emerald'));
+      setSelectedIcon(entidadActual.icono || (esDepartamento ? 'FolderKanban' : 'Building2'));
       setBusquedaIcono('');
       setCategoriaActiva('todas');
     }
-  }, [facultad]);
+  }, [facultad, area, esDepartamento]);
 
-  if (!isOpen || !facultad) return null;
+  if (!isOpen || !entidadActual) return null;
 
   const currentTheme = getFacultyTheme(selectedColor);
 
@@ -60,7 +67,7 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
   const handleGuardar = async () => {
     setIsSaving(true);
     try {
-      await onSave(facultad.id, selectedColor, selectedIcon);
+      await onSave(entidadActual.id, selectedColor, selectedIcon);
       onClose();
     } finally {
       setIsSaving(false);
@@ -80,14 +87,14 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-extrabold text-charcoal-900">
-                  Identidad Visual de Facultad
+                  {esDepartamento ? 'Identidad Visual de Departamento' : 'Identidad Visual de Facultad'}
                 </h3>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-sage-100 text-sage-800 px-2 py-0.5 rounded-md">
                   Personalización
                 </span>
               </div>
               <p className="text-xs text-charcoal-500 truncate max-w-md">
-                {facultad.nombre}
+                {entidadActual.nombre}
               </p>
             </div>
           </div>
@@ -108,7 +115,7 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-black uppercase tracking-wider text-charcoal-600 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-sage-600" />
-                Previsualización en Vivo (Herencia a Programas y Cursos)
+                Previsualización en Vivo ({esDepartamento ? 'Herencia a Proyectos del Departamento' : 'Herencia a Programas y Cursos'})
               </label>
               <span className="text-[11px] font-bold text-charcoal-400">
                 Así se visualizará en la plataforma
@@ -116,15 +123,17 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
             </div>
 
             <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/40 space-y-3">
-              {/* Preview Facultad Header */}
-              <div className={`p-3.5 rounded-2xl border ${currentTheme.borderLight} bg-white flex items-center justify-between shadow-2xs`}>
+              {/* Preview Header */}
+              <div className={`p-3.5 rounded-2xl border ${currentTheme.borderLight} bg-white flex items-center justify-between shadow-2xs border-l-4 ${currentTheme.borderLeft}`}>
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl ${currentTheme.iconBg} ${currentTheme.iconText} flex items-center justify-center font-bold shadow-2xs`}>
                     <DynamicLucideIcon name={selectedIcon} className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-extrabold text-charcoal-900">{facultad.nombre}</h4>
-                    <span className="text-[11px] text-charcoal-500 font-medium">Decano: {facultad.decano_nombre || 'Asignado'}</span>
+                    <h4 className="text-sm font-extrabold text-charcoal-900">{entidadActual.nombre}</h4>
+                    <span className="text-[11px] text-charcoal-500 font-medium">
+                      {esDepartamento ? 'Departamento Institucional de Proyectos' : `Decano: ${facultad?.decano_nombre || 'Asignado'}`}
+                    </span>
                   </div>
                 </div>
                 <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${currentTheme.badgeBg} ${currentTheme.badgeText} ${currentTheme.badgeBorder}`}>
@@ -132,40 +141,86 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
                 </span>
               </div>
 
-              {/* Preview Programa y Curso */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* Preview Programa Card */}
-                <div className={`p-3 rounded-xl border border-stone-200 bg-white shadow-2xs border-l-4 ${currentTheme.borderLeft} space-y-1.5`}>
-                  <div className="flex items-center justify-between">
-                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
-                      Programa Heredado
-                    </span>
-                    <span className={`text-[10px] font-bold ${currentTheme.textPrimary}`}>Coord. Asignado</span>
+              {/* Preview Cards */}
+              {esDepartamento ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className={`p-3.5 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2`}>
+                    <div className="flex justify-between items-center">
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
+                        PROYECTO CCV
+                      </span>
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">En Proceso</span>
+                    </div>
+                    <p className="text-xs font-extrabold text-charcoal-900 line-clamp-1">
+                      Plataforma Interactiva & Recursos Didácticos
+                    </p>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold">
+                        <span className="text-charcoal-500">Progreso Entregables</span>
+                        <span className={currentTheme.textPrimary}>65%</span>
+                      </div>
+                      <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${currentTheme.progressFill}`} style={{ width: '65%' }} />
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs font-extrabold text-charcoal-800 line-clamp-1">
-                    Especialización / Diplomado
-                  </p>
-                </div>
 
-                {/* Preview Curso Card */}
-                <div className={`p-3 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2`}>
-                  <div className="flex items-center justify-between">
-                    <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
-                      CCV-MOD-101
-                    </span>
-                    <span className="text-[10px] font-bold text-charcoal-400">En Producción</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-bold">
-                      <span className="text-charcoal-500">Avance</span>
-                      <span className={currentTheme.textPrimary}>75%</span>
+                  <div className={`p-3.5 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2`}>
+                    <div className="flex justify-between items-center">
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
+                        PROYECTO CCV
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Completado</span>
                     </div>
-                    <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${currentTheme.progressFill}`} style={{ width: '75%' }} />
+                    <p className="text-xs font-extrabold text-charcoal-900 line-clamp-1">
+                      Banco Institucional de Objetos H5P
+                    </p>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold">
+                        <span className="text-charcoal-500">Progreso Entregables</span>
+                        <span className={currentTheme.textPrimary}>100%</span>
+                      </div>
+                      <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${currentTheme.progressFill}`} style={{ width: '100%' }} />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Preview Programa Card */}
+                  <div className={`p-3 rounded-xl border border-stone-200 bg-white shadow-2xs border-l-4 ${currentTheme.borderLeft} space-y-1.5`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
+                        Programa Heredado
+                      </span>
+                      <span className={`text-[10px] font-bold ${currentTheme.textPrimary}`}>Coord. Asignado</span>
+                    </div>
+                    <p className="text-xs font-extrabold text-charcoal-800 line-clamp-1">
+                      Especialización / Diplomado
+                    </p>
+                  </div>
+
+                  {/* Preview Curso Card */}
+                  <div className={`p-3 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
+                        CCV-MOD-101
+                      </span>
+                      <span className="text-[10px] font-bold text-charcoal-400">En Producción</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold">
+                        <span className="text-charcoal-500">Avance</span>
+                        <span className={currentTheme.textPrimary}>75%</span>
+                      </div>
+                      <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${currentTheme.progressFill}`} style={{ width: '75%' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

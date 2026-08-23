@@ -20,6 +20,7 @@ import {
   updateUsuarioDB,
   deleteUsuarioDB,
   createAreaDB,
+  updateAreaIdentidadDB,
   createFacultadDB,
   updateFacultadDB,
   deleteFacultadDB,
@@ -80,6 +81,7 @@ interface AuthContextType {
   actualizarPermisosRol: (rolId: string, permisos: string[]) => void;
   crearRol: (nombre: string, areaId: string, permisos?: string[]) => void;
   crearArea: (nombre: string, nivel: NivelArea, parentId?: string | null) => void;
+  actualizarIdentidadArea: (areaId: string, color: string, icono: string) => Promise<void>;
   eliminarArea: (areaId: string) => void;
   adminResetPassword: (userId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 
@@ -599,6 +601,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAreas(prev => [...prev, nuevaArea]);
   };
 
+  const actualizarIdentidadArea = async (areaId: string, color: string, icono: string) => {
+    setAreas(prev => prev.map(a => a.id === areaId ? { ...a, color, icono } : a));
+    await updateAreaIdentidadDB(areaId, color, icono);
+  };
+
   const eliminarArea = (areaId: string) => {
     const areaAEliminar = areas.find(a => a.id === areaId);
     if (!areaAEliminar) return;
@@ -851,6 +858,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         actualizarPermisosRol,
         crearRol,
         crearArea,
+        actualizarIdentidadArea,
         eliminarArea,
         adminResetPassword,
         crearFacultad,

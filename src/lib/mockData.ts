@@ -8,18 +8,18 @@ export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
 ];
 
 export const INITIAL_AREAS: Area[] = [
-  { id: 'a-6', nombre: 'ADMIN', nivel: 6, parent_id: null },
-  { id: 'a-5', nombre: 'CMU', nivel: 5, parent_id: 'a-6', area_padre_nombre: 'ADMIN' },
-  { id: 'a-5-1', nombre: 'PRODUCCIÓN MULTIMEDIA', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
-  { id: 'a-5-2', nombre: 'DISEÑO INSTRUCCIONAL', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
-  { id: 'a-5-3', nombre: 'SOPORTE LMS', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU' },
-  { id: 'a-4', nombre: 'DEPARTAMENTO', nivel: 4, parent_id: 'a-6', area_padre_nombre: 'ADMIN' },
-  { id: 'a-4-1', nombre: 'Departamento de Innovación y Educación Virtual CCV', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
-  { id: 'a-4-2', nombre: 'Departamento de Producción Multimedial (CMU)', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
-  { id: 'a-4-3', nombre: 'Departamento de Desarrollo e Integración Tecnológica', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
-  { id: 'a-3', nombre: 'FACULTAD', nivel: 3, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO' },
-  { id: 'a-2', nombre: 'PROGRAMA', nivel: 2, parent_id: 'a-3', area_padre_nombre: 'FACULTAD' },
-  { id: 'a-1', nombre: 'CURSO', nivel: 1, parent_id: 'a-2', area_padre_nombre: 'PROGRAMA' },
+  { id: 'a-6', nombre: 'ADMIN', nivel: 6, parent_id: null, color: 'amber', icono: 'Shield' },
+  { id: 'a-5', nombre: 'CMU', nivel: 5, parent_id: 'a-6', area_padre_nombre: 'ADMIN', color: 'emerald', icono: 'Layers' },
+  { id: 'a-5-1', nombre: 'PRODUCCIÓN MULTIMEDIA', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU', color: 'purple', icono: 'Video' },
+  { id: 'a-5-2', nombre: 'DISEÑO INSTRUCCIONAL', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU', color: 'blue', icono: 'Palette' },
+  { id: 'a-5-3', nombre: 'SOPORTE LMS', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU', color: 'teal', icono: 'Headphones' },
+  { id: 'a-4', nombre: 'DEPARTAMENTO', nivel: 4, parent_id: 'a-6', area_padre_nombre: 'ADMIN', color: 'amber', icono: 'FolderKanban' },
+  { id: 'a-4-1', nombre: 'Departamento de Innovación y Educación Virtual CCV', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO', color: 'amber', icono: 'Sparkles' },
+  { id: 'a-4-2', nombre: 'Departamento de Producción Multimedial (CMU)', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO', color: 'purple', icono: 'Video' },
+  { id: 'a-4-3', nombre: 'Departamento de Desarrollo e Integración Tecnológica', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO', color: 'blue', icono: 'Code2' },
+  { id: 'a-3', nombre: 'FACULTAD', nivel: 3, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO', color: 'emerald', icono: 'Building2' },
+  { id: 'a-2', nombre: 'PROGRAMA', nivel: 2, parent_id: 'a-3', area_padre_nombre: 'FACULTAD', color: 'indigo', icono: 'GraduationCap' },
+  { id: 'a-1', nombre: 'CURSO', nivel: 1, parent_id: 'a-2', area_padre_nombre: 'PROGRAMA', color: 'teal', icono: 'BookOpen' },
 ];
 
 export const INITIAL_ROLES: Rol[] = [

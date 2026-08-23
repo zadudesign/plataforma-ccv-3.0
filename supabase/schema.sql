@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS public.areas (
     nombre TEXT NOT NULL UNIQUE,
     nivel INT NOT NULL CHECK (nivel BETWEEN 1 AND 6),
     parent_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
+    color TEXT DEFAULT 'amber', -- Color distintivo (amber, purple, blue, emerald, cyan, rose, etc.)
+    icono TEXT DEFAULT 'FolderKanban', -- Icono de Lucide React (FolderKanban, Sparkles, Video, Code2, Layers, etc.)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
