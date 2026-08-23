@@ -406,23 +406,23 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
             const iconoFacultad = facultad.icono || 'Building2';
 
             return (
-              <div key={facultad.id} className="ccv-card overflow-hidden shadow-sm">
+              <div key={facultad.id} className={`ccv-card overflow-hidden shadow-sm border ${theme.borderLight} border-l-[6px] ${theme.borderLeft}`}>
                 {/* Faculty Accordion Header */}
                 <div 
-                  className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer bg-stone-50/50 ${theme.bgLightHover} transition-colors border-b border-stone-100`}
+                  className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer bg-white ${theme.bgLightHover} transition-colors border-b ${theme.borderLight}`}
                 >
                   <div 
                     onClick={() => toggleFacultad(facultad.id)}
                     className="flex items-center gap-3 flex-1"
                   >
-                    <div className={`w-10 h-10 rounded-2xl ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-2xs shrink-0`}>
+                    <div className={`w-11 h-11 rounded-2xl ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-2xs shrink-0`}>
                       <DynamicLucideIcon name={iconoFacultad} className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-base font-extrabold text-charcoal-900">{facultad.nombre}</h3>
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
-                          Facultad
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
+                          {theme.name}
                         </span>
                       </div>
                       <p className="text-xs text-charcoal-500 flex items-center gap-1 mt-0.5">
@@ -462,9 +462,9 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
 
                 {/* Programs and Courses Accordion Body */}
                 {isOpen && (
-                  <div className="p-5 space-y-5 bg-white">
+                  <div className="p-5 space-y-5 bg-stone-50/30">
                     {progsFacultad.length === 0 ? (
-                      <div className="p-6 text-center rounded-2xl border border-dashed border-stone-200 bg-stone-50/50">
+                      <div className="p-6 text-center rounded-2xl border border-dashed border-stone-200 bg-white">
                         <p className="text-xs font-semibold text-charcoal-500">
                           Esta facultad aún no tiene programas académicos registrados.
                         </p>
@@ -475,18 +475,18 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                         return (
                           <div 
                             key={prog.id} 
-                            className={`p-5 bg-gradient-to-b from-stone-50/80 to-white rounded-3xl border border-stone-200 shadow-xs space-y-4 border-l-4 ${theme.borderLeft}`}
+                            className={`p-5 bg-white rounded-2xl border ${theme.borderLight} shadow-2xs space-y-4 border-l-4 ${theme.borderLeft}`}
                           >
                             {/* Program Header Banner */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200/80">
+                            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b ${theme.borderLight}`}>
                               <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-2xl ${theme.bgPrimary} text-white flex items-center justify-center shadow-xs shrink-0`}>
+                                <div className={`w-10 h-10 rounded-xl ${theme.iconBg} ${theme.iconText} flex items-center justify-center shadow-xs shrink-0`}>
                                   <DynamicLucideIcon name={iconoFacultad} fallbackName="GraduationCap" className="w-5 h-5" />
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${theme.badgeBg} ${theme.badgeText}`}>
-                                      Programa Académico
+                                      PROGRAMA HEREDADO
                                     </span>
                                   </div>
                                   <h4 className="font-black text-charcoal-900 text-base leading-tight mt-0.5">
@@ -496,7 +496,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                               </div>
 
                               <div className="flex items-center gap-2 flex-wrap shrink-0">
-                                <span className="text-xs font-bold text-charcoal-700 bg-white px-3 py-1 rounded-full border border-stone-200 shadow-2xs flex items-center gap-1.5">
+                                <span className={`text-xs font-bold ${theme.textPrimary} bg-white px-3 py-1 rounded-full border ${theme.borderLight} shadow-2xs flex items-center gap-1.5`}>
                                   <User className={`w-3.5 h-3.5 ${theme.textPrimary}`} />
                                   Coord: <strong className="text-charcoal-900">{prog.coordinador_nombre || 'Sin Asignar'}</strong>
                                 </span>
@@ -522,16 +522,16 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                     <div
                                       key={curso.id}
                                       onClick={() => onOpenProgreso ? onOpenProgreso(curso, 'curso') : onSelectCurso(curso)}
-                                      className={`p-4 bg-white rounded-xl border border-stone-200 hover:${theme.borderPrimary} hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3`}
+                                      className={`p-4 bg-white rounded-2xl border border-stone-200 ${theme.hoverBorder} hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 group`}
                                     >
                                       <div>
                                         <div className="flex justify-between items-start mb-2">
-                                          <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded ${theme.badgeBg} ${theme.badgeText}`}>
+                                          <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
                                             {curso.codigo}
                                           </span>
                                           {getEstadoBadge(curso.estado)}
                                         </div>
-                                        <h5 className="font-extrabold text-charcoal-900 text-sm line-clamp-2">{curso.nombre}</h5>
+                                        <h5 className={`font-extrabold text-charcoal-900 text-sm line-clamp-2 group-hover:${theme.textPrimary} transition-colors`}>{curso.nombre}</h5>
                                       </div>
 
                                       {/* Mini Progress Bar */}
@@ -541,7 +541,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                           <span className={theme.textPrimary}>{pctCurso}%</span>
                                         </div>
                                         <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-                                          <div className={`h-full rounded-full transition-all ${theme.progressFill}`} style={{ width: `${pctCurso}%` }} />
+                                          <div className={`h-full rounded-full transition-all duration-500 ${theme.progressFill}`} style={{ width: `${pctCurso}%` }} />
                                         </div>
                                       </div>
 

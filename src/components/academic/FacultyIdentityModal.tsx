@@ -206,18 +206,18 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
             </div>
           </div>
 
-          {/* 1. Selector de Color Ampliado */}
+          {/* 1. Selector de Color */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-black uppercase tracking-wider text-charcoal-700 block">
-                1. Selecciona el Color Distintivo (20 Opciones Disponibles)
+                1. Selecciona el Color Distintivo (9 Paletas Únicas de Alto Contraste)
               </label>
               <span className="text-[11px] font-bold text-sage-700 bg-sage-50 px-2 py-0.5 rounded-md border border-sage-200">
-                Color actual: {currentTheme.name.split('&')[0]}
+                Seleccionado: {currentTheme.name}
               </span>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-56 overflow-y-auto p-1.5 border border-stone-100 rounded-2xl bg-stone-50/30 pr-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-1.5 border border-stone-100 rounded-2xl bg-stone-50/30">
               {Object.values(FACULTY_THEMES).map((tema) => {
                 const isSelected = selectedColor === tema.id;
                 return (
@@ -225,21 +225,24 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
                     key={tema.id}
                     type="button"
                     onClick={() => setSelectedColor(tema.id)}
-                    className={`p-2.5 rounded-2xl border text-left transition-all flex items-center gap-2.5 relative ${
+                    className={`p-3 rounded-2xl border text-left transition-all flex items-center gap-3 relative ${
                       isSelected
                         ? `border-charcoal-900 bg-white shadow-sm ring-2 ring-charcoal-900/15`
                         : `border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/50`
                     }`}
                   >
                     <div
-                      className="w-6 h-6 rounded-lg flex items-center justify-center text-white shrink-0 shadow-2xs"
+                      className="w-7 h-7 rounded-xl flex items-center justify-center text-white shrink-0 shadow-2xs"
                       style={{ backgroundColor: tema.hex }}
                     >
-                      {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-[11px] font-bold text-charcoal-900 truncate">
-                        {tema.name.split(' ')[0]}
+                      <div className="text-xs font-extrabold text-charcoal-900 truncate">
+                        {tema.name}
+                      </div>
+                      <div className="text-[10px] font-mono text-charcoal-400">
+                        {tema.hex}
                       </div>
                     </div>
                   </button>

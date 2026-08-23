@@ -4,6 +4,16 @@ module.exports = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  safelist: [
+    {
+      pattern: /(bg|text|border|ring)-(emerald|blue|amber|rose|purple|cyan|orange|indigo|fuchsia)-(50|100|200|300|400|500|600|700|800|900|950)/,
+      variants: ['hover', 'group-hover', 'focus'],
+    },
+    {
+      pattern: /border-l-(emerald|blue|amber|rose|purple|cyan|orange|indigo|fuchsia)-(500|600)/,
+    },
   ],
   theme: {
     extend: {
