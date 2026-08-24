@@ -392,6 +392,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroArea, setFiltroArea] = useState<string>('todos');
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   
   // Ordenamiento dinámico de usuarios por columna
   const [ordenCampo, setOrdenCampo] = useState<'nombre' | 'email' | 'rol' | 'area' | 'conexion' | 'estado'>('conexion');
@@ -443,6 +444,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       u.area_nombre?.toLowerCase().includes(query);
 
     const matchRol = !filtroRol || filtroRol === 'todos' || u.rol_id === filtroRol || u.rol_nombre === filtroRol;
+    const matchEstado = !filtroEstado || filtroEstado === 'todos' || (filtroEstado === 'activos' ? u.activo !== false : u.activo === false);
 
     let matchArea = true;
     if (filtroArea && filtroArea !== 'todos') {
@@ -456,7 +458,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     }
 
-    return matchBusqueda && matchRol && matchArea;
+    return matchBusqueda && matchRol && matchArea && matchEstado;
   });
 
   // Ordenar usuarios según la columna y dirección seleccionada
@@ -493,12 +495,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   }, [usuariosFiltrados, ordenCampo, ordenDireccion]);
 
-  const hayFiltrosActivos = busquedaUsuario !== '' || filtroRol !== 'todos' || filtroArea !== 'todos';
+  const hayFiltrosActivos = busquedaUsuario !== '' || filtroRol !== 'todos' || filtroArea !== 'todos' || filtroEstado !== 'todos';
 
   const limpiarFiltros = () => {
     setBusquedaUsuario('');
     setFiltroRol('todos');
     setFiltroArea('todos');
+    setFiltroEstado('todos');
     setOrdenCampo('conexion');
     setOrdenDireccion('desc');
   };
@@ -656,7 +659,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {/* Buscador de texto */}
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-charcoal-400 absolute left-3 top-3" />
@@ -680,10 +683,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }}
                   className="w-full px-3 py-2 bg-white border border-sage-300 rounded-xl text-xs font-extrabold text-sage-900 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
                 >
-                  <option value="conexion-desc">⚡ Conexión: Más Reciente Primero</option>
-                  <option value="conexion-asc">🕒 Conexión: Más Antigua Primero</option>
-                  <option value="nombre-asc">🔤 Nombre: A → Z (Alfabético)</option>
-                  <option value="nombre-desc">🔤 Nombre: Z → A (Inverso)</option>
+                  <option value="conexion-desc">⚡ Conexión: Más Reciente</option>
+                  <option value="conexion-asc">🕒 Conexión: Más Antigua</option>
+                  <option value="nombre-asc">🔤 Nombre: A → Z</option>
+                  <option value="nombre-desc">🔤 Nombre: Z → A</option>
                   <option value="email-asc">📧 Correo: A → Z</option>
                   <option value="rol-asc">🎭 Rol: A → Z</option>
                   <option value="area-asc">🏛️ Área: A → Z</option>
@@ -723,7 +726,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onChange={e => setFiltroArea(e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
                 >
-                  <option value="todos">🏛️ Todas las áreas & jerarquías</option>
+                  <option value="todos">🏛️ Todas las áreas</option>
                   <optgroup label="── Por Nivel Jerárquico RLS ──">
                     <option value="nivel:6">Nivel 6: ADMIN ({usuarios.filter(u => {
                       const areaObj = areas.find(a => a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
@@ -760,6 +763,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       );
                     })}
                   </optgroup>
+                </select>
+                <div className="absolute right-3 top-2.5 pointer-events-none text-charcoal-400 text-[10px] font-bold">
+                  ▼
+                </div>
+              </div>
+
+              {/* Filtro por Estado */}
+              <div className="relative">
+                <select
+                  value={filtroEstado}
+                  onChange={e => setFiltroEstado(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
+                >
+                  <option value="todos">🔘 Todos los estados</option>
+                  <option value="activos">🟢 Solo Activos ({usuarios.filter(u => u.activo !== false).length})</option>
+                  <option value="inactivos">🔴 Inactivos ({usuarios.filter(u => u.activo === false).length})</option>
                 </select>
                 <div className="absolute right-3 top-2.5 pointer-events-none text-charcoal-400 text-[10px] font-bold">
                   ▼
