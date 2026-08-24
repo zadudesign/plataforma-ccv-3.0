@@ -315,9 +315,14 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                               >
                                 <div className="space-y-2">
                                   <div className="flex justify-between items-start gap-2">
-                                    <span className={`text-[10px] font-mono font-black border px-2 py-0.5 rounded-md ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
-                                      PROYECTO CCV
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-7 h-7 rounded-xl ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-2xs shrink-0 border ${theme.badgeBorder}`}>
+                                        <DynamicLucideIcon name={deptIcono} className="w-4 h-4" />
+                                      </div>
+                                      <span className={`text-[10px] font-mono font-black border px-2.5 py-0.5 rounded-md ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
+                                        PROYECTO CCV
+                                      </span>
+                                    </div>
                                     {getEstadoBadge(proy.estado)}
                                   </div>
                                   <h5 className={`font-extrabold text-charcoal-900 text-sm group-hover:${theme.textPrimary} transition-colors line-clamp-2 leading-snug`}>

@@ -21,6 +21,9 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { getFacultyTheme } from '@/lib/facultyThemes';
+import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -41,6 +44,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onSelectTask,
   onUpdateStatus,
 }) => {
+  const { areas, facultades, programas } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
@@ -48,6 +52,17 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const esCurso = tipo === 'curso';
   const curso = esCurso ? (entidad as CursoVirtual) : null;
   const proyecto = !esCurso ? (entidad as ProyectoEspecial) : null;
+
+  // Obtener departamento o facultad para la herencia visual de Identidad (Logo e Ícono)
+  const areaProyecto = !esCurso 
+    ? areas.find(a => a.id === proyecto?.area_id || a.nombre.toLowerCase() === (proyecto?.area_id || '').toLowerCase()) 
+    : null;
+  const programaCurso = esCurso ? programas.find(p => p.id === curso?.programa_id) : null;
+  const facultadCurso = esCurso ? facultades.find(f => f.id === programaCurso?.facultad_id) : null;
+
+  const themeColor = !esCurso ? (areaProyecto?.color || 'amber') : (facultadCurso?.color || 'emerald');
+  const themeIcono = !esCurso ? (areaProyecto?.icono || 'FolderKanban') : (facultadCurso?.icono || 'BookOpen');
+  const theme = getFacultyTheme(themeColor);
 
   // Filtrar tareas pertenecientes a este curso o proyecto
   const tareasEntidad = tareas.filter(t => 
@@ -138,7 +153,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
     <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
       <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col relative overflow-hidden">
         {/* Modal Top Banner */}
-        <div className="p-6 bg-gradient-to-r from-cream-100 via-white to-sage-50 border-b border-stone-200/80 relative shrink-0">
+        <div className={`p-6 bg-gradient-to-r ${theme.bgLight} via-white to-stone-50/50 border-b ${theme.borderLight} relative shrink-0`}>
           <button
             onClick={onClose}
             className="absolute top-5 right-5 p-2 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-200/60 transition-all"
@@ -147,16 +162,14 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
           </button>
 
           <div className="flex items-start gap-4 pr-8">
-            <div className={`w-12 h-12 rounded-2xl ${esCurso ? 'bg-sage-600 text-white' : 'bg-amber-600 text-white'} flex items-center justify-center font-bold shadow-md shrink-0`}>
-              {esCurso ? <BookOpen className="w-6 h-6" /> : <FolderKanban className="w-6 h-6" />}
+            <div className={`w-12 h-12 rounded-2xl ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-md shrink-0 border ${theme.badgeBorder}`}>
+              <DynamicLucideIcon name={themeIcono} className="w-6 h-6" />
             </div>
 
             <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider ${
-                  esCurso ? 'bg-sage-100 text-sage-800' : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {esCurso ? `Curso Virtual • ${curso?.codigo}` : `Proyecto CCV`}
+                <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
+                  {esCurso ? `Curso Virtual • ${curso?.codigo}` : `PROYECTO CCV • ${areaProyecto?.nombre || 'Departamento'}`}
                 </span>
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-200 text-charcoal-700">
                   {entidad.estado}
@@ -188,7 +201,10 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                   </>
                 )}
                 {!esCurso && (
-                  <span>{proyecto?.descripcion || 'Iniciativa institucional y proyecto especial CCV'}</span>
+                  <>
+                    {areaProyecto && <span><strong className="text-charcoal-700">Departamento:</strong> {areaProyecto.nombre}</span>}
+                    <span>{proyecto?.descripcion || 'Iniciativa institucional y proyecto especial CCV'}</span>
+                  </>
                 )}
               </p>
             </div>
@@ -200,7 +216,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
               onClick={() => setPestanaModal('resumen')}
               className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 ${
                 pestanaModal === 'resumen'
-                  ? 'bg-charcoal-900 text-white shadow-sm'
+                  ? `${theme.bgPrimary} text-white shadow-sm`
                   : 'bg-white border border-stone-200 text-charcoal-600 hover:bg-cream-100'
               }`}
             >

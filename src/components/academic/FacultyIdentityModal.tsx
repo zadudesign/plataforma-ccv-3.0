@@ -128,11 +128,16 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
               {/* Preview Cards */}
               {esDepartamento ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div className={`p-3.5 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2`}>
+                  <div className={`p-3.5 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2 ${currentTheme.hoverBorder}`}>
                     <div className="flex justify-between items-center">
-                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
-                        PROYECTO CCV
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-lg ${currentTheme.iconBg} ${currentTheme.iconText} flex items-center justify-center font-bold shadow-2xs shrink-0 border ${currentTheme.badgeBorder}`}>
+                          <DynamicLucideIcon name={validIconName} className="w-3.5 h-3.5" />
+                        </div>
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText} border ${currentTheme.badgeBorder}`}>
+                          PROYECTO CCV
+                        </span>
+                      </div>
                       <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">En Proceso</span>
                     </div>
                     <p className="text-xs font-extrabold text-charcoal-900 line-clamp-1">
@@ -149,11 +154,16 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
                     </div>
                   </div>
 
-                  <div className={`p-3.5 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2`}>
+                  <div className={`p-3.5 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2 ${currentTheme.hoverBorder}`}>
                     <div className="flex justify-between items-center">
-                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
-                        PROYECTO CCV
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-lg ${currentTheme.iconBg} ${currentTheme.iconText} flex items-center justify-center font-bold shadow-2xs shrink-0 border ${currentTheme.badgeBorder}`}>
+                          <DynamicLucideIcon name={validIconName} className="w-3.5 h-3.5" />
+                        </div>
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText} border ${currentTheme.badgeBorder}`}>
+                          PROYECTO CCV
+                        </span>
+                      </div>
                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Completado</span>
                     </div>
                     <p className="text-xs font-extrabold text-charcoal-900 line-clamp-1">
