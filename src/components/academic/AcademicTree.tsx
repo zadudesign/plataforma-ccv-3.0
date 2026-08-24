@@ -48,7 +48,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   onSelectCurso,
   onOpenProgreso,
 }) => {
-  const { actualizarIdentidadFacultad, actualizarIdentidadArea } = useAuth();
+  const { actualizarIdentidadFacultad, actualizarIdentidadArea, isAdmin } = useAuth();
   const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
   const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
   const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({});
@@ -260,7 +260,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {grupo.areaObj && (
+                        {isAdmin() && grupo.areaObj && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -268,7 +268,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                               setDepartamentoParaIdentidad(grupo.areaObj || null);
                             }}
                             className="px-2.5 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-charcoal-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
-                            title="Personalizar color e icono de este departamento"
+                            title="Personalizar color e icono de este departamento (Solo Administrador)"
                           >
                             <Palette className="w-3.5 h-3.5 text-sage-600" />
                             <span className="hidden sm:inline">Identidad</span>
@@ -434,19 +434,21 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                    {/* Botón Personalizar Identidad de la Facultad */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFacultadParaIdentidad(facultad);
-                      }}
-                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder} hover:scale-102`}
-                      title="Personalizar color e ícono de esta facultad"
-                    >
-                      <Palette className="w-3.5 h-3.5" />
-                      <span>Identidad Visual</span>
-                    </button>
+                    {/* Botón Personalizar Identidad de la Facultad (Solo Administrador) */}
+                    {isAdmin() && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFacultadParaIdentidad(facultad);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder} hover:scale-102`}
+                        title="Personalizar color e ícono de esta facultad (Solo Administrador)"
+                      >
+                        <Palette className="w-3.5 h-3.5" />
+                        <span>Identidad Visual</span>
+                      </button>
+                    )}
 
                     <span className="text-xs font-semibold text-charcoal-600 bg-white px-3 py-1.5 rounded-xl border border-stone-200 shadow-2xs">
                       {progsFacultad.length} Programas

@@ -5,6 +5,7 @@ import { X, Sparkles, Check, Palette, Search, CheckCircle2, AlertCircle, Externa
 import { Facultad, Area } from '@/types';
 import { FACULTY_THEMES, POPULAR_LUCIDE_SUGGESTIONS, getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon, resolveLucideIcon, getValidLucideIconName } from '@/components/common/DynamicLucideIcon';
+import { useAuth } from '@/context/AuthContext';
 
 interface FacultyIdentityModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
   tipo = facultad ? 'facultad' : 'departamento',
   onSave,
 }) => {
+  const { isAdmin } = useAuth();
   const entidadActual = facultad || area;
   const esDepartamento = tipo === 'departamento' || (!facultad && !!area);
 
@@ -38,7 +40,7 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
     }
   }, [facultad, area, esDepartamento]);
 
-  if (!isOpen || !entidadActual) return null;
+  if (!isOpen || !entidadActual || !isAdmin()) return null;
 
   const currentTheme = getFacultyTheme(selectedColor);
 
