@@ -392,7 +392,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroArea, setFiltroArea] = useState<string>('todos');
-  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activos' | 'inactivos'>('todos');
   
   // Ordenamiento dinámico de usuarios por columna
   const [ordenCampo, setOrdenCampo] = useState<'nombre' | 'email' | 'rol' | 'area' | 'conexion' | 'estado'>('conexion');
@@ -434,7 +433,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setAreaAEliminar(area);
   };
 
-  // Filter users by search box, role, area/hierarchy, and status
+  // Filter users by search box, role, and area/hierarchy
   const usuariosFiltrados = usuarios.filter(u => {
     const query = busquedaUsuario.toLowerCase().trim();
     const matchBusqueda = !query ||
@@ -457,11 +456,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     }
 
-    const matchEstado = filtroEstado === 'todos' ||
-      (filtroEstado === 'activos' && u.activo !== false) ||
-      (filtroEstado === 'inactivos' && u.activo === false);
-
-    return matchBusqueda && matchRol && matchArea && matchEstado;
+    return matchBusqueda && matchRol && matchArea;
   });
 
   // Ordenar usuarios según la columna y dirección seleccionada
@@ -498,13 +493,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   }, [usuariosFiltrados, ordenCampo, ordenDireccion]);
 
-  const hayFiltrosActivos = busquedaUsuario !== '' || filtroRol !== 'todos' || filtroArea !== 'todos' || filtroEstado !== 'todos';
+  const hayFiltrosActivos = busquedaUsuario !== '' || filtroRol !== 'todos' || filtroArea !== 'todos';
 
   const limpiarFiltros = () => {
     setBusquedaUsuario('');
     setFiltroRol('todos');
     setFiltroArea('todos');
-    setFiltroEstado('todos');
     setOrdenCampo('conexion');
     setOrdenDireccion('desc');
   };
@@ -662,7 +656,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Buscador de texto */}
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-charcoal-400 absolute left-3 top-3" />
@@ -766,26 +760,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       );
                     })}
                   </optgroup>
-                </select>
-                <div className="absolute right-3 top-2.5 pointer-events-none text-charcoal-400 text-[10px] font-bold">
-                  ▼
-                </div>
-              </div>
-
-              {/* Filtro por Estado de Cuenta */}
-              <div className="relative">
-                <select
-                  value={filtroEstado}
-                  onChange={e => setFiltroEstado(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
-                >
-                  <option value="todos">🟢 Todos los estados</option>
-                  <option value="activos">
-                    ✅ Solo Activos ({usuarios.filter(u => u.activo !== false).length})
-                  </option>
-                  <option value="inactivos">
-                    ⛔ Solo Inactivos ({usuarios.filter(u => u.activo === false).length})
-                  </option>
                 </select>
                 <div className="absolute right-3 top-2.5 pointer-events-none text-charcoal-400 text-[10px] font-bold">
                   ▼
