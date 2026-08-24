@@ -426,9 +426,6 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-base font-extrabold text-charcoal-900">{facultad.nombre}</h3>
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
-                          {theme.name}
-                        </span>
                       </div>
                       <p className="text-xs text-charcoal-500 flex items-center gap-1 mt-0.5">
                         <User className="w-3.5 h-3.5 text-charcoal-400" /> Decano: <span className="font-semibold text-charcoal-700">{facultad.decano_nombre || 'No asignado'}</span>
