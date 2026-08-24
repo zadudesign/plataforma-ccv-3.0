@@ -26,7 +26,10 @@ import {
   Filter,
   RotateCcw,
   Clock,
-  Activity
+  Activity,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -391,6 +394,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [filtroArea, setFiltroArea] = useState<string>('todos');
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activos' | 'inactivos'>('todos');
   
+  // Ordenamiento dinámico de usuarios por columna
+  const [ordenCampo, setOrdenCampo] = useState<'nombre' | 'email' | 'rol' | 'area' | 'conexion' | 'estado'>('conexion');
+  const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('desc');
+
+  const handleToggleOrden = (campo: 'nombre' | 'email' | 'rol' | 'area' | 'conexion' | 'estado') => {
+    if (ordenCampo === campo) {
+      setOrdenDireccion(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOrdenCampo(campo);
+      setOrdenDireccion(campo === 'conexion' ? 'desc' : 'asc');
+    }
+  };
+
   // Modals state
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [usuarioEditar, setUsuarioEditar] = useState<Usuario | null>(null);
@@ -448,6 +464,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return matchBusqueda && matchRol && matchArea && matchEstado;
   });
 
+  // Ordenar usuarios según la columna y dirección seleccionada
+  const usuariosOrdenados = React.useMemo(() => {
+    return [...usuariosFiltrados].sort((a, b) => {
+      let comparison = 0;
+      switch (ordenCampo) {
+        case 'nombre':
+          comparison = a.nombre_completo.localeCompare(b.nombre_completo, 'es', { sensitivity: 'base' });
+          break;
+        case 'email':
+          comparison = a.email.localeCompare(b.email, 'es', { sensitivity: 'base' });
+          break;
+        case 'rol':
+          comparison = (a.rol_nombre || '').localeCompare(b.rol_nombre || '', 'es', { sensitivity: 'base' });
+          break;
+        case 'area':
+          comparison = (a.area_nombre || '').localeCompare(b.area_nombre || '', 'es', { sensitivity: 'base' });
+          break;
+        case 'conexion': {
+          const timeA = a.ultima_conexion ? new Date(a.ultima_conexion).getTime() : 0;
+          const timeB = b.ultima_conexion ? new Date(b.ultima_conexion).getTime() : 0;
+          comparison = timeA - timeB;
+          break;
+        }
+        case 'estado': {
+          const actA = a.activo !== false ? 1 : 0;
+          const actB = b.activo !== false ? 1 : 0;
+          comparison = actB - actA;
+          break;
+        }
+      }
+      return ordenDireccion === 'asc' ? comparison : -comparison;
+    });
+  }, [usuariosFiltrados, ordenCampo, ordenDireccion]);
+
   const hayFiltrosActivos = busquedaUsuario !== '' || filtroRol !== 'todos' || filtroArea !== 'todos' || filtroEstado !== 'todos';
 
   const limpiarFiltros = () => {
@@ -455,6 +505,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setFiltroRol('todos');
     setFiltroArea('todos');
     setFiltroEstado('todos');
+    setOrdenCampo('conexion');
+    setOrdenDireccion('desc');
   };
 
   // Handlers for assignments
@@ -610,7 +662,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {/* Buscador de texto */}
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-charcoal-400 absolute left-3 top-3" />
@@ -621,6 +673,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   placeholder="Buscar nombre o correo..."
                   className="w-full pl-8 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs"
                 />
+              </div>
+
+              {/* Ordenar por Columna */}
+              <div className="relative">
+                <select
+                  value={`${ordenCampo}-${ordenDireccion}`}
+                  onChange={e => {
+                    const [campo, dir] = e.target.value.split('-');
+                    setOrdenCampo(campo as any);
+                    setOrdenDireccion(dir as any);
+                  }}
+                  className="w-full px-3 py-2 bg-white border border-sage-300 rounded-xl text-xs font-extrabold text-sage-900 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-xs cursor-pointer appearance-none"
+                >
+                  <option value="conexion-desc">⚡ Conexión: Más Reciente Primero</option>
+                  <option value="conexion-asc">🕒 Conexión: Más Antigua Primero</option>
+                  <option value="nombre-asc">🔤 Nombre: A → Z (Alfabético)</option>
+                  <option value="nombre-desc">🔤 Nombre: Z → A (Inverso)</option>
+                  <option value="email-asc">📧 Correo: A → Z</option>
+                  <option value="rol-asc">🎭 Rol: A → Z</option>
+                  <option value="area-asc">🏛️ Área: A → Z</option>
+                  <option value="estado-desc">🟢 Estado: Activos Primero</option>
+                </select>
+                <div className="absolute right-3 top-2.5 pointer-events-none text-sage-600 text-[10px] font-bold">
+                  ▼
+                </div>
               </div>
 
               {/* Filtro por Rol */}
@@ -720,7 +797,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center justify-between text-xs text-charcoal-500 pt-1 flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-charcoal-700 bg-white px-2.5 py-1 rounded-lg border border-stone-200 shadow-2xs">
-                  Mostrando <strong className="text-sage-700 font-extrabold">{usuariosFiltrados.length}</strong> de {usuarios.length} usuarios
+                  Mostrando <strong className="text-sage-700 font-extrabold">{usuariosOrdenados.length}</strong> de {usuarios.length} usuarios
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-900 text-[11px] font-extrabold border border-sage-200">
+                  Orden: {ordenCampo === 'nombre' ? 'Alfabético' : ordenCampo === 'conexion' ? 'Última Conexión' : ordenCampo} ({ordenDireccion === 'asc' ? 'A-Z / Asc' : 'Desc'})
                 </span>
                 {filtroRol !== 'todos' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 text-[11px] font-bold">
@@ -744,28 +824,102 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          {/* Tabla de Usuarios con Columna de Última Conexión */}
+          {/* Tabla de Usuarios con Columna de Última Conexión & Ordenamiento Interactivo */}
           <div className="overflow-x-auto rounded-2xl border border-stone-200/90 shadow-2xs">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-cream-100/70 border-b border-stone-200 text-charcoal-600 font-extrabold uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Usuario</th>
-                  <th className="py-3.5 px-4">Correo Electrónico</th>
-                  <th className="py-3.5 px-4">Rol Asignado</th>
-                  <th className="py-3.5 px-4">Área & Jerarquía</th>
-                  <th className="py-3.5 px-4">
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-sage-600" />
-                      Última Conexión
-                    </span>
+                  <th 
+                    onClick={() => handleToggleOrden('nombre')} 
+                    className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
+                    title="Ordenar por nombre alfabético"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Usuario</span>
+                      {ordenCampo === 'nombre' ? (
+                        ordenDireccion === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" /> : <ArrowDown className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 text-charcoal-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
                   </th>
-                  <th className="py-3.5 px-4">Estado</th>
+                  <th 
+                    onClick={() => handleToggleOrden('email')} 
+                    className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
+                    title="Ordenar por correo electrónico"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Correo Electrónico</span>
+                      {ordenCampo === 'email' ? (
+                        ordenDireccion === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" /> : <ArrowDown className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 text-charcoal-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleToggleOrden('rol')} 
+                    className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
+                    title="Ordenar por rol asignado"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Rol Asignado</span>
+                      {ordenCampo === 'rol' ? (
+                        ordenDireccion === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" /> : <ArrowDown className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 text-charcoal-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleToggleOrden('area')} 
+                    className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
+                    title="Ordenar por área asignada"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Área & Jerarquía</span>
+                      {ordenCampo === 'area' ? (
+                        ordenDireccion === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" /> : <ArrowDown className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 text-charcoal-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleToggleOrden('conexion')} 
+                    className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
+                    title="Ordenar por fecha de última conexión"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-sage-600" />
+                      <span>Última Conexión</span>
+                      {ordenCampo === 'conexion' ? (
+                        ordenDireccion === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" /> : <ArrowDown className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 text-charcoal-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleToggleOrden('estado')} 
+                    className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
+                    title="Ordenar por estado activo/inactivo"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Estado</span>
+                      {ordenCampo === 'estado' ? (
+                        ordenDireccion === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" /> : <ArrowDown className="w-3.5 h-3.5 text-sage-700 stroke-[2.5]" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 text-charcoal-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3.5 px-4">Firma Digital</th>
                   <th className="py-3.5 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 text-charcoal-800 bg-white">
-                {usuariosFiltrados.length === 0 ? (
+                {usuariosOrdenados.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-charcoal-500">
                       <div className="max-w-xs mx-auto space-y-3">
@@ -784,7 +938,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  usuariosFiltrados.map((usr) => {
+                  usuariosOrdenados.map((usr) => {
                     const isCurrentSession = usuarioActual?.id === usr.id;
                     const infoConexion = formatUltimaConexion(usr.ultima_conexion);
 
