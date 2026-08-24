@@ -739,7 +739,10 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       `)
       .order('orden_tarea', { ascending: true });
 
-    if (error || !data) return [];
+    if (error || !data) {
+      if (error) console.error('Error al obtener tareas de Supabase:', error);
+      return [];
+    }
 
     return data.map((t: any) => ({
       id: t.id,
@@ -755,6 +758,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       responsable_nombre: t.responsable?.nombre_completo,
       responsable_avatar: t.responsable?.avatar_url,
       rol_destino: t.rol_destino,
+      categoria_proyecto: t.categoria_proyecto,
       orden_tarea: t.orden_tarea || 0,
       estado: t.estado as EstadoTarea,
       tipo_tarea: (t.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
@@ -762,46 +766,56 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       fecha_completada: t.fecha_completada,
       tiempo_estimado: Number(t.tiempo_estimado || 0),
       tiempo_invertido: Number(t.tiempo_invertido || 0),
+      tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
       tarifa_tarea: Number(t.tarifa_tarea || 0),
       created_at: t.created_at
     }));
-  } catch {
+  } catch (err) {
+    console.error('Excepción en fetchTareasDB:', err);
     return [];
   }
 }
 
 export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaCCV | null> {
   try {
-    const payload = {
+    const payload: any = {
       titulo: tarea.titulo,
-      descripcion: tarea.descripcion,
-      proyecto_id: tarea.proyecto_id || null,
-      curso_id: tarea.curso_id || null,
-      area_id: tarea.area_id || null,
-      responsable_id: tarea.responsable_id || null,
+      descripcion: tarea.descripcion || '',
+      proyecto_id: isGuid(tarea.proyecto_id) ? tarea.proyecto_id : null,
+      curso_id: isGuid(tarea.curso_id) ? tarea.curso_id : null,
+      area_id: isGuid(tarea.area_id) ? tarea.area_id : null,
+      responsable_id: isGuid(tarea.responsable_id) ? tarea.responsable_id : null,
       rol_destino: tarea.rol_destino || null,
+      categoria_proyecto: tarea.categoria_proyecto || null,
       orden_tarea: tarea.orden_tarea || 0,
-      estado: tarea.estado,
-      tipo_tarea: tarea.tipo_tarea === 'Proyecto' ? 'Proyecto Especial' : tarea.tipo_tarea,
-      fecha_vencimiento: tarea.fecha_vencimiento,
-      tiempo_estimado: tarea.tiempo_estimado || 0,
-      tiempo_invertido: tarea.tiempo_invertido || 0,
-      tarifa_tarea: tarea.tarifa_tarea || 0
+      estado: tarea.estado || 'Pendiente',
+      tipo_tarea: tarea.tipo_tarea === 'Proyecto' ? 'Proyecto Especial' : (tarea.tipo_tarea || 'Curso Virtual'),
+      fecha_vencimiento: tarea.fecha_vencimiento || new Date().toISOString().split('T')[0],
+      fecha_completada: tarea.fecha_completada || null,
+      tiempo_estimado: Number(tarea.tiempo_estimado) || 0,
+      tiempo_invertido: Number(tarea.tiempo_invertido) || 0,
+      tarifa_hora: tarea.tarifa_hora !== undefined && tarea.tarifa_hora !== null ? Number(tarea.tarifa_hora) : null,
+      tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0
     };
     const { data, error } = await supabase.from('tareas').insert(payload).select().single();
-    if (error) return null;
+    if (error) {
+      console.error('Error insertando tarea en Supabase:', error);
+      return null;
+    }
     return {
       ...tarea,
       id: data.id,
       created_at: data.created_at
     };
-  } catch {
+  } catch (err) {
+    console.error('Excepción insertando tarea:', err);
     return null;
   }
 }
 
 export async function updateTareaEstadoDB(id: string, nuevoEstado: EstadoTarea): Promise<boolean> {
   try {
+    if (!isGuid(id)) return true;
     const payload: any = { estado: nuevoEstado, updated_at: new Date().toISOString() };
     if (nuevoEstado === 'Completada') {
       payload.fecha_completada = new Date().toISOString().split('T')[0];
@@ -809,8 +823,10 @@ export async function updateTareaEstadoDB(id: string, nuevoEstado: EstadoTarea):
       payload.fecha_completada = null;
     }
     const { error } = await supabase.from('tareas').update(payload).eq('id', id);
+    if (error) console.error('Error actualizando estado de tarea en Supabase:', error);
     return !error;
-  } catch {
+  } catch (err) {
+    console.error('Excepción actualizando estado de tarea:', err);
     return false;
   }
 }

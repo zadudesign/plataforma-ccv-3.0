@@ -30,7 +30,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [cursoId, setCursoId] = useState(cursos[0]?.id || 'c-1');
   const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || 'pry-1');
   const [responsableId, setResponsableId] = useState(usuarios[0]?.id || 'u-1');
-  const [fechaVencimiento, setFechaVencimiento] = useState('2026-08-15');
+  const [fechaVencimiento, setFechaVencimiento] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  });
   const [tiempoEstimado, setTiempoEstimado] = useState(20);
 
   const resp = usuarios.find(u => u.id === responsableId);

@@ -127,14 +127,16 @@ CREATE TABLE IF NOT EXISTS public.tareas (
     curso_id UUID REFERENCES public.cursos(id) ON DELETE CASCADE,
     area_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
     responsable_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
-    rol_destino UUID REFERENCES public.roles(id) ON DELETE SET NULL,
+    rol_destino TEXT, -- Rol funcional o especialidad ('Diseño', 'Multimedia', 'Docente', 'Par Evaluador', 'Soporte', 'General')
+    categoria_proyecto TEXT, -- 'Diseño', 'Multimedia', 'Soporte', 'Transmisión'
     orden_tarea INT DEFAULT 0,
     estado TEXT NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'En Proceso', 'En Revisión', 'Completada')),
-    tipo_tarea TEXT NOT NULL CHECK (tipo_tarea IN ('Curso Virtual', 'Proyecto Especial')),
+    tipo_tarea TEXT NOT NULL CHECK (tipo_tarea IN ('Curso Virtual', 'Proyecto Especial', 'Proyecto')),
     fecha_vencimiento DATE,
     fecha_completada DATE,
     tiempo_estimado NUMERIC(6, 2) DEFAULT 0.00,
     tiempo_invertido NUMERIC(6, 2) DEFAULT 0.00,
+    tarifa_hora NUMERIC(10, 2) DEFAULT 0.00,
     tarifa_tarea NUMERIC(10, 2) DEFAULT 0.00,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -144,6 +146,12 @@ CREATE TABLE IF NOT EXISTS public.tareas (
         (curso_id IS NULL AND proyecto_id IS NULL)
     )
 );
+
+CREATE INDEX IF NOT EXISTS idx_tareas_curso_id ON public.tareas(curso_id);
+CREATE INDEX IF NOT EXISTS idx_tareas_proyecto_id ON public.tareas(proyecto_id);
+CREATE INDEX IF NOT EXISTS idx_tareas_responsable_id ON public.tareas(responsable_id);
+CREATE INDEX IF NOT EXISTS idx_tareas_estado ON public.tareas(estado);
+CREATE INDEX IF NOT EXISTS idx_tareas_rol_destino ON public.tareas(rol_destino);
 
 -- Tabla de Comentarios de Tareas
 CREATE TABLE IF NOT EXISTS public.tarea_comentarios (
