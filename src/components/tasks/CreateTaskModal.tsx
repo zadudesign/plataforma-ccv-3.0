@@ -36,7 +36,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     d.setDate(d.getDate() + 7);
     return d.toISOString().split('T')[0];
   });
-  const [tiempoEstimado, setTiempoEstimado] = useState(20);
+  const [tiempoEstimado, setTiempoEstimado] = useState(1);
 
   const activeCursoId = cursoId || cursos[0]?.id;
   const activeProyectoId = proyectoId || proyectos[0]?.id;
@@ -215,7 +215,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 >
                   {tarifasProyecto.map(t => (
                     <option key={t.categoria} value={t.categoria}>
-                      {t.categoria} (${t.tarifa_hora.toLocaleString('es-CO')} COP/h)
+                      {t.categoria} (${t.tarifa_hora.toLocaleString('es-CO')} COP / 1 hr)
                     </option>
                   ))}
                 </select>
@@ -265,7 +265,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 min="1"
                 value={tiempoEstimado}
                 onChange={(e) => setTiempoEstimado(Number(e.target.value))}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
+                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold"
               />
             </div>
           </div>
@@ -280,7 +280,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 <div>
                   <h5 className="font-extrabold text-charcoal-900 text-xs">Costo Estimado de Proyecto ({categoriaProyecto})</h5>
                   <p className="text-[11px] text-charcoal-600">
-                    Tarifa Oficial: <span className="font-bold text-sage-800">${tarifaHoraActual.toLocaleString('es-CO')} COP/h</span> × {tiempoEstimado} horas
+                    Tarifa Oficial: <span className="font-bold text-sage-800">${tarifaHoraActual.toLocaleString('es-CO')} COP / 1 hr</span> × {tiempoEstimado} {tiempoEstimado === 1 ? 'hora' : 'horas'}
                   </p>
                 </div>
               </div>
