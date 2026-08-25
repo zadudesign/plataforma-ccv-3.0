@@ -27,9 +27,9 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [descripcion, setDescripcion] = useState('');
   const [tipoTarea, setTipoTarea] = useState<TipoTarea>('Curso Virtual');
   const [categoriaProyecto, setCategoriaProyecto] = useState<CategoriaTareaProyecto>('Diseño');
-  const [cursoId, setCursoId] = useState(cursos[0]?.id || 'c-1');
-  const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || 'pry-1');
-  const [responsableId, setResponsableId] = useState(usuarios[0]?.id || 'u-1');
+  const [cursoId, setCursoId] = useState(cursos[0]?.id || '');
+  const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || '');
+  const [responsableId, setResponsableId] = useState(usuarios[0]?.id || '');
   const [fechaVencimiento, setFechaVencimiento] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
@@ -37,8 +37,12 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   });
   const [tiempoEstimado, setTiempoEstimado] = useState(20);
 
-  const resp = usuarios.find(u => u.id === responsableId);
-  const respArea = areas.find(a => a.nombre === resp?.area_nombre) || areas.find(a => a.id === 'a-5') || areas[0];
+  const activeCursoId = cursoId || cursos[0]?.id;
+  const activeProyectoId = proyectoId || proyectos[0]?.id;
+  const activeResponsableId = responsableId || usuarios[0]?.id;
+
+  const resp = usuarios.find(u => u.id === activeResponsableId);
+  const respArea = areas.find(a => a.nombre === resp?.area_nombre) || areas[0];
 
   const tarifaConfig = tarifasProyecto.find(t => t.categoria === categoriaProyecto);
   const tarifaHoraActual = tarifaConfig ? tarifaConfig.tarifa_hora : 35000;
@@ -48,22 +52,22 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     e.preventDefault();
     if (!titulo.trim()) return;
 
-    const cursoObj = cursos.find(c => c.id === cursoId);
-    const proyObj = proyectos.find(p => p.id === proyectoId);
+    const cursoObj = cursos.find(c => c.id === activeCursoId);
+    const proyObj = proyectos.find(p => p.id === activeProyectoId);
 
     onCreateTask({
       titulo,
       descripcion,
       tipo_tarea: tipoTarea,
       categoria_proyecto: tipoTarea === 'Proyecto' ? categoriaProyecto : undefined,
-      area_id: respArea?.id || 'a-5',
-      area_nombre: respArea?.nombre || resp?.area_nombre || 'CMU',
-      curso_id: tipoTarea === 'Curso Virtual' ? cursoId : undefined,
+      area_id: respArea?.id || undefined,
+      area_nombre: respArea?.nombre || resp?.area_nombre || undefined,
+      curso_id: tipoTarea === 'Curso Virtual' ? activeCursoId : undefined,
       curso_nombre: tipoTarea === 'Curso Virtual' ? cursoObj?.nombre : undefined,
-      proyecto_id: tipoTarea === 'Proyecto' ? proyectoId : undefined,
+      proyecto_id: tipoTarea === 'Proyecto' ? activeProyectoId : undefined,
       proyecto_nombre: tipoTarea === 'Proyecto' ? proyObj?.nombre : undefined,
-      responsable_id: responsableId,
-      responsable_nombre: resp?.nombre_completo || 'Usuario',
+      responsable_id: activeResponsableId || undefined,
+      responsable_nombre: resp?.nombre_completo || undefined,
       responsable_avatar: resp?.avatar_url,
       rol_destino: resp?.rol_nombre || (tipoTarea === 'Proyecto' ? categoriaProyecto : 'General'),
       orden_tarea: 1,
