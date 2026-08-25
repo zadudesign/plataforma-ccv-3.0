@@ -24,6 +24,7 @@ import {
   addComentarioDB,
   addRegistroHorasDB
 } from '@/lib/supabaseService';
+import { INITIAL_TAREAS } from '@/lib/mockData';
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
 import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
@@ -69,11 +70,15 @@ export default function Home() {
     }
   }, [usuarioActual?.id]);
 
-  // Cargar tareas iniciales desde Supabase DB
+  // Cargar tareas iniciales desde Supabase DB o Fallback
   useEffect(() => {
     const loadTareas = async () => {
       const dbTareas = await fetchTareasDB();
-      setTareas(dbTareas || []);
+      if (dbTareas && dbTareas.length > 0) {
+        setTareas(dbTareas);
+      } else {
+        setTareas(INITIAL_TAREAS);
+      }
     };
     loadTareas();
   }, []);
@@ -158,7 +163,11 @@ export default function Home() {
   const handleCreateTask = async (nuevaTarea: Omit<TareaCCV, 'id'>) => {
     const dbTarea = await createTareaDB(nuevaTarea);
     const id = dbTarea?.id || `t-${Date.now()}`;
-    const tareaCompleta: TareaCCV = { ...nuevaTarea, id };
+    const tareaCompleta: TareaCCV = { 
+      ...nuevaTarea, 
+      ...(dbTarea || {}),
+      id 
+    };
     setTareas(prev => [tareaCompleta, ...prev]);
   };
 

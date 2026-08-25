@@ -740,8 +740,39 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       .order('orden_tarea', { ascending: true });
 
     if (error || !data) {
-      if (error) console.error('Error al obtener tareas de Supabase:', error);
-      return [];
+      if (error) console.error('Error al obtener tareas de Supabase (con joins):', error);
+      // Fallback sin joins en caso de discrepancia en nombres de foreign keys:
+      const { data: rawData, error: rawError } = await supabase
+        .from('tareas')
+        .select('*')
+        .order('orden_tarea', { ascending: true });
+
+      if (rawError || !rawData) {
+        if (rawError) console.error('Error al obtener tareas (raw) de Supabase:', rawError);
+        return [];
+      }
+
+      return rawData.map((t: any) => ({
+        id: t.id,
+        titulo: t.titulo,
+        descripcion: t.descripcion || '',
+        proyecto_id: t.proyecto_id,
+        curso_id: t.curso_id,
+        area_id: t.area_id,
+        responsable_id: t.responsable_id,
+        rol_destino: t.rol_destino,
+        categoria_proyecto: t.categoria_proyecto,
+        orden_tarea: t.orden_tarea || 0,
+        estado: t.estado as EstadoTarea,
+        tipo_tarea: (t.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
+        fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
+        fecha_completada: t.fecha_completada,
+        tiempo_estimado: Number(t.tiempo_estimado || 0),
+        tiempo_invertido: Number(t.tiempo_invertido || 0),
+        tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
+        tarifa_tarea: Number(t.tarifa_tarea || 0),
+        created_at: t.created_at
+      }));
     }
 
     return data.map((t: any) => ({
@@ -778,15 +809,103 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
 
 export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaCCV | null> {
   try {
+    let validCursoId = isGuid(tarea.curso_id) ? tarea.curso_id : null;
+    let validProyectoId = isGuid(tarea.proyecto_id) ? tarea.proyecto_id : null;
+    let validAreaId = isGuid(tarea.area_id) ? tarea.area_id : null;
+    let validResponsableId = isGuid(tarea.responsable_id) ? tarea.responsable_id : null;
+
+    // 1. Resolver Curso en Supabase si no es UUID válido
+    if (!validCursoId && tarea.tipo_tarea === 'Curso Virtual') {
+      if (tarea.curso_nombre) {
+        const { data: cursoFound } = await supabase
+          .from('cursos')
+          .select('id')
+          .ilike('nombre', `%${tarea.curso_nombre.trim()}%`)
+          .maybeSingle();
+        if (cursoFound?.id) validCursoId = cursoFound.id;
+      }
+      if (!validCursoId) {
+        const { data: primerCurso } = await supabase.from('cursos').select('id').limit(1);
+        if (primerCurso && primerCurso.length > 0) {
+          validCursoId = primerCurso[0].id;
+        }
+      }
+    }
+
+    // 2. Resolver Proyecto en Supabase si no es UUID válido
+    if (!validProyectoId && (tarea.tipo_tarea === 'Proyecto' || (tarea.tipo_tarea as string) === 'Proyecto Especial')) {
+      if (tarea.proyecto_nombre) {
+        const { data: proyFound } = await supabase
+          .from('proyectos')
+          .select('id')
+          .ilike('nombre', `%${tarea.proyecto_nombre.trim()}%`)
+          .maybeSingle();
+        if (proyFound?.id) validProyectoId = proyFound.id;
+      }
+      if (!validProyectoId) {
+        const { data: primerProy } = await supabase.from('proyectos').select('id').limit(1);
+        if (primerProy && primerProy.length > 0) {
+          validProyectoId = primerProy[0].id;
+        }
+      }
+    }
+
+    // 3. Resolver Área en Supabase si no es UUID válido
+    if (!validAreaId) {
+      if (tarea.area_nombre) {
+        const { data: areaFound } = await supabase
+          .from('areas')
+          .select('id')
+          .ilike('nombre', `%${tarea.area_nombre.trim()}%`)
+          .maybeSingle();
+        if (areaFound?.id) validAreaId = areaFound.id;
+      }
+      if (!validAreaId) {
+        const { data: areaDefecto } = await supabase.from('areas').select('id').limit(1);
+        if (areaDefecto && areaDefecto.length > 0) {
+          validAreaId = areaDefecto[0].id;
+        }
+      }
+    }
+
+    // 4. Resolver Responsable en Supabase si no es UUID válido
+    if (!validResponsableId) {
+      if (tarea.responsable_nombre) {
+        const { data: userFound } = await supabase
+          .from('usuarios')
+          .select('id')
+          .ilike('nombre_completo', `%${tarea.responsable_nombre.trim()}%`)
+          .maybeSingle();
+        if (userFound?.id) validResponsableId = userFound.id;
+      }
+      if (!validResponsableId) {
+        try {
+          const { data: authUser } = await supabase.auth.getUser();
+          if (authUser?.user?.id && isGuid(authUser.user.id)) {
+            validResponsableId = authUser.user.id;
+          }
+        } catch {
+          // Ignorar error de auth lookup
+        }
+      }
+    }
+
+    // Asegurar compatibilidad estricta con la restricción check_curso_o_proyecto
+    if (tarea.tipo_tarea === 'Curso Virtual') {
+      validProyectoId = null;
+    } else {
+      validCursoId = null;
+    }
+
     const payload: any = {
-      titulo: tarea.titulo,
+      titulo: tarea.titulo.trim(),
       descripcion: tarea.descripcion || '',
-      proyecto_id: isGuid(tarea.proyecto_id) ? tarea.proyecto_id : null,
-      curso_id: isGuid(tarea.curso_id) ? tarea.curso_id : null,
-      area_id: isGuid(tarea.area_id) ? tarea.area_id : null,
-      responsable_id: isGuid(tarea.responsable_id) ? tarea.responsable_id : null,
+      proyecto_id: validProyectoId,
+      curso_id: validCursoId,
+      area_id: validAreaId,
+      responsable_id: validResponsableId,
       rol_destino: tarea.rol_destino || null,
-      categoria_proyecto: tarea.categoria_proyecto || null,
+      categoria_proyecto: tarea.tipo_tarea === 'Proyecto' ? (tarea.categoria_proyecto || 'Diseño') : null,
       orden_tarea: tarea.orden_tarea || 0,
       estado: tarea.estado || 'Pendiente',
       tipo_tarea: tarea.tipo_tarea === 'Proyecto' ? 'Proyecto Especial' : (tarea.tipo_tarea || 'Curso Virtual'),
@@ -797,14 +916,53 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaC
       tarifa_hora: tarea.tarifa_hora !== undefined && tarea.tarifa_hora !== null ? Number(tarea.tarifa_hora) : null,
       tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0
     };
-    const { data, error } = await supabase.from('tareas').insert(payload).select().single();
+
+    let { data, error } = await supabase
+      .from('tareas')
+      .insert(payload)
+      .select(`
+        *,
+        proyecto:proyectos(nombre),
+        curso:cursos(nombre),
+        area:areas(nombre),
+        responsable:usuarios!responsable_id(nombre_completo, avatar_url)
+      `)
+      .single();
+
+    // Fallback: Si falla con el join enrich, intentar insert simple o reintentar tipo_tarea
     if (error) {
+      const rawRes = await supabase.from('tareas').insert(payload).select().single();
+      if (!rawRes.error && rawRes.data) {
+        data = rawRes.data;
+        error = null;
+      } else if (rawRes.error && tarea.tipo_tarea === 'Proyecto') {
+        payload.tipo_tarea = 'Proyecto';
+        const retryRes = await supabase.from('tareas').insert(payload).select().single();
+        if (!retryRes.error && retryRes.data) {
+          data = retryRes.data;
+          error = null;
+        }
+      }
+    }
+
+    if (error || !data) {
       console.error('Error insertando tarea en Supabase:', error);
       return null;
     }
+
     return {
       ...tarea,
       id: data.id,
+      curso_id: data.curso_id || validCursoId || tarea.curso_id,
+      curso_nombre: data.curso?.nombre || tarea.curso_nombre,
+      proyecto_id: data.proyecto_id || validProyectoId || tarea.proyecto_id,
+      proyecto_nombre: data.proyecto?.nombre || tarea.proyecto_nombre,
+      area_id: data.area_id || validAreaId || tarea.area_id,
+      area_nombre: data.area?.nombre || tarea.area_nombre,
+      responsable_id: data.responsable_id || validResponsableId || tarea.responsable_id,
+      responsable_nombre: data.responsable?.nombre_completo || tarea.responsable_nombre,
+      responsable_avatar: data.responsable?.avatar_url || tarea.responsable_avatar,
+      tipo_tarea: (data.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
       created_at: data.created_at
     };
   } catch (err) {
@@ -827,6 +985,42 @@ export async function updateTareaEstadoDB(id: string, nuevoEstado: EstadoTarea):
     return !error;
   } catch (err) {
     console.error('Excepción actualizando estado de tarea:', err);
+    return false;
+  }
+}
+
+export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload: any = { updated_at: new Date().toISOString() };
+    if (datos.titulo !== undefined) payload.titulo = datos.titulo;
+    if (datos.descripcion !== undefined) payload.descripcion = datos.descripcion;
+    if (datos.estado !== undefined) payload.estado = datos.estado;
+    if (datos.fecha_vencimiento !== undefined) payload.fecha_vencimiento = datos.fecha_vencimiento;
+    if (datos.tiempo_estimado !== undefined) payload.tiempo_estimado = Number(datos.tiempo_estimado);
+    if (datos.tiempo_invertido !== undefined) payload.tiempo_invertido = Number(datos.tiempo_invertido);
+    if (datos.tarifa_hora !== undefined) payload.tarifa_hora = datos.tarifa_hora;
+    if (datos.tarifa_tarea !== undefined) payload.tarifa_tarea = datos.tarifa_tarea;
+    if (datos.responsable_id !== undefined && isGuid(datos.responsable_id)) payload.responsable_id = datos.responsable_id;
+    if (datos.rol_destino !== undefined) payload.rol_destino = datos.rol_destino;
+
+    const { error } = await supabase.from('tareas').update(payload).eq('id', id);
+    if (error) console.error('Error al actualizar tarea en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al actualizar tarea:', err);
+    return false;
+  }
+}
+
+export async function deleteTareaDB(id: string): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const { error } = await supabase.from('tareas').delete().eq('id', id);
+    if (error) console.error('Error al eliminar tarea en Supabase:', error);
+    return !error;
+  } catch (err) {
+    console.error('Excepción al eliminar tarea:', err);
     return false;
   }
 }

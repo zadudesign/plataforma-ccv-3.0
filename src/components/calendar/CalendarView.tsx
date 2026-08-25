@@ -6,7 +6,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Clock, 
-  Plus, 
   CheckCircle2, 
   AlertCircle, 
   Clock3, 
@@ -21,7 +20,7 @@ import { TareaCCV, EstadoTarea } from '@/types';
 interface CalendarViewProps {
   tareas: TareaCCV[];
   onSelectTask: (tarea: TareaCCV) => void;
-  onOpenCreateTask: () => void;
+  onOpenCreateTask?: () => void;
 }
 
 const NOMBRES_MESES = [
@@ -41,7 +40,6 @@ const formatYYYYMMDD = (year: number, monthIndex: number, day: number): string =
 export const CalendarView: React.FC<CalendarViewProps> = ({
   tareas,
   onSelectTask,
-  onOpenCreateTask,
 }) => {
   // Fecha actual del sistema
   const hoyObj = useMemo(() => new Date(), []);
@@ -217,15 +215,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Botón Crear Tarea */}
-          <button
-            onClick={onOpenCreateTask}
-            className="ccv-btn-primary flex items-center gap-2 px-4 py-2 text-xs font-bold shadow-xs hover:shadow-md transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nueva Entrega</span>
-          </button>
         </div>
       </div>
 
@@ -443,31 +432,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <div className="ccv-card p-6 h-full flex flex-col justify-between border-t-4 border-t-primary-600 shadow-card">
             <div className="space-y-4">
               {/* Header del Panel Lateral */}
-              <div className="pb-3 border-b border-stone-200 flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="w-5 h-5 text-primary-600" />
-                    <span className="text-xs font-black uppercase tracking-wider text-primary-700">
-                      Entregas del Día
+              <div className="pb-3 border-b border-stone-200">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-primary-600" />
+                  <span className="text-xs font-black uppercase tracking-wider text-primary-700">
+                    Entregas del Día
+                  </span>
+                  {esHoySeleccionado && (
+                    <span className="bg-accent-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-2xs">
+                      HOY
                     </span>
-                    {esHoySeleccionado && (
-                      <span className="bg-accent-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-2xs">
-                        HOY
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-base font-extrabold text-charcoal-900 mt-1">
-                    {textoFechaSeleccionada}
-                  </h3>
+                  )}
                 </div>
-
-                <button
-                  onClick={onOpenCreateTask}
-                  className="p-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
-                  title="Añadir entrega para esta fecha"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                <h3 className="text-base font-extrabold text-charcoal-900 mt-1">
+                  {textoFechaSeleccionada}
+                </h3>
               </div>
 
               {/* Filtro rápido por estado dentro del día */}
@@ -565,13 +544,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         No se registran vencimientos para este día con los filtros seleccionados.
                       </p>
                     </div>
-                    <button
-                      onClick={onOpenCreateTask}
-                      className="px-3 py-1.5 rounded-xl bg-white border border-stone-200 text-primary-700 hover:bg-primary-50 text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Programar Entrega</span>
-                    </button>
                   </div>
                 )}
               </div>
