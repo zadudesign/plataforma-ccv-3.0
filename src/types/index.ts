@@ -122,6 +122,7 @@ export interface TareaCCV {
   tiempo_invertido: number; // en horas
   tarifa_hora?: number; // valor por hora asignado
   tarifa_tarea?: number; // valor monetario total (tiempo_estimado * tarifa_hora)
+  enlace_recurso?: string; // URL externa a material, Google Drive, OneDrive, Figma, etc.
   created_at?: string;
 }
 

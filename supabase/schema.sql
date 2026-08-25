@@ -138,6 +138,7 @@ CREATE TABLE IF NOT EXISTS public.tareas (
     tiempo_invertido NUMERIC(6, 2) DEFAULT 0.00,
     tarifa_hora NUMERIC(10, 2) DEFAULT 0.00,
     tarifa_tarea NUMERIC(10, 2) DEFAULT 0.00,
+    enlace_recurso TEXT, -- Enlace externo a recursos didácticos, Google Drive, OneDrive, Figma, etc.
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CONSTRAINT check_curso_o_proyecto CHECK (

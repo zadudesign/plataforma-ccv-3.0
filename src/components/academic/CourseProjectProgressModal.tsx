@@ -19,7 +19,9 @@ import {
   ArrowLeft,
   DollarSign,
   MessageSquare,
-  Send
+  Send,
+  Link as LinkIcon,
+  ExternalLink
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -549,6 +551,35 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                     {tareaSeleccionadaLocal.descripcion}
                   </p>
                 </div>
+
+                {/* Material & Recursos Adjuntos Externos */}
+                {tareaSeleccionadaLocal.enlace_recurso && (
+                  <div className="p-4 rounded-2xl bg-sage-50/80 border border-sage-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-sage-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <LinkIcon className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h5 className="font-extrabold text-charcoal-900 text-xs flex items-center gap-2">
+                          Material & Recursos Adjuntos
+                          <span className="text-[10px] bg-white text-sage-800 border border-sage-300 px-2 py-0.5 rounded-full font-bold">Enlace Externo</span>
+                        </h5>
+                        <p className="text-[11px] text-charcoal-600 truncate font-mono mt-0.5 max-w-sm">
+                          {tareaSeleccionadaLocal.enlace_recurso}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={tareaSeleccionadaLocal.enlace_recurso.startsWith('http') ? tareaSeleccionadaLocal.enlace_recurso : `https://${tareaSeleccionadaLocal.enlace_recurso}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-charcoal-900 hover:bg-sage-600 text-white text-xs font-extrabold rounded-full transition-all shadow-sm hover:shadow-md flex-shrink-0"
+                    >
+                      <span>Abrir Recurso</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
 
                 {/* Metrics Grid */}
                 <div className={`grid grid-cols-1 ${tareaSeleccionadaLocal.tipo_tarea === 'Proyecto' && tareaSeleccionadaLocal.tarifa_tarea !== undefined ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>

@@ -786,6 +786,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         tiempo_invertido: Number(t.tiempo_invertido || 0),
         tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
         tarifa_tarea: Number(t.tarifa_tarea || 0),
+        enlace_recurso: t.enlace_recurso || undefined,
         created_at: t.created_at
       }));
     }
@@ -814,6 +815,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       tiempo_invertido: Number(t.tiempo_invertido || 0),
       tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
       tarifa_tarea: Number(t.tarifa_tarea || 0),
+      enlace_recurso: t.enlace_recurso || undefined,
       created_at: t.created_at
     }));
   } catch (err) {
@@ -948,7 +950,8 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       tiempo_estimado: Number(tarea.tiempo_estimado) || 0,
       tiempo_invertido: Number(tarea.tiempo_invertido) || 0,
       tarifa_hora: tarea.tarifa_hora !== undefined && tarea.tarifa_hora !== null ? Number(tarea.tarifa_hora) : null,
-      tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0
+      tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0,
+      enlace_recurso: tarea.enlace_recurso || null
     };
 
     // Intentar inserciones con variantes de tipo_tarea para máxima compatibilidad con restricciones CHECK
@@ -974,12 +977,13 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
 
       // Si falló por columnas inexistentes (código PGRST204)
       if (res.error && res.error.code === 'PGRST204') {
-        delete currentPayload.categoria_proyecto;
-        delete currentPayload.tarifa_hora;
-        delete currentPayload.tarifa_tarea;
-        delete currentPayload.tiempo_estimado;
-        delete currentPayload.tiempo_invertido;
-        delete currentPayload.fecha_completada;
+        if (res.error.message.includes('categoria_proyecto')) delete currentPayload.categoria_proyecto;
+        if (res.error.message.includes('tarifa_hora')) delete currentPayload.tarifa_hora;
+        if (res.error.message.includes('tarifa_tarea')) delete currentPayload.tarifa_tarea;
+        if (res.error.message.includes('tiempo_estimado')) delete currentPayload.tiempo_estimado;
+        if (res.error.message.includes('tiempo_invertido')) delete currentPayload.tiempo_invertido;
+        if (res.error.message.includes('fecha_completada')) delete currentPayload.fecha_completada;
+        if (res.error.message.includes('enlace_recurso')) delete currentPayload.enlace_recurso;
         res = await supabase.from('tareas').insert(currentPayload).select().single();
       }
 
@@ -1014,6 +1018,7 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
         responsable_nombre: tarea.responsable_nombre,
         responsable_avatar: tarea.responsable_avatar,
         tipo_tarea: (data.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
+        enlace_recurso: data.enlace_recurso || tarea.enlace_recurso,
         created_at: data.created_at
       }
     };

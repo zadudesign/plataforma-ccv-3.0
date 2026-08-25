@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Plus, Calendar, DollarSign, Clock, Layers, BookOpen, FolderKanban } from 'lucide-react';
+import { X, Plus, Calendar, DollarSign, Clock, Layers, BookOpen, FolderKanban, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -25,6 +25,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const { tarifasProyecto } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [enlaceRecurso, setEnlaceRecurso] = useState('');
   const [tipoTarea, setTipoTarea] = useState<TipoTarea>('Curso Virtual');
   const [categoriaProyecto, setCategoriaProyecto] = useState<CategoriaTareaProyecto>('Diseño');
   const [cursoId, setCursoId] = useState(cursos[0]?.id || '');
@@ -77,6 +78,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       tiempo_invertido: 0,
       tarifa_hora: tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined,
       tarifa_tarea: costoTotalCalculado,
+      enlace_recurso: enlaceRecurso.trim() || undefined,
     });
 
     onClose();
@@ -153,6 +155,26 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               onChange={(e) => setDescripcion(e.target.value)}
               className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
             ></textarea>
+          </div>
+
+          {/* Enlace a Recursos o Material Pertinente */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-bold text-charcoal-800 flex items-center gap-1.5">
+                <LinkIcon className="w-3.5 h-3.5 text-sage-600" /> Enlace a Recursos o Material Adjunto (Opcional)
+              </label>
+              <span className="text-[10px] text-charcoal-400 font-medium">Google Drive, OneDrive, Figma, etc.</span>
+            </div>
+            <div className="relative">
+              <input
+                type="url"
+                placeholder="https://drive.google.com/... o enlace web externo"
+                value={enlaceRecurso}
+                onChange={(e) => setEnlaceRecurso(e.target.value)}
+                className="w-full p-3 pl-9 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-mono"
+              />
+              <ExternalLink className="w-4 h-4 text-charcoal-400 absolute left-3 top-3.5 pointer-events-none" />
+            </div>
           </div>
 
           {/* Cascading Association: Curso vs Proyecto */}

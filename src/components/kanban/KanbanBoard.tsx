@@ -11,7 +11,9 @@ import {
   DollarSign,
   ArrowRight,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Link as LinkIcon,
+  ExternalLink
 } from 'lucide-react';
 import { TareaCCV, EstadoTarea } from '@/types';
 
@@ -154,10 +156,26 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                           {tarea.descripcion}
                         </p>
 
-                        {/* Association (Course or Project) */}
-                        <div className="mt-3 pt-2 border-t border-stone-200/60 text-[11px] font-semibold text-charcoal-700">
-                          {tarea.curso_nombre && <span className="line-clamp-1">📘 {tarea.curso_nombre}</span>}
-                          {tarea.proyecto_nombre && <span className="line-clamp-1">📁 {tarea.proyecto_nombre}</span>}
+                        {/* Association (Course or Project) & External Resource Link */}
+                        <div className="mt-3 pt-2 border-t border-stone-200/60 flex items-center justify-between gap-2 text-[11px] font-semibold text-charcoal-700">
+                          <div className="truncate flex-1">
+                            {tarea.curso_nombre && <span className="truncate block">📘 {tarea.curso_nombre}</span>}
+                            {tarea.proyecto_nombre && <span className="truncate block">📁 {tarea.proyecto_nombre}</span>}
+                          </div>
+                          {tarea.enlace_recurso && (
+                            <a
+                              href={tarea.enlace_recurso.startsWith('http') ? tarea.enlace_recurso : `https://${tarea.enlace_recurso}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white hover:bg-sage-100 text-sage-800 hover:text-sage-950 border border-sage-300 font-extrabold text-[10px] transition-colors shadow-2xs flex-shrink-0"
+                              title={`Abrir recurso externo: ${tarea.enlace_recurso}`}
+                            >
+                              <LinkIcon className="w-2.5 h-2.5 text-sage-600" />
+                              <span>Recurso</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-charcoal-400" />
+                            </a>
+                          )}
                         </div>
 
                         {/* Footer details & state transfer controls */}
