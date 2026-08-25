@@ -288,11 +288,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
 
-      {/* Grid Principal: Calendario a la izquierda + Panel de Día a la derecha */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      {/* Grid Principal: Calendario a la izquierda + Paneles a la derecha (Misma Altura) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
         {/* Columna Calendario (8/12) */}
-        <div className="xl:col-span-8 space-y-4">
-          <div className="ccv-card p-6 shadow-card">
+        <div className="xl:col-span-8 flex flex-col h-full">
+          <div className="ccv-card p-5 sm:p-6 shadow-card h-full flex flex-col justify-between">
             {/* Encabezado Días de la semana */}
             <div className="grid grid-cols-7 gap-2 text-center text-xs font-black text-charcoal-500 uppercase tracking-wider pb-3 border-b border-stone-200">
               <div className="text-rose-600">Dom</div>
@@ -304,15 +304,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <div className="text-charcoal-700">Sáb</div>
             </div>
 
-            {/* Matriz de Días */}
-            <div className="grid grid-cols-7 gap-2 mt-3.5">
-              {/* Celdas del mes anterior (relleno visual atenuado) */}
+            {/* Cuadrícula de Días */}
+            <div className="grid grid-cols-7 gap-2 pt-3 flex-1">
+              {/* Días del mes anterior (Relleno) */}
               {Array.from({ length: offsetInicial }).map((_, idx) => {
                 const diaAnt = diasMesAnterior - offsetInicial + idx + 1;
                 return (
                   <div
                     key={`prev-offset-${idx}`}
-                    className="min-h-[105px] p-2 rounded-2xl bg-stone-50/60 border border-dashed border-stone-200/70 opacity-40 select-none flex flex-col justify-between"
+                    className="min-h-[95px] p-2 rounded-2xl bg-stone-50/60 border border-dashed border-stone-200/70 opacity-40 select-none flex flex-col justify-between"
                   >
                     <span className="text-xs font-bold text-stone-400">{diaAnt}</span>
                   </div>
@@ -330,7 +330,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <div
                     key={`dia-${dia}`}
                     onClick={() => setFechaSeleccionada(fechaStr)}
-                    className={`min-h-[105px] p-2 rounded-2xl border flex flex-col justify-between transition-all cursor-pointer group relative ${
+                    className={`min-h-[95px] p-2 rounded-2xl border flex flex-col justify-between transition-all cursor-pointer group relative ${
                       esSeleccionado
                         ? 'bg-primary-50/80 border-primary-600 ring-2 ring-primary-500 shadow-md scale-[1.01] z-10'
                         : esHoy
@@ -338,7 +338,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         : 'bg-white border-stone-200/90 hover:border-primary-300 hover:bg-stone-50/50 hover:shadow-xs'
                     }`}
                   >
-                    {/* Header de la celda de día */}
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-1">
                         <span
@@ -358,7 +357,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           </span>
                         )}
                       </div>
-
                       {tareasDelDia.length > 0 && (
                         <span
                           className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
@@ -372,7 +370,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       )}
                     </div>
 
-                    {/* Pastillas de tareas */}
                     <div className="space-y-1 my-1 overflow-y-auto max-h-16 scrollbar-thin">
                       {tareasDelDia.map((t) => {
                         const bgBadge = 
@@ -398,7 +395,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       })}
                     </div>
 
-                    {/* Footer sutil con total */}
                     <div className="text-[9px] text-charcoal-400 flex justify-end">
                       {tareasDelDia.length > 0 ? (
                         <span className="text-charcoal-500 font-medium">
@@ -410,13 +406,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 );
               })}
 
-              {/* Celdas del mes siguiente para completar la cuadrícula */}
+              {/* Celdas del mes siguiente */}
               {Array.from({ length: totalCeldas - (offsetInicial + diasMes.length) }).map((_, idx) => {
                 const diaSig = idx + 1;
                 return (
                   <div
                     key={`next-offset-${idx}`}
-                    className="min-h-[105px] p-2 rounded-2xl bg-stone-50/60 border border-dashed border-stone-200/70 opacity-40 select-none flex flex-col justify-between"
+                    className="min-h-[95px] p-2 rounded-2xl bg-stone-50/60 border border-dashed border-stone-200/70 opacity-40 select-none flex flex-col justify-between"
                   >
                     <span className="text-xs font-bold text-stone-400">{diaSig}</span>
                   </div>
@@ -425,8 +421,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </div>
 
             {/* Leyenda de estados */}
-            <div className="mt-6 pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex flex-wrap items-center gap-4">
+            <div className="mt-4 pt-3 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="font-bold text-charcoal-600">Convenciones:</span>
                 <span className="flex items-center gap-1.5 text-charcoal-700">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
@@ -448,37 +444,43 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
               <div className="flex items-center gap-2 text-[11px] text-charcoal-500">
                 <span className="w-2 h-2 rounded-full bg-accent-500 animate-pulse"></span>
-                <span>Día actual sombreado en dorado / Hoy</span>
+                <span>Hoy</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Columna Derecha: Panel de Tareas & Entregas del Día Seleccionado (4/12) */}
-        <div className="xl:col-span-4 space-y-4">
-          <div className="ccv-card p-6 h-full flex flex-col justify-between border-t-4 border-t-primary-600 shadow-card">
-            <div className="space-y-4">
+        {/* Columna Derecha: 2 Paneles Divididos Equitativamente (4/12) */}
+        <div className="xl:col-span-4 grid grid-rows-2 gap-4 h-full min-h-[600px] xl:min-h-0">
+          {/* Panel Superior: Entregas del Día Seleccionado (50% Altura) */}
+          <div className="ccv-card p-4 sm:p-5 flex flex-col justify-between border-t-4 border-t-primary-600 shadow-card h-full overflow-hidden">
+            <div className="flex flex-col min-h-0 flex-1">
               {/* Header del Panel Lateral */}
-              <div className="pb-3 border-b border-stone-200">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="w-5 h-5 text-primary-600" />
-                  <span className="text-xs font-black uppercase tracking-wider text-primary-700">
-                    Entregas del Día
-                  </span>
-                  {esHoySeleccionado && (
-                    <span className="bg-accent-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-2xs">
-                      HOY
+              <div className="pb-2 border-b border-stone-200 shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <CalendarDays className="w-4 h-4 text-primary-600" />
+                    <span className="text-[11px] font-black uppercase tracking-wider text-primary-700">
+                      Entregas del Día
                     </span>
-                  )}
+                    {esHoySeleccionado && (
+                      <span className="bg-accent-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-2xs">
+                        HOY
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-primary-100 text-primary-900 border border-primary-200">
+                    {tareasDelDiaSeleccionado.length}
+                  </span>
                 </div>
-                <h3 className="text-base font-extrabold text-charcoal-900 mt-1">
+                <h3 className="text-xs sm:text-sm font-extrabold text-charcoal-900 mt-0.5 truncate">
                   {textoFechaSeleccionada}
                 </h3>
               </div>
 
-              {/* Filtro rápido por estado dentro del día */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                <Filter className="w-3.5 h-3.5 text-charcoal-400 shrink-0" />
+              {/* Filtro rápido */}
+              <div className="flex items-center gap-1 overflow-x-auto py-1.5 shrink-0 text-xs">
+                <Filter className="w-3 h-3 text-charcoal-400 shrink-0" />
                 {[
                   { id: 'todos', label: 'Todas' },
                   { id: 'Pendiente', label: 'Pendientes' },
@@ -488,7 +490,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <button
                     key={opc.id}
                     onClick={() => setFiltroEstado(opc.id)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${
                       filtroEstado === opc.id
                         ? 'bg-charcoal-800 text-white shadow-2xs'
                         : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
@@ -499,8 +501,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 ))}
               </div>
 
-              {/* Listado de Tareas del Día */}
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              {/* Listado de Tareas */}
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-2 mt-1">
                 {tareasDelDiaSeleccionado.length > 0 ? (
                   tareasDelDiaSeleccionado.map((tarea) => {
                     const badgeClass =
@@ -513,120 +515,87 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       <div
                         key={tarea.id}
                         onClick={() => onSelectTask(tarea)}
-                        className="p-4 rounded-2xl border border-stone-200 bg-white hover:border-primary-400 hover:shadow-md transition-all cursor-pointer group space-y-2.5"
+                        className="p-2.5 sm:p-3 rounded-xl border border-stone-200 bg-white hover:border-primary-400 hover:shadow-sm transition-all cursor-pointer group space-y-1.5"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${badgeClass}`}>
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md border ${badgeClass}`}>
                             {tarea.estado}
                           </span>
-                          <span className="text-[11px] font-bold text-charcoal-400">
+                          <span className="text-[10px] font-bold text-charcoal-400">
                             {tarea.tipo_tarea}
                           </span>
                         </div>
-
-                        <h4 className="text-xs font-extrabold text-charcoal-900 group-hover:text-primary-700 transition-colors line-clamp-2 leading-snug">
+                        <h4 className="text-xs font-bold text-charcoal-900 group-hover:text-primary-700 transition-colors line-clamp-1 leading-tight">
                           {tarea.titulo}
                         </h4>
-
-                        <div className="text-[11px] text-charcoal-500 truncate">
-                          {tarea.curso_nombre || tarea.proyecto_nombre || 'Asignación General CCV'}
-                        </div>
-
-                        <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs text-charcoal-600">
-                          <div className="flex items-center gap-1.5">
-                            {tarea.responsable_avatar ? (
-                              <img
-                                src={tarea.responsable_avatar}
-                                alt={tarea.responsable_nombre || ''}
-                                className="w-5 h-5 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-primary-100 text-primary-800 flex items-center justify-center text-[10px] font-bold">
-                                {(tarea.responsable_nombre || 'U').charAt(0)}
-                              </div>
-                            )}
-                            <span className="text-[11px] font-bold text-charcoal-700 truncate max-w-[130px]">
-                              {tarea.responsable_nombre || 'Sin asignar'}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1 text-[11px] font-extrabold text-primary-700 group-hover:translate-x-0.5 transition-transform">
-                            <span>Gestionar</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </div>
+                        <div className="pt-1 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-600">
+                          <span className="truncate max-w-[140px] text-charcoal-500 font-medium">
+                            {tarea.curso_nombre || tarea.proyecto_nombre || 'General CCV'}
+                          </span>
+                          <span className="text-primary-700 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
+                            Ver <ArrowRight className="w-3 h-3" />
+                          </span>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-stone-200 bg-cream-50/50 space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-600 mx-auto flex items-center justify-center">
-                      <Clock className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-extrabold text-charcoal-800">
-                        No hay entregas programadas
-                      </p>
-                      <p className="text-[11px] text-charcoal-500 mt-0.5">
-                        No se registran vencimientos para este día con los filtros seleccionados.
-                      </p>
-                    </div>
+                  <div className="py-6 px-3 text-center rounded-xl border border-dashed border-stone-200 bg-cream-50/50 space-y-1.5">
+                    <Clock className="w-5 h-5 text-primary-600 mx-auto" />
+                    <p className="text-xs font-bold text-charcoal-800">Sin entregas</p>
+                    <p className="text-[10px] text-charcoal-500">No se registran vencimientos para la fecha.</p>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Footer Informativo */}
-            <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-[11px] text-charcoal-500">
-              <span>{tareasDelDiaSeleccionado.length} entregas listadas</span>
-              <span className="text-primary-600 font-bold">CCV 3.0 Sync</span>
+            <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-500 shrink-0">
+              <span>{tareasDelDiaSeleccionado.length} entregas</span>
+              <span className="text-primary-600 font-bold">CCV 3.0</span>
             </div>
           </div>
 
-          {/* Nueva Sección Debajo: Próximas Tareas */}
-          <div className="ccv-card p-6 flex flex-col justify-between border-t-4 border-t-accent-500 shadow-card space-y-4">
-            <div>
-              {/* Header de Próximas Tareas */}
-              <div className="pb-3 border-b border-stone-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CalendarClock className="w-5 h-5 text-accent-600" />
+          {/* Panel Inferior: Próximas Tareas (50% Altura) */}
+          <div className="ccv-card p-4 sm:p-5 flex flex-col justify-between border-t-4 border-t-accent-500 shadow-card h-full overflow-hidden">
+            <div className="flex flex-col min-h-0 flex-1">
+              {/* Header */}
+              <div className="pb-2 border-b border-stone-200 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <CalendarClock className="w-4 h-4 text-accent-600" />
                   <div>
-                    <span className="text-xs font-black uppercase tracking-wider text-accent-700 block">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-accent-700 block">
                       Próximas Tareas
                     </span>
-                    <h3 className="text-sm font-extrabold text-charcoal-900">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-charcoal-900 leading-tight">
                       Entregas en Calendario CCV
                     </h3>
                   </div>
                 </div>
-                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-accent-100 text-accent-900 border border-accent-200">
-                  {proximasTareas.length} {proximasTareas.length === 1 ? 'pendiente' : 'pendientes'}
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-accent-100 text-accent-900 border border-accent-200">
+                  {proximasTareas.length}
                 </span>
               </div>
 
-              {/* Lista de Próximas Tareas */}
-              <div className="space-y-2.5 mt-3 max-h-[360px] overflow-y-auto pr-1">
+              {/* Lista */}
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-2 mt-2">
                 {proximasTareas.length > 0 ? (
                   proximasTareas.map((tarea) => {
                     const badgeClass =
                       tarea.estado === 'En Revisión' ? 'bg-amber-100 text-amber-800 border-amber-300' :
                       tarea.estado === 'En Proceso' ? 'bg-blue-100 text-blue-800 border-blue-300' :
                       'bg-rose-100 text-rose-800 border-rose-300';
-
                     const tiempoRestante = formatDiasRestantes(tarea.fecha_vencimiento || '');
-
                     return (
                       <div
                         key={tarea.id}
                         onClick={() => onSelectTask(tarea)}
-                        className="p-3.5 rounded-2xl border border-stone-200 bg-white hover:border-accent-400 hover:shadow-md transition-all cursor-pointer group space-y-2"
+                        className="p-2.5 sm:p-3 rounded-xl border border-stone-200 bg-white hover:border-accent-400 hover:shadow-sm transition-all cursor-pointer group space-y-1.5"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${badgeClass}`}>
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md border ${badgeClass}`}>
                               {tarea.estado}
                             </span>
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-stone-100 text-charcoal-700 border border-stone-200">
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-charcoal-700 border border-stone-200">
                               📅 {tarea.fecha_vencimiento}
                             </span>
                           </div>
@@ -637,16 +606,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             {tiempoRestante}
                           </span>
                         </div>
-
-                        <h4 className="text-xs font-bold text-charcoal-900 group-hover:text-accent-700 transition-colors line-clamp-1">
+                        <h4 className="text-xs font-bold text-charcoal-900 group-hover:text-accent-700 transition-colors line-clamp-1 leading-tight">
                           {tarea.titulo}
                         </h4>
-
-                        <div className="flex items-center justify-between text-[11px] text-charcoal-500 pt-1.5 border-t border-stone-100">
-                          <span className="truncate max-w-[150px] font-medium">
-                            {tarea.curso_nombre || tarea.proyecto_nombre || 'CCV'}
-                          </span>
-                          <span className="text-accent-700 font-extrabold text-[10px] group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
+                        <div className="flex items-center justify-between text-[10px] text-charcoal-500 pt-1 border-t border-stone-100">
+                          <span className="truncate max-w-[140px] font-medium">{tarea.curso_nombre || tarea.proyecto_nombre || 'CCV'}</span>
+                          <span className="text-accent-700 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
                             Ver <ArrowRight className="w-3 h-3" />
                           </span>
                         </div>
@@ -654,22 +619,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     );
                   })
                 ) : (
-                  <div className="py-8 px-3 text-center rounded-2xl border border-dashed border-stone-200 bg-cream-50/50 space-y-2">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
-                    <p className="text-xs font-extrabold text-charcoal-800">
-                      ¡Al día con las entregas!
-                    </p>
-                    <p className="text-[10px] text-charcoal-500">
-                      No hay tareas pendientes con fecha de vencimiento próxima.
-                    </p>
+                  <div className="py-6 px-3 text-center rounded-xl border border-dashed border-stone-200 bg-cream-50/50 space-y-1.5">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto" />
+                    <p className="text-xs font-bold text-charcoal-800">¡Al día!</p>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Footer de Próximas Tareas */}
-            <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-400 font-medium">
-              <span>Ordenado cronológicamente</span>
+            <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-400 font-medium shrink-0">
+              <span>Cronológico</span>
               <span className="text-accent-700 font-bold">Producción CCV</span>
             </div>
           </div>
