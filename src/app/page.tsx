@@ -156,10 +156,11 @@ export default function Home() {
   };
 
   const handleCreateTask = async (nuevaTarea: Omit<TareaCCV, 'id'>) => {
-    const dbTarea = await createTareaDB(nuevaTarea);
-    if (dbTarea) {
-      setTareas(prev => [dbTarea, ...prev]);
+    const res = await createTareaDB(nuevaTarea);
+    if (res.success && res.data) {
+      setTareas(prev => [res.data!, ...prev]);
     } else {
+      alert(`⚠️ Error al guardar tarea en Supabase:\n\n${res.error || 'No se pudo conectar con la base de datos.'}\n\nRevisa que el archivo .env.local esté configurado o que se hayan ejecutado las tablas en Supabase.`);
       const fallbackTarea: TareaCCV = { ...nuevaTarea, id: `t-${Date.now()}` };
       setTareas(prev => [fallbackTarea, ...prev]);
     }

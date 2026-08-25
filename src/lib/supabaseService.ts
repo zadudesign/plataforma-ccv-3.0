@@ -16,14 +16,29 @@ import {
 } from '@/types';
 
 
-// Helper para determinar si Supabase responde adecuadamente
-export async function testSupabaseConnection(): Promise<boolean> {
+// Helper para determinar si Supabase responde adecuadamente con diagnóstico detallado
+export async function testSupabaseConnection(): Promise<{ ok: boolean; message: string; url?: string }> {
   try {
-    const { data, error } = await supabase.from('areas').select('id').limit(1);
-    if (error) return false;
-    return true;
-  } catch {
-    return false;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || url.includes('placeholder') || !key || key.includes('placeholder')) {
+      return {
+        ok: false,
+        message: 'Variables de entorno no detectadas o apuntando a placeholder. Revisa .env.local o Vercel.',
+        url: url || 'Sin URL'
+      };
+    }
+    const { data, error } = await supabase.from('tareas').select('id').limit(1);
+    if (error) {
+      return {
+        ok: false,
+        message: `Error en Supabase (${error.code || 'API'}): ${error.message}`,
+        url
+      };
+    }
+    return { ok: true, message: 'Conexión activa y verificada con Supabase', url };
+  } catch (err: any) {
+    return { ok: false, message: `Error de red al conectar: ${err?.message || err}`, url: process.env.NEXT_PUBLIC_SUPABASE_URL };
   }
 }
 
@@ -807,8 +822,16 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
   }
 }
 
-export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaCCV | null> {
+export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ success: boolean; data?: TareaCCV; error?: string }> {
   try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || url.includes('placeholder') || !key || key.includes('placeholder')) {
+      const msg = 'Variables de entorno no configuradas. Verifica NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY en .env.local o Vercel.';
+      console.error(msg);
+      return { success: false, error: msg };
+    }
+
     let validCursoId = isGuid(tarea.curso_id) ? tarea.curso_id : null;
     let validProyectoId = isGuid(tarea.proyecto_id) ? tarea.proyecto_id : null;
     let validAreaId = isGuid(tarea.area_id) ? tarea.area_id : null;
@@ -926,30 +949,35 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaC
     }
 
     if (insertRes.error || !insertRes.data) {
-      console.error('Error insertando tarea en Supabase:', insertRes.error);
-      return null;
+      const errMsg = `Error de Supabase (${insertRes.error?.code || 'PGRST'}): ${insertRes.error?.message || 'No se pudo guardar la tarea en Supabase.'}`;
+      console.error(errMsg, insertRes.error);
+      return { success: false, error: errMsg };
     }
 
     const data = insertRes.data;
 
     return {
-      ...tarea,
-      id: data.id,
-      curso_id: data.curso_id || validCursoId || tarea.curso_id,
-      curso_nombre: tarea.curso_nombre,
-      proyecto_id: data.proyecto_id || validProyectoId || tarea.proyecto_id,
-      proyecto_nombre: tarea.proyecto_nombre,
-      area_id: data.area_id || validAreaId || tarea.area_id,
-      area_nombre: tarea.area_nombre,
-      responsable_id: data.responsable_id || validResponsableId || tarea.responsable_id,
-      responsable_nombre: tarea.responsable_nombre,
-      responsable_avatar: tarea.responsable_avatar,
-      tipo_tarea: (data.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
-      created_at: data.created_at
+      success: true,
+      data: {
+        ...tarea,
+        id: data.id,
+        curso_id: data.curso_id || validCursoId || tarea.curso_id,
+        curso_nombre: tarea.curso_nombre,
+        proyecto_id: data.proyecto_id || validProyectoId || tarea.proyecto_id,
+        proyecto_nombre: tarea.proyecto_nombre,
+        area_id: data.area_id || validAreaId || tarea.area_id,
+        area_nombre: tarea.area_nombre,
+        responsable_id: data.responsable_id || validResponsableId || tarea.responsable_id,
+        responsable_nombre: tarea.responsable_nombre,
+        responsable_avatar: tarea.responsable_avatar,
+        tipo_tarea: (data.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
+        created_at: data.created_at
+      }
     };
-  } catch (err) {
-    console.error('Excepción insertando tarea:', err);
-    return null;
+  } catch (err: any) {
+    const errMsg = `Excepción al conectar con Supabase: ${err?.message || err}`;
+    console.error(errMsg);
+    return { success: false, error: errMsg };
   }
 }
 
