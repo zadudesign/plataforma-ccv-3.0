@@ -732,10 +732,10 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       .from('tareas')
       .select(`
         *,
-        proyecto:proyectos(nombre),
-        curso:cursos(nombre),
-        area:areas(nombre),
-        responsable:usuarios!responsable_id(nombre_completo, avatar_url)
+        proyectos(nombre),
+        cursos(nombre),
+        areas(nombre),
+        usuarios(nombre_completo, avatar_url)
       `)
       .order('orden_tarea', { ascending: true });
 
@@ -780,14 +780,14 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       titulo: t.titulo,
       descripcion: t.descripcion || '',
       proyecto_id: t.proyecto_id,
-      proyecto_nombre: t.proyecto?.nombre,
+      proyecto_nombre: t.proyectos?.nombre,
       curso_id: t.curso_id,
-      curso_nombre: t.curso?.nombre,
+      curso_nombre: t.cursos?.nombre,
       area_id: t.area_id,
-      area_nombre: t.area?.nombre,
+      area_nombre: t.areas?.nombre,
       responsable_id: t.responsable_id,
-      responsable_nombre: t.responsable?.nombre_completo,
-      responsable_avatar: t.responsable?.avatar_url,
+      responsable_nombre: t.usuarios?.nombre_completo,
+      responsable_avatar: t.usuarios?.avatar_url,
       rol_destino: t.rol_destino,
       categoria_proyecto: t.categoria_proyecto,
       orden_tarea: t.orden_tarea || 0,
@@ -861,9 +861,9 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaC
         if (areaFound?.id) validAreaId = areaFound.id;
       }
       if (!validAreaId) {
-        const { data: areaDefecto } = await supabase.from('areas').select('id').limit(1);
-        if (areaDefecto && areaDefecto.length > 0) {
-          validAreaId = areaDefecto[0].id;
+        const { data: primerArea } = await supabase.from('areas').select('id').limit(1);
+        if (primerArea && primerArea.length > 0) {
+          validAreaId = primerArea[0].id;
         }
       }
     }
@@ -917,51 +917,33 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<TareaC
       tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0
     };
 
-    let { data, error } = await supabase
-      .from('tareas')
-      .insert(payload)
-      .select(`
-        *,
-        proyecto:proyectos(nombre),
-        curso:cursos(nombre),
-        area:areas(nombre),
-        responsable:usuarios!responsable_id(nombre_completo, avatar_url)
-      `)
-      .single();
+    let insertRes = await supabase.from('tareas').insert(payload).select().single();
 
-    // Fallback: Si falla con el join enrich, intentar insert simple o reintentar tipo_tarea
-    if (error) {
-      const rawRes = await supabase.from('tareas').insert(payload).select().single();
-      if (!rawRes.error && rawRes.data) {
-        data = rawRes.data;
-        error = null;
-      } else if (rawRes.error && tarea.tipo_tarea === 'Proyecto') {
-        payload.tipo_tarea = 'Proyecto';
-        const retryRes = await supabase.from('tareas').insert(payload).select().single();
-        if (!retryRes.error && retryRes.data) {
-          data = retryRes.data;
-          error = null;
-        }
-      }
+    // Si falló y es Proyecto, reintentar con 'Proyecto'
+    if (insertRes.error && tarea.tipo_tarea === 'Proyecto') {
+      payload.tipo_tarea = 'Proyecto';
+      insertRes = await supabase.from('tareas').insert(payload).select().single();
     }
 
-    if (error || !data) {
-      console.error('Error insertando tarea en Supabase:', error);
+    if (insertRes.error || !insertRes.data) {
+      console.error('Error insertando tarea en Supabase:', insertRes.error);
       return null;
     }
+
+    const data = insertRes.data;
 
     return {
       ...tarea,
       id: data.id,
       curso_id: data.curso_id || validCursoId || tarea.curso_id,
-      curso_nombre: data.curso?.nombre || tarea.curso_nombre,
+      curso_nombre: tarea.curso_nombre,
       proyecto_id: data.proyecto_id || validProyectoId || tarea.proyecto_id,
-      proyecto_nombre: data.proyecto?.nombre || tarea.proyecto_nombre,
+      proyecto_nombre: tarea.proyecto_nombre,
       area_id: data.area_id || validAreaId || tarea.area_id,
-      area_nombre: data.area?.nombre || tarea.area_nombre,
+      area_nombre: tarea.area_nombre,
       responsable_id: data.responsable_id || validResponsableId || tarea.responsable_id,
-      responsable_nombre: data.responsable?.nombre_completo || tarea.responsable_nombre,
-      responsable_avatar: data.responsable?.avatar_url || tarea.responsable_avatar,
+      responsable_nombre: tarea.responsable_nombre,
+      responsable_avatar: tarea.responsable_avatar,
       tipo_tarea: (data.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
       created_at: data.created_at
     };
