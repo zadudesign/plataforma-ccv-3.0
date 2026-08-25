@@ -435,6 +435,7 @@ export default function Home() {
             onClose={() => setEntidadProgresoSeleccionada(null)}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onUpdateStatus={handleUpdateStatus}
+            onAddComentario={handleAddComment}
           />
         )}
         {/* Digital Signature Modal */}

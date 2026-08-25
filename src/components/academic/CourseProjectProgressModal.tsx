@@ -18,7 +18,8 @@ import {
   Timer,
   ArrowLeft,
   DollarSign,
-  MessageSquare
+  MessageSquare,
+  Send
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +34,7 @@ interface CourseProjectProgressModalProps {
   onClose: () => void;
   onSelectTask?: (tarea: TareaCCV) => void;
   onUpdateStatus?: (tareaId: string, nuevoEstado: EstadoTarea) => void;
+  onAddComentario?: (tareaId: string, texto: string) => void;
 }
 
 export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProps> = ({
@@ -43,10 +45,12 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onClose,
   onSelectTask,
   onUpdateStatus,
+  onAddComentario,
 }) => {
   const { areas, facultades, programas } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
+  const [nuevoComentario, setNuevoComentario] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
 
   const esCurso = tipo === 'curso';
@@ -635,6 +639,35 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                       ))
                     )}
                   </div>
+
+                  {/* Comment Form */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!nuevoComentario.trim() || !tareaSeleccionadaLocal) return;
+                      if (onAddComentario) {
+                        onAddComentario(tareaSeleccionadaLocal.id, nuevoComentario.trim());
+                      }
+                      setNuevoComentario('');
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <input
+                      type="text"
+                      placeholder="Escribe un comentario o retroalimentación didáctica..."
+                      value={nuevoComentario}
+                      onChange={(e) => setNuevoComentario(e.target.value)}
+                      className="flex-1 py-2.5 px-4 bg-white rounded-full text-xs border border-stone-200 focus:outline-none focus:ring-2 focus:ring-sage-500 text-charcoal-900 shadow-inner"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!nuevoComentario.trim()}
+                      className="w-10 h-10 rounded-full bg-sage-600 hover:bg-sage-700 disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center justify-center transition-colors shadow flex-shrink-0"
+                      title="Enviar comentario"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
                 </div>
               </div>
             )

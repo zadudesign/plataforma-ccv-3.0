@@ -920,7 +920,18 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       validCursoId = null;
     }
 
-    const payload: any = {
+    // Resolver UUID para rol_destino si la tabla de Supabase lo requiere como UUID
+    let resolvedRolDestinoId: string | null = null;
+    if (tarea.rol_destino && !isGuid(tarea.rol_destino)) {
+      const { data: rolFound } = await supabase
+        .from('roles')
+        .select('id')
+        .ilike('nombre', `%${tarea.rol_destino.trim()}%`)
+        .maybeSingle();
+      if (rolFound?.id) resolvedRolDestinoId = rolFound.id;
+    }
+
+    const basePayload: any = {
       titulo: tarea.titulo.trim(),
       descripcion: tarea.descripcion || '',
       proyecto_id: validProyectoId,
@@ -940,52 +951,53 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0
     };
 
-    let insertRes = await supabase.from('tareas').insert(payload).select().single();
+    // Intentar inserciones con variantes de tipo_tarea para máxima compatibilidad con restricciones CHECK
+    const tipoCandidatos = tarea.tipo_tarea === 'Proyecto'
+      ? ['Proyecto Especial', 'Proyecto', 'Curso Virtual']
+      : ['Curso Virtual', 'Proyecto Especial', 'Proyecto'];
 
-    // 1. Si falló por tipo_tarea (ej. si el check espera 'Proyecto' en vez de 'Proyecto Especial'):
-    if (insertRes.error && tarea.tipo_tarea === 'Proyecto') {
-      payload.tipo_tarea = 'Proyecto';
-      insertRes = await supabase.from('tareas').insert(payload).select().single();
+    let lastError: any = null;
+    let data: any = null;
+
+    for (const tipo of tipoCandidatos) {
+      const currentPayload = { ...basePayload, tipo_tarea: tipo };
+
+      // Intento 1: Payload estándar
+      let res = await supabase.from('tareas').insert(currentPayload).select().single();
+
+      // Si falló por UUID en rol_destino o categoria_proyecto (código 22P02)
+      if (res.error && (res.error.code === '22P02' || res.error.message?.includes('invalid input syntax for type uuid'))) {
+        currentPayload.rol_destino = resolvedRolDestinoId || null;
+        currentPayload.categoria_proyecto = null;
+        res = await supabase.from('tareas').insert(currentPayload).select().single();
+      }
+
+      // Si falló por columnas inexistentes (código PGRST204)
+      if (res.error && res.error.code === 'PGRST204') {
+        delete currentPayload.categoria_proyecto;
+        delete currentPayload.tarifa_hora;
+        delete currentPayload.tarifa_tarea;
+        delete currentPayload.tiempo_estimado;
+        delete currentPayload.tiempo_invertido;
+        delete currentPayload.fecha_completada;
+        res = await supabase.from('tareas').insert(currentPayload).select().single();
+      }
+
+      // Si tuvo éxito, salir del bucle
+      if (!res.error && res.data) {
+        data = res.data;
+        lastError = null;
+        break;
+      } else {
+        lastError = res.error;
+      }
     }
 
-    // 2. Si falló por columnas que aún no existen en la tabla de Supabase (código PGRST204):
-    if (insertRes.error && insertRes.error.code === 'PGRST204') {
-      const cleanPayload = { ...payload };
-      if (insertRes.error.message.includes('categoria_proyecto')) delete cleanPayload.categoria_proyecto;
-      if (insertRes.error.message.includes('tarifa_hora')) delete cleanPayload.tarifa_hora;
-      if (insertRes.error.message.includes('tarifa_tarea')) delete cleanPayload.tarifa_tarea;
-      if (insertRes.error.message.includes('tiempo_estimado')) delete cleanPayload.tiempo_estimado;
-      if (insertRes.error.message.includes('tiempo_invertido')) delete cleanPayload.tiempo_invertido;
-      if (insertRes.error.message.includes('fecha_completada')) delete cleanPayload.fecha_completada;
-
-      insertRes = await supabase.from('tareas').insert(cleanPayload).select().single();
-    }
-
-    // 3. Si falló porque la columna rol_destino o categoria_proyecto fue creada como UUID en Supabase (código 22P02):
-    if (insertRes.error && (insertRes.error.code === '22P02' || insertRes.error.message?.includes('invalid input syntax for type uuid'))) {
-      const uuidPayload = { ...payload };
-      if (typeof uuidPayload.rol_destino === 'string' && !isGuid(uuidPayload.rol_destino)) {
-        const { data: rolFound } = await supabase.from('roles').select('id').ilike('nombre', `%${uuidPayload.rol_destino.trim()}%`).maybeSingle();
-        uuidPayload.rol_destino = rolFound?.id || null;
-      }
-      if (typeof uuidPayload.categoria_proyecto === 'string' && !isGuid(uuidPayload.categoria_proyecto)) {
-        uuidPayload.categoria_proyecto = null;
-      }
-      insertRes = await supabase.from('tareas').insert(uuidPayload).select().single();
-
-      if (insertRes.error && insertRes.error.code === '22P02') {
-        const ultraCleanPayload = { ...payload, rol_destino: null, categoria_proyecto: null };
-        insertRes = await supabase.from('tareas').insert(ultraCleanPayload).select().single();
-      }
-    }
-
-    if (insertRes.error || !insertRes.data) {
-      const errMsg = `Error de Supabase (${insertRes.error?.code || 'PGRST'}): ${insertRes.error?.message || 'No se pudo guardar la tarea en Supabase.'}`;
-      console.error(errMsg, insertRes.error);
+    if (lastError || !data) {
+      const errMsg = `Error de Supabase (${lastError?.code || 'PGRST'}): ${lastError?.message || 'No se pudo guardar la tarea en Supabase.'}`;
+      console.error(errMsg, lastError);
       return { success: false, error: errMsg };
     }
-
-    const data = insertRes.data;
 
     return {
       success: true,
