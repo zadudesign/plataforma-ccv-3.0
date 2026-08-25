@@ -942,10 +942,41 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
 
     let insertRes = await supabase.from('tareas').insert(payload).select().single();
 
-    // Si falló y es Proyecto, reintentar con 'Proyecto'
+    // 1. Si falló por tipo_tarea (ej. si el check espera 'Proyecto' en vez de 'Proyecto Especial'):
     if (insertRes.error && tarea.tipo_tarea === 'Proyecto') {
       payload.tipo_tarea = 'Proyecto';
       insertRes = await supabase.from('tareas').insert(payload).select().single();
+    }
+
+    // 2. Si falló por columnas que aún no existen en la tabla de Supabase (código PGRST204):
+    if (insertRes.error && insertRes.error.code === 'PGRST204') {
+      const cleanPayload = { ...payload };
+      if (insertRes.error.message.includes('categoria_proyecto')) delete cleanPayload.categoria_proyecto;
+      if (insertRes.error.message.includes('tarifa_hora')) delete cleanPayload.tarifa_hora;
+      if (insertRes.error.message.includes('tarifa_tarea')) delete cleanPayload.tarifa_tarea;
+      if (insertRes.error.message.includes('tiempo_estimado')) delete cleanPayload.tiempo_estimado;
+      if (insertRes.error.message.includes('tiempo_invertido')) delete cleanPayload.tiempo_invertido;
+      if (insertRes.error.message.includes('fecha_completada')) delete cleanPayload.fecha_completada;
+
+      insertRes = await supabase.from('tareas').insert(cleanPayload).select().single();
+    }
+
+    // 3. Si falló porque la columna rol_destino o categoria_proyecto fue creada como UUID en Supabase (código 22P02):
+    if (insertRes.error && (insertRes.error.code === '22P02' || insertRes.error.message?.includes('invalid input syntax for type uuid'))) {
+      const uuidPayload = { ...payload };
+      if (typeof uuidPayload.rol_destino === 'string' && !isGuid(uuidPayload.rol_destino)) {
+        const { data: rolFound } = await supabase.from('roles').select('id').ilike('nombre', `%${uuidPayload.rol_destino.trim()}%`).maybeSingle();
+        uuidPayload.rol_destino = rolFound?.id || null;
+      }
+      if (typeof uuidPayload.categoria_proyecto === 'string' && !isGuid(uuidPayload.categoria_proyecto)) {
+        uuidPayload.categoria_proyecto = null;
+      }
+      insertRes = await supabase.from('tareas').insert(uuidPayload).select().single();
+
+      if (insertRes.error && insertRes.error.code === '22P02') {
+        const ultraCleanPayload = { ...payload, rol_destino: null, categoria_proyecto: null };
+        insertRes = await supabase.from('tareas').insert(ultraCleanPayload).select().single();
+      }
     }
 
     if (insertRes.error || !insertRes.data) {
