@@ -23,6 +23,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { TareaCCV, Usuario } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import { LogHoursModal } from './LogHoursModal';
 
 interface ProductivityDashboardProps {
@@ -40,6 +41,21 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   onUpdateTaskHours,
   onSelectTask,
 }) => {
+  const { roles } = useAuth();
+
+  // Helper para resolver el nombre legible del rol a partir de su ID o nombre directo
+  const getNombreRol = (rolDestinoOrId?: string): string => {
+    if (!rolDestinoOrId) return 'General';
+    const rFound = roles.find(r => r.id === rolDestinoOrId || r.nombre.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (rFound) return rFound.nombre;
+    const uFound = usuarios.find(u => u.rol_id === rolDestinoOrId || u.rol_nombre?.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (uFound?.rol_nombre) return uFound.rol_nombre;
+    if (rolDestinoOrId.length > 20 && rolDestinoOrId.includes('-')) {
+      return 'Especialidad / CCV';
+    }
+    return rolDestinoOrId;
+  };
+
   // Pestaña Activa: 'horas' (Panel de Esfuerzo) vs 'entregas' (Dumbbell Plot Control de Entregas)
   const [pestanaActiva, setPestanaActiva] = useState<'horas' | 'entregas'>('horas');
 
@@ -60,16 +76,16 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   const rolesDestinoDisponibles = useMemo(() => {
     const rolesSet = new Set<string>(['Diseño', 'Multimedia', 'Soporte', 'Docente', 'Par Evaluador']);
     tareas.forEach(t => {
-      if (t.rol_destino) rolesSet.add(t.rol_destino);
+      if (t.rol_destino) rolesSet.add(getNombreRol(t.rol_destino));
     });
     return Array.from(rolesSet);
-  }, [tareas]);
+  }, [tareas, roles, usuarios]);
 
   // Filtrado de tareas general
   const tareasFiltradas = useMemo(() => {
     return tareas.filter(t => {
       // Filtro por Rol Destino
-      if (filtroRol !== 'todos' && t.rol_destino !== filtroRol) {
+      if (filtroRol !== 'todos' && getNombreRol(t.rol_destino) !== filtroRol && t.rol_destino !== filtroRol) {
         return false;
       }
       
@@ -140,7 +156,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     const mapa: Record<string, { rol: string; totalInvertido: number; totalEstimado: number; conteoTareas: number }> = {};
     
     tareasFiltradas.forEach(t => {
-      const rolKey = t.rol_destino || 'General';
+      const rolKey = getNombreRol(t.rol_destino);
       if (!mapa[rolKey]) {
         mapa[rolKey] = { rol: rolKey, totalInvertido: 0, totalEstimado: 0, conteoTareas: 0 };
       }
@@ -150,9 +166,9 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     });
 
     return Object.values(mapa).sort((a, b) => b.totalInvertido - a.totalInvertido);
-  }, [tareasFiltradas]);
+  }, [tareasFiltradas, roles, usuarios]);
 
-  const rolMasActivo = desglosePorRol[0]?.rol || 'N/A';
+  const rolMasActivo = desglosePorRol[0]?.rol || 'Sin Asignar';
 
   // =========================================================================
   // LÓGICA DEL DUMBBELL PLOT (PESTAÑA 2: CONTROL DE ENTREGAS Y PUNTUALIDAD)
@@ -242,7 +258,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     const mapa: Record<string, { rol: string; total: number; retrasadas: number; sumaDiasRetraso: number }> = {};
 
     tareasDumbbell.forEach(t => {
-      const r = t.rol_destino || 'General';
+      const r = getNombreRol(t.rol_destino);
       if (!mapa[r]) {
         mapa[r] = { rol: r, total: 0, retrasadas: 0, sumaDiasRetraso: 0 };
       }
@@ -258,7 +274,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       pctRetraso: item.total > 0 ? Math.round((item.retrasadas / item.total) * 100) : 0,
       promedioDias: item.retrasadas > 0 ? (item.sumaDiasRetraso / item.retrasadas).toFixed(1) : '0'
     })).sort((a, b) => b.pctRetraso - a.pctRetraso);
-  }, [tareasDumbbell]);
+  }, [tareasDumbbell, roles, usuarios]);
 
   // Rango global de fechas para la escala del Dumbbell Plot
   const escalaFechas = useMemo(() => {
@@ -464,7 +480,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
               <div>
                 <h3 className="text-lg font-black text-charcoal-900 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-sage-600" />
+                  <BarChart3 className="w-5 h-5 text-primary-600" />
                   Distribución de Horas Invertidas por Fecha
                 </h3>
                 <p className="text-xs text-charcoal-500 mt-0.5">
@@ -473,7 +489,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-sage-800 bg-sage-50 px-3 py-1 rounded-full border border-sage-200">
+                <span className="text-xs font-bold text-primary-800 bg-primary-50 px-3 py-1 rounded-full border border-primary-200">
                   {tareasFiltradas.length} Tareas en Vista
                 </span>
               </div>
@@ -499,21 +515,21 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                       <div key={item.fecha} className="flex-1 flex flex-col items-center h-full justify-end group relative">
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 bg-charcoal-900 text-white text-[11px] font-bold py-1.5 px-3 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-20">
                           <div>{fechaFormateada}</div>
-                          <div className="text-sage-400 font-extrabold">{item.totalHoras.toFixed(1)} hrs ({item.conteoTareas} tareas)</div>
+                          <div className="text-accent-400 font-extrabold">{item.totalHoras.toFixed(1)} hrs ({item.conteoTareas} tareas)</div>
                         </div>
 
-                        <span className="text-[11px] font-extrabold text-sage-700 mb-1">
+                        <span className="text-[11px] font-black text-primary-800 bg-primary-50/80 px-2 py-0.5 rounded-lg border border-primary-100 mb-1.5 shadow-2xs">
                           {item.totalHoras.toFixed(1)}h
                         </span>
 
-                        <div className="w-full max-w-[48px] bg-stone-100 rounded-t-xl overflow-hidden flex flex-col justify-end h-full">
+                        <div className="w-full max-w-[48px] bg-stone-100/90 rounded-t-2xl border-x border-t border-stone-200/60 p-0.5 overflow-hidden flex flex-col justify-end h-full">
                           <div 
-                            className="bg-gradient-to-t from-sage-700 via-sage-500 to-amber-400 w-full rounded-t-xl transition-all duration-500 group-hover:brightness-110 shadow-sm"
+                            className="bg-gradient-to-t from-primary-800 via-primary-600 to-accent-500 w-full rounded-t-xl transition-all duration-500 group-hover:from-primary-700 group-hover:to-accent-400 group-hover:shadow-md shadow-2xs"
                             style={{ height: `${Math.max(pctAltura, 8)}%` }}
                           />
                         </div>
 
-                        <span className="text-[10px] font-bold text-charcoal-500 mt-2 truncate w-full text-center capitalize">
+                        <span className="text-[10px] font-extrabold text-charcoal-600 group-hover:text-primary-700 mt-2 truncate w-full text-center capitalize transition-colors">
                           {fechaFormateada}
                         </span>
                       </div>
@@ -533,10 +549,10 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                           <span className="text-[11px] font-bold text-charcoal-600 truncate block">{item.rol}</span>
                           <div className="flex justify-between items-baseline">
                             <span className="text-base font-black text-charcoal-900">{item.totalInvertido.toFixed(1)}h</span>
-                            <span className="text-[10px] font-bold text-sage-700">{pct}%</span>
+                            <span className="text-[10px] font-bold text-primary-700">{pct}%</span>
                           </div>
                           <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-sage-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                            <div className="bg-primary-600 h-full rounded-full" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-[10px] text-charcoal-500 block pt-0.5">{item.conteoTareas} tareas asignadas</span>
                         </div>
@@ -593,7 +609,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                         </td>
                         <td className="p-4">
                           <span className="bg-sage-100 text-sage-800 border border-sage-200 px-2.5 py-1 rounded-full text-[11px] font-bold">
-                            {tarea.rol_destino || 'General'}
+                            {getNombreRol(tarea.rol_destino)}
                           </span>
                         </td>
                         <td className="p-4">

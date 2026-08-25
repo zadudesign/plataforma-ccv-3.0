@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { TareaCCV, Usuario } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 interface LogHoursModalProps {
   tareas: TareaCCV[];
@@ -17,9 +18,22 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
   onClose,
   onUpdateTaskHours,
 }) => {
+  const { roles, usuarios } = useAuth();
   const [tareaId, setTareaId] = useState<string>(tareas[0]?.id || '');
   const [horas, setHoras] = useState<string>('2.5');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const getNombreRol = (rolDestinoOrId?: string): string => {
+    if (!rolDestinoOrId) return 'General';
+    const rFound = roles.find(r => r.id === rolDestinoOrId || r.nombre.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (rFound) return rFound.nombre;
+    const uFound = usuarios.find(u => u.rol_id === rolDestinoOrId || u.rol_nombre?.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (uFound?.rol_nombre) return uFound.rol_nombre;
+    if (rolDestinoOrId.length > 20 && rolDestinoOrId.includes('-')) {
+      return 'Especialidad / CCV';
+    }
+    return rolDestinoOrId;
+  };
 
   const tareaSeleccionada = tareas.find(t => t.id === tareaId);
 
@@ -80,7 +94,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
             >
               {tareas.map(t => (
                 <option key={t.id} value={t.id}>
-                  {t.titulo} ({t.curso_nombre || t.proyecto_nombre || 'General'}) — Rol: {t.rol_destino || 'Sin Rol'}
+                  {t.titulo} ({t.curso_nombre || t.proyecto_nombre || 'General'}) — Rol: {getNombreRol(t.rol_destino)}
                 </option>
               ))}
             </select>
@@ -90,7 +104,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
           {tareaSeleccionada && (
             <div className="p-3 bg-sage-50/60 rounded-2xl border border-sage-200/80 text-xs space-y-1 text-charcoal-700">
               <div className="flex justify-between font-bold">
-                <span>Rol Destino: <strong className="text-sage-800">{tareaSeleccionada.rol_destino || 'General'}</strong></span>
+                <span>Rol Destino: <strong className="text-sage-800">{getNombreRol(tareaSeleccionada.rol_destino)}</strong></span>
                 <span>Estado: <strong className="text-sage-800">{tareaSeleccionada.estado}</strong></span>
               </div>
               <div className="flex justify-between text-[11px] pt-1 border-t border-sage-200/50">
