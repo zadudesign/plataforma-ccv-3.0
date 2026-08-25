@@ -29,7 +29,10 @@ import {
   Activity,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  FolderKanban,
+  Tag,
+  ChevronRight
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -419,6 +422,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [defaultParentIdForAreaModal, setDefaultParentIdForAreaModal] = useState<string | undefined>(undefined);
   const [defaultAreaIdForRoleModal, setDefaultAreaIdForRoleModal] = useState<string | undefined>(undefined);
   const [areaAEliminar, setAreaAEliminar] = useState<Area | null>(null);
+  const [filtroAreaAsignaciones, setFiltroAreaAsignaciones] = useState<string>('todas');
 
   const handleOpenCreateSubarea = (parentAreaId: string) => {
     setDefaultParentIdForAreaModal(parentAreaId);
@@ -1044,269 +1048,602 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Academic Assignments Tab */}
       {pestana === 'asignaciones' && (
         <div className="space-y-6">
-          {/* Section 1: Facultades & Decanos */}
-          <div className="ccv-card p-6 space-y-4">
+          {/* Barra de Clasificación y Filtro Multifactorial por Área */}
+          <div className="p-4 bg-cream-50/80 rounded-3xl border border-stone-200/90 shadow-2xs space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-sage-600" />
-                <h3 className="text-base font-extrabold text-charcoal-900">1. Asignación y Registro de Facultades</h3>
+                <Filter className="w-4 h-4 text-sage-600" />
+                <h4 className="text-xs font-extrabold text-charcoal-800 uppercase tracking-wider">
+                  Clasificación & Filtro Jerárquico por Área
+                </h4>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-charcoal-500">Filtrar vista por área:</span>
+                <select
+                  value={filtroAreaAsignaciones}
+                  onChange={(e) => setFiltroAreaAsignaciones(e.target.value)}
+                  className="px-3 py-1.5 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500 shadow-2xs"
+                >
+                  <option value="todas">Todas las Áreas & Jerarquías</option>
+                  {areas.map(a => (
+                    <option key={a.id} value={a.nombre}>
+                      Nivel {a.nivel} — {a.nombre}
+                    </option>
+                  ))}
+                </select>
+                {filtroAreaAsignaciones !== 'todas' && (
+                  <button
+                    onClick={() => setFiltroAreaAsignaciones('todas')}
+                    className="px-2.5 py-1 bg-white hover:bg-stone-100 text-coral-600 rounded-lg text-xs font-bold border border-stone-200 transition-colors flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Limpiar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Area Summary Chips */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-stone-200/60">
+              <button
+                onClick={() => setFiltroAreaAsignaciones('todas')}
+                className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-all ${
+                  filtroAreaAsignaciones === 'todas'
+                    ? 'bg-charcoal-900 text-white shadow-xs'
+                    : 'bg-white text-charcoal-700 hover:bg-cream-100 border border-stone-200'
+                }`}
+              >
+                Todas ({facultades.length} Fac. / {programas.length} Prog. / {cursos.length} Cur. / {proyectos.length} Proy.)
+              </button>
+              {areas.map(a => {
+                const isSelected = filtroAreaAsignaciones === a.nombre;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => setFiltroAreaAsignaciones(a.nombre)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 ${
+                      isSelected
+                        ? 'bg-sage-700 text-white shadow-xs'
+                        : 'bg-white text-charcoal-700 hover:bg-cream-100 border border-stone-200'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-sage-500"></span>
+                    <span>{a.nombre}</span>
+                    <span className="text-[9px] opacity-75 font-semibold">(N{a.nivel})</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 1: Facultades & Decanos (Clasificadas por Área Nivel 3 FACULTAD) */}
+          <div className="ccv-card p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sage-100 text-sage-800 flex items-center justify-center font-bold">
+                  <Building2 className="w-4 h-4 text-sage-700" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-charcoal-900">1. Asignación y Registro de Facultades</h3>
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                      Área: FACULTAD (Nivel 3)
+                    </span>
+                  </div>
+                  <p className="text-xs text-charcoal-500 mt-0.5">
+                    Unidades académicas mayores de la corporación y decanos asignados.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setCreateEntityType('facultad')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" /> Agregar Facultad
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {facultades.map(fac => (
-                <div key={fac.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-extrabold text-charcoal-900 text-sm">{fac.nombre}</h4>
-                      <p className="text-xs text-charcoal-500 mt-1">
-                        Decano Actual: <strong className="text-sage-700">{fac.decano_nombre || 'Sin Asignar'}</strong>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => setEntityToEdit({ tipo: 'facultad', data: fac })}
-                        title="Editar Facultad"
-                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-white transition-all"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => { if (window.confirm(`¿Eliminar la facultad "${fac.nombre}"?`)) eliminarFacultad(fac.id); }}
-                        title="Eliminar Facultad"
-                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Decano:</label>
-                    <select
-                      value={fac.decano_id || ''}
-                      onChange={e => handleAssignDecano(fac.id, e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
-                    >
-                      <option value="">-- Seleccionar Decano --</option>
-                      {usuarios.filter(u => u.rol_nombre === 'Decano' || u.area_nombre === 'FACULTAD' || u.rol_nombre === 'Administrador').map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre_completo} ({u.rol_nombre})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Section 2: Programas & Coordinadores */}
-          <div className="ccv-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-sage-600" />
-                <h3 className="text-base font-extrabold text-charcoal-900">2. Asignación y Registro de Programas Académicos</h3>
-              </div>
-              <button
-                onClick={() => setCreateEntityType('programa')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" /> Agregar Programa
-              </button>
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {programas.map(prog => (
-                <div key={prog.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-extrabold text-charcoal-900 text-sm">{prog.nombre}</h4>
-                      <p className="text-xs text-charcoal-500 mt-1">
-                        Coordinador Actual: <strong className="text-sage-700">{prog.coordinador_nombre || 'Sin Asignar'}</strong>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => setEntityToEdit({ tipo: 'programa', data: prog })}
-                        title="Editar Programa"
-                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-white transition-all"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => { if (window.confirm(`¿Eliminar el programa "${prog.nombre}"?`)) eliminarPrograma(prog.id); }}
-                        title="Eliminar Programa"
-                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Coordinador:</label>
-                    <select
-                      value={prog.coordinador_id || ''}
-                      onChange={e => handleAssignCoordinador(prog.id, e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
-                    >
-                      <option value="">-- Seleccionar Coordinador --</option>
-                      {usuarios.filter(u => u.rol_nombre === 'Coordinador' || u.area_nombre === 'PROGRAMA' || u.rol_nombre === 'Administrador').map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre_completo} ({u.rol_nombre})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 3: Cursos Virtuales (Docente & Par Evaluador) */}
-          <div className="ccv-card p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-sage-600" />
-                <h3 className="text-base font-extrabold text-charcoal-900">3. Asignación y Creación de Cursos Virtuales</h3>
-              </div>
-              <button
-                onClick={() => setCreateEntityType('curso')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" /> Agregar Curso
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {cursos.map(cur => (
-                <div key={cur.id} className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs space-y-3">
-                  <div>
+              {facultades.map(fac => {
+                const progsDeFacultad = programas.filter(p => p.facultad_id === fac.id);
+                return (
+                  <div key={fac.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3 hover:border-sage-300 transition-colors">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-extrabold text-charcoal-900 text-sm">{cur.nombre}</h4>
-                        <p className="text-[11px] text-charcoal-500 mt-0.5">Programa: {cur.programa_nombre} • Periodo: {cur.periodo}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="font-mono text-[10px] bg-sage-100 text-sage-800 px-2 py-0.5 rounded font-bold">{cur.codigo}</span>
-                        <button
-                          onClick={() => setEntityToEdit({ tipo: 'curso', data: cur })}
-                          title="Editar Curso"
-                          className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-cream-50 transition-all"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => { if (window.confirm(`¿Eliminar el curso "${cur.nombre}"?`)) eliminarCurso(cur.id); }}
-                          title="Eliminar Curso"
-                          className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Docente Asignado:</label>
-                      <select
-                        value={cur.docente_id || ''}
-                        onChange={e => handleAssignCursoDocente(cur.id, e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-cream-50 border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900"
-                      >
-                        <option value="">-- Seleccionar Docente --</option>
-                        {usuarios.map(u => (
-                          <option key={u.id} value={u.id}>{u.nombre_completo}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Par Evaluador:</label>
-                      <select
-                        value={cur.evaluador_id || ''}
-                        onChange={e => handleAssignCursoEvaluador(cur.id, e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-cream-50 border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900"
-                      >
-                        <option value="">-- Seleccionar Evaluador --</option>
-                        {usuarios.map(u => (
-                          <option key={u.id} value={u.id}>{u.nombre_completo}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 4: Proyectos CCV */}
-          <div className="ccv-card p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-sage-600" />
-                <h3 className="text-base font-extrabold text-charcoal-900">4. Registro de Proyectos CCV</h3>
-              </div>
-              <button
-                onClick={() => setCreateEntityType('proyecto')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" /> Agregar Proyecto
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {proyectos.map(pry => (
-                <div key={pry.id} className="p-4 bg-cream-50 rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3">
-                  <div>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-extrabold text-charcoal-900 text-sm">{pry.nombre}</h4>
-                        <p className="text-xs text-charcoal-600 mt-1">{pry.descripcion}</p>
-                        <p className="text-xs text-charcoal-500 mt-1">
-                          Líder Responsable: <strong className="text-sage-700">{pry.lider_nombre || 'Sin Asignar'}</strong>
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-extrabold text-charcoal-900 text-sm">{fac.nombre}</h4>
+                          <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-white border border-stone-200 text-charcoal-700">
+                            {progsDeFacultad.length} {progsDeFacultad.length === 1 ? 'Programa' : 'Programas'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="text-[10px] font-bold text-sage-800 bg-sage-50 px-2 py-0.5 rounded-md border border-sage-200">
+                            Área: FACULTAD (Nivel 3)
+                          </span>
+                          <span className="text-xs text-charcoal-500">
+                            Decano: <strong className="text-sage-700 font-extrabold">{fac.decano_nombre || 'Sin Asignar'}</strong>
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
-                          {pry.estado}
-                        </span>
                         <button
-                          onClick={() => setEntityToEdit({ tipo: 'proyecto', data: pry })}
-                          title="Editar Proyecto"
+                          onClick={() => setEntityToEdit({ tipo: 'facultad', data: fac })}
+                          title="Editar Facultad"
                           className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-white transition-all"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => { if (window.confirm(`¿Eliminar el proyecto "${pry.nombre}"?`)) eliminarProyecto(pry.id); }}
-                          title="Eliminar Proyecto"
+                          onClick={() => { if (window.confirm(`¿Eliminar la facultad "${fac.nombre}"?`)) eliminarFacultad(fac.id); }}
+                          title="Eliminar Facultad"
                           className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-white transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
+
+                    <div className="pt-2 border-t border-stone-200/60">
+                      <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Decano:</label>
+                      <select
+                        value={fac.decano_id || ''}
+                        onChange={e => handleAssignDecano(fac.id, e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
+                      >
+                        <option value="">-- Seleccionar Decano --</option>
+                        {usuarios.filter(u => u.rol_nombre === 'Decano' || u.area_nombre === 'FACULTAD' || u.rol_nombre === 'Administrador').map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.nombre_completo} ({u.rol_nombre})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div className="pt-2 border-t border-stone-200/60">
-                    <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Líder de Proyecto:</label>
-                    <select
-                      value={pry.lider_id || ''}
-                      onChange={e => asignarLiderProyecto(pry.id, e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
-                    >
-                      <option value="">-- Seleccionar Líder / Responsable --</option>
-                      {usuarios.map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre_completo} ({u.rol_nombre || u.area_nombre})
-                        </option>
-                      ))}
-                    </select>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 2: Programas Académicos (Clasificados internamente por Facultad / Área) */}
+          <div className="ccv-card p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
+                  <GraduationCap className="w-4 h-4 text-blue-700" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-charcoal-900">2. Asignación y Registro de Programas Académicos</h3>
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                      Clasificado por Área / Facultad
+                    </span>
+                  </div>
+                  <p className="text-xs text-charcoal-500 mt-0.5">
+                    Programas de pregrado/posgrado agrupados bajo su respectiva Facultad y Área académica.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreateEntityType('programa')}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Programa
+              </button>
+            </div>
+
+            {/* Programas agrupados por Facultad */}
+            <div className="space-y-4">
+              {facultades.map(fac => {
+                const progsEnFac = programas.filter(p => p.facultad_id === fac.id);
+                if (progsEnFac.length === 0 && filtroAreaAsignaciones !== 'todas') return null;
+
+                return (
+                  <div key={fac.id} className="p-4 bg-cream-50/70 rounded-3xl border border-stone-200/80 space-y-3">
+                    {/* Header de la Facultad / Área */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-stone-200/60">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-sage-600" />
+                        <h4 className="font-black text-charcoal-900 text-sm">{fac.nombre}</h4>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white text-charcoal-700 border border-stone-200">
+                          {progsEnFac.length} {progsEnFac.length === 1 ? 'Programa' : 'Programas'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-charcoal-500 font-medium">
+                        Decano: <strong className="text-sage-800">{fac.decano_nombre || 'Sin asignar'}</strong>
+                      </span>
+                    </div>
+
+                    {/* Grid de Programas de esta Facultad */}
+                    {progsEnFac.length === 0 ? (
+                      <p className="text-xs text-charcoal-400 italic py-2">No hay programas registrados en esta facultad.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {progsEnFac.map(prog => (
+                          <div key={prog.id} className="p-3.5 bg-white rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3 shadow-2xs hover:border-sage-300 transition-all">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h5 className="font-extrabold text-charcoal-900 text-xs sm:text-sm">{prog.nombre}</h5>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                                    PROGRAMA (Nivel 2)
+                                  </span>
+                                  <span className="text-[11px] text-charcoal-500">
+                                    Coord: <strong className="text-sage-700 font-bold">{prog.coordinador_nombre || 'Sin Asignar'}</strong>
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => setEntityToEdit({ tipo: 'programa', data: prog })}
+                                  title="Editar Programa"
+                                  className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-cream-50 transition-all"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => { if (window.confirm(`¿Eliminar el programa "${prog.nombre}"?`)) eliminarPrograma(prog.id); }}
+                                  title="Eliminar Programa"
+                                  className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-stone-100">
+                              <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Coordinador:</label>
+                              <select
+                                value={prog.coordinador_id || ''}
+                                onChange={e => handleAssignCoordinador(prog.id, e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-cream-50 border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900 focus:ring-2 focus:ring-sage-500"
+                              >
+                                <option value="">-- Seleccionar Coordinador --</option>
+                                {usuarios.filter(u => u.rol_nombre === 'Coordinador' || u.area_nombre === 'PROGRAMA' || u.rol_nombre === 'Administrador').map(u => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.nombre_completo} ({u.rol_nombre})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Programas sin Facultad asignada si existieran */}
+              {programas.filter(p => !facultades.some(f => f.id === p.facultad_id)).length > 0 && (
+                <div className="p-4 bg-amber-50/70 rounded-3xl border border-amber-200 space-y-3">
+                  <h4 className="font-bold text-amber-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5" /> Programas Generales / Sin Facultad Asignada
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {programas.filter(p => !facultades.some(f => f.id === p.facultad_id)).map(prog => (
+                      <div key={prog.id} className="p-3 bg-white rounded-2xl border border-amber-200 flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h5 className="font-extrabold text-charcoal-900 text-xs">{prog.nombre}</h5>
+                            <p className="text-[11px] text-charcoal-500 mt-1">Coord: {prog.coordinador_nombre || 'Sin Asignar'}</p>
+                          </div>
+                          <button
+                            onClick={() => setEntityToEdit({ tipo: 'programa', data: prog })}
+                            className="p-1 text-charcoal-400 hover:text-sage-700"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+
+          {/* Section 3: Cursos Virtuales (Clasificados internamente por Programa y Área/Facultad) */}
+          <div className="ccv-card p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                  <BookOpen className="w-4 h-4 text-emerald-700" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-charcoal-900">3. Asignación y Creación de Cursos Virtuales</h3>
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Clasificado por Programa & Área
+                    </span>
+                  </div>
+                  <p className="text-xs text-charcoal-500 mt-0.5">
+                    Cursos didácticos organizados por Programa Académico con asignación de Docente y Par Evaluador.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreateEntityType('curso')}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Curso
+              </button>
+            </div>
+
+            {/* Cursos agrupados por Programa */}
+            <div className="space-y-4">
+              {programas.map(prog => {
+                const cursosEnProg = cursos.filter(c => c.programa_id === prog.id);
+                if (cursosEnProg.length === 0 && filtroAreaAsignaciones !== 'todas') return null;
+
+                const fac = facultades.find(f => f.id === prog.facultad_id);
+
+                return (
+                  <div key={prog.id} className="p-4 bg-cream-50/70 rounded-3xl border border-stone-200/80 space-y-3">
+                    {/* Header del Programa / Área */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-stone-200/60">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-emerald-700" />
+                        <h4 className="font-black text-charcoal-900 text-sm">{prog.nombre}</h4>
+                        {fac && (
+                          <span className="text-[10px] font-bold text-charcoal-600 bg-white px-2 py-0.5 rounded-md border border-stone-200">
+                            Fac. {fac.nombre}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900">
+                          {cursosEnProg.length} {cursosEnProg.length === 1 ? 'Curso' : 'Cursos'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-charcoal-500 font-medium">
+                        Coord: <strong className="text-sage-800">{prog.coordinador_nombre || 'Sin asignar'}</strong>
+                      </span>
+                    </div>
+
+                    {/* Grid de Cursos de este Programa */}
+                    {cursosEnProg.length === 0 ? (
+                      <p className="text-xs text-charcoal-400 italic py-2">No hay cursos registrados en este programa.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {cursosEnProg.map(cur => (
+                          <div key={cur.id} className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-3 hover:border-sage-300 transition-all">
+                            <div>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h5 className="font-extrabold text-charcoal-900 text-xs sm:text-sm">{cur.nombre}</h5>
+                                  <p className="text-[10px] text-charcoal-500 mt-0.5 flex items-center gap-1.5 font-medium">
+                                    <span className="font-bold text-sage-800 bg-sage-50 px-1.5 py-0.2 rounded border border-sage-200">
+                                      CURSO (Nivel 1)
+                                    </span>
+                                    <span>Periodo: {cur.periodo}</span>
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="font-mono text-[10px] bg-sage-100 text-sage-800 px-2 py-0.5 rounded font-bold">{cur.codigo}</span>
+                                  <button
+                                    onClick={() => setEntityToEdit({ tipo: 'curso', data: cur })}
+                                    title="Editar Curso"
+                                    className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-cream-50 transition-all"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => { if (window.confirm(`¿Eliminar el curso "${cur.nombre}"?`)) eliminarCurso(cur.id); }}
+                                    title="Eliminar Curso"
+                                    className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100">
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Docente Asignado:</label>
+                                <select
+                                  value={cur.docente_id || ''}
+                                  onChange={e => handleAssignCursoDocente(cur.id, e.target.value)}
+                                  className="w-full px-2.5 py-1.5 bg-cream-50 border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900 focus:ring-2 focus:ring-sage-500"
+                                >
+                                  <option value="">-- Docente --</option>
+                                  {usuarios.map(u => (
+                                    <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Par Evaluador:</label>
+                                <select
+                                  value={cur.evaluador_id || ''}
+                                  onChange={e => handleAssignCursoEvaluador(cur.id, e.target.value)}
+                                  className="w-full px-2.5 py-1.5 bg-cream-50 border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900 focus:ring-2 focus:ring-sage-500"
+                                >
+                                  <option value="">-- Evaluador --</option>
+                                  {usuarios.map(u => (
+                                    <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Cursos sin Programa Asignado */}
+              {cursos.filter(c => !programas.some(p => p.id === c.programa_id)).length > 0 && (
+                <div className="p-4 bg-amber-50/70 rounded-3xl border border-amber-200 space-y-3">
+                  <h4 className="font-bold text-amber-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5" /> Cursos Generales / Sin Programa Asignado
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {cursos.filter(c => !programas.some(p => p.id === c.programa_id)).map(cur => (
+                      <div key={cur.id} className="p-3 bg-white rounded-2xl border border-amber-200 flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h5 className="font-extrabold text-charcoal-900 text-xs">{cur.nombre}</h5>
+                            <p className="text-[11px] text-charcoal-500 mt-1">Código: {cur.codigo} • Periodo: {cur.periodo}</p>
+                          </div>
+                          <button
+                            onClick={() => setEntityToEdit({ tipo: 'curso', data: cur })}
+                            className="p-1 text-charcoal-400 hover:text-sage-700"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section 4: Proyectos CCV (Clasificados internamente por Área Responsable) */}
+          <div className="ccv-card p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold">
+                  <Layers className="w-4 h-4 text-purple-700" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-charcoal-900">4. Registro de Proyectos CCV</h3>
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                      Clasificado por Área Responsable
+                    </span>
+                  </div>
+                  <p className="text-xs text-charcoal-500 mt-0.5">
+                    Iniciativas y proyectos especiales organizados por cada unidad o área responsable del CCV.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreateEntityType('proyecto')}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Proyecto
+              </button>
+            </div>
+
+            {/* Proyectos agrupados por Área */}
+            <div className="space-y-4">
+              {areas.map(area => {
+                const proyectosDeEstaArea = proyectos.filter(
+                  p => p.area_id === area.id || p.area_id === area.nombre || area.nombre.toLowerCase() === (p.area_id || '').toLowerCase()
+                );
+
+                if (proyectosDeEstaArea.length === 0 && filtroAreaAsignaciones !== 'todas') return null;
+
+                return (
+                  <div key={area.id} className="p-4 bg-cream-50/70 rounded-3xl border border-stone-200/80 space-y-3">
+                    {/* Header del Área */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-stone-200/60">
+                      <div className="flex items-center gap-2">
+                        <FolderKanban className="w-4 h-4 text-purple-700" />
+                        <h4 className="font-black text-charcoal-900 text-sm">{area.nombre}</h4>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-sage-100 text-sage-800 border border-sage-200">
+                          Nivel {area.nivel}
+                        </span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-900">
+                          {proyectosDeEstaArea.length} {proyectosDeEstaArea.length === 1 ? 'Proyecto' : 'Proyectos'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-charcoal-500 font-medium">
+                        Área Padre: <strong className="text-charcoal-700">{area.area_padre_nombre || 'Principal'}</strong>
+                      </span>
+                    </div>
+
+                    {/* Grid de Proyectos de esta Área */}
+                    {proyectosDeEstaArea.length === 0 ? (
+                      <p className="text-xs text-charcoal-400 italic py-2">No hay proyectos registrados adscritos a este área.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {proyectosDeEstaArea.map(pry => (
+                          <div key={pry.id} className="p-4 bg-white rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3 shadow-2xs hover:border-sage-300 transition-all">
+                            <div>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h5 className="font-extrabold text-charcoal-900 text-xs sm:text-sm">{pry.nombre}</h5>
+                                  <p className="text-xs text-charcoal-600 mt-1 line-clamp-2">{pry.descripcion}</p>
+                                  <p className="text-xs text-charcoal-500 mt-1.5">
+                                    Líder: <strong className="text-sage-700 font-bold">{pry.lider_nombre || 'Sin Asignar'}</strong>
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
+                                    {pry.estado}
+                                  </span>
+                                  <button
+                                    onClick={() => setEntityToEdit({ tipo: 'proyecto', data: pry })}
+                                    title="Editar Proyecto"
+                                    className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-cream-50 transition-all"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => { if (window.confirm(`¿Eliminar el proyecto "${pry.nombre}"?`)) eliminarProyecto(pry.id); }}
+                                    title="Eliminar Proyecto"
+                                    className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-stone-100">
+                              <label className="block text-[10px] font-bold uppercase text-charcoal-500 mb-1">Cambiar Líder de Proyecto:</label>
+                              <select
+                                value={pry.lider_id || ''}
+                                onChange={e => asignarLiderProyecto(pry.id, e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-cream-50 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
+                              >
+                                <option value="">-- Seleccionar Líder --</option>
+                                {usuarios.map(u => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.nombre_completo} ({u.rol_nombre || u.area_nombre})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Proyectos sin Área Específica */}
+              {proyectos.filter(p => !areas.some(a => a.id === p.area_id || a.nombre === p.area_id)).length > 0 && (
+                <div className="p-4 bg-stone-50 rounded-3xl border border-stone-200 space-y-3">
+                  <h4 className="font-bold text-charcoal-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <FolderKanban className="w-3.5 h-3.5" /> Proyectos Generales CCV
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {proyectos.filter(p => !areas.some(a => a.id === p.area_id || a.nombre === p.area_id)).map(pry => (
+                      <div key={pry.id} className="p-3 bg-white rounded-2xl border border-stone-200 flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h5 className="font-extrabold text-charcoal-900 text-xs">{pry.nombre}</h5>
+                            <p className="text-xs text-charcoal-600 mt-1">{pry.descripcion}</p>
+                            <p className="text-xs text-charcoal-500 mt-1">Líder: {pry.lider_nombre || 'Sin Asignar'}</p>
+                          </div>
+                          <button
+                            onClick={() => setEntityToEdit({ tipo: 'proyecto', data: pry })}
+                            className="p-1 text-charcoal-400 hover:text-sage-700"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
