@@ -13,7 +13,8 @@ import {
   Layers,
   ArrowRight,
   Filter,
-  CalendarDays
+  CalendarDays,
+  CalendarClock
 } from 'lucide-react';
 import { TareaCCV, EstadoTarea } from '@/types';
 
@@ -159,6 +160,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
     return { total, completadas, pendientes, enRevision, enProceso };
   }, [tareas, currentYear, currentMonth]);
+
+  // Próximas Tareas ordenadas cronológicamente para fechas venideras o activas
+  const proximasTareas = useMemo(() => {
+    return tareas
+      .filter(t => {
+        if (!t.fecha_vencimiento) return false;
+        // Tareas con fecha vencimiento futura o de hoy, y que aún no estén completadas
+        return t.fecha_vencimiento >= hoyStr && t.estado !== 'Completada';
+      })
+      .sort((a, b) => (a.fecha_vencimiento || '').localeCompare(b.fecha_vencimiento || ''))
+      .slice(0, 6); // Top 6 próximas tareas
+  }, [tareas, hoyStr]);
+
+  const formatDiasRestantes = (fechaStr: string) => {
+    if (fechaStr === hoyStr) return 'Vence hoy';
+    const [y, m, d] = fechaStr.split('-').map(Number);
+    const targetDate = new Date(y, m - 1, d);
+    const today = new Date(hoyYear, hoyMonth, hoyDay);
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Mañana';
+    if (diffDays > 1 && diffDays <= 7) return `En ${diffDays} días`;
+    if (diffDays > 7) return `En ${Math.round(diffDays / 7)} sem`;
+    return fechaStr;
+  };
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -553,6 +580,97 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-[11px] text-charcoal-500">
               <span>{tareasDelDiaSeleccionado.length} entregas listadas</span>
               <span className="text-primary-600 font-bold">CCV 3.0 Sync</span>
+            </div>
+          </div>
+
+          {/* Nueva Sección Debajo: Próximas Tareas */}
+          <div className="ccv-card p-6 flex flex-col justify-between border-t-4 border-t-accent-500 shadow-card space-y-4">
+            <div>
+              {/* Header de Próximas Tareas */}
+              <div className="pb-3 border-b border-stone-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="w-5 h-5 text-accent-600" />
+                  <div>
+                    <span className="text-xs font-black uppercase tracking-wider text-accent-700 block">
+                      Próximas Tareas
+                    </span>
+                    <h3 className="text-sm font-extrabold text-charcoal-900">
+                      Entregas en Calendario CCV
+                    </h3>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-accent-100 text-accent-900 border border-accent-200">
+                  {proximasTareas.length} {proximasTareas.length === 1 ? 'pendiente' : 'pendientes'}
+                </span>
+              </div>
+
+              {/* Lista de Próximas Tareas */}
+              <div className="space-y-2.5 mt-3 max-h-[360px] overflow-y-auto pr-1">
+                {proximasTareas.length > 0 ? (
+                  proximasTareas.map((tarea) => {
+                    const badgeClass =
+                      tarea.estado === 'En Revisión' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                      tarea.estado === 'En Proceso' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                      'bg-rose-100 text-rose-800 border-rose-300';
+
+                    const tiempoRestante = formatDiasRestantes(tarea.fecha_vencimiento || '');
+
+                    return (
+                      <div
+                        key={tarea.id}
+                        onClick={() => onSelectTask(tarea)}
+                        className="p-3.5 rounded-2xl border border-stone-200 bg-white hover:border-accent-400 hover:shadow-md transition-all cursor-pointer group space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${badgeClass}`}>
+                              {tarea.estado}
+                            </span>
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-stone-100 text-charcoal-700 border border-stone-200">
+                              📅 {tarea.fecha_vencimiento}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-extrabold ${
+                            tiempoRestante.includes('hoy') ? 'text-rose-600 animate-pulse font-black' :
+                            tiempoRestante.includes('Mañana') ? 'text-amber-600 font-black' : 'text-charcoal-500'
+                          }`}>
+                            {tiempoRestante}
+                          </span>
+                        </div>
+
+                        <h4 className="text-xs font-bold text-charcoal-900 group-hover:text-accent-700 transition-colors line-clamp-1">
+                          {tarea.titulo}
+                        </h4>
+
+                        <div className="flex items-center justify-between text-[11px] text-charcoal-500 pt-1.5 border-t border-stone-100">
+                          <span className="truncate max-w-[150px] font-medium">
+                            {tarea.curso_nombre || tarea.proyecto_nombre || 'CCV'}
+                          </span>
+                          <span className="text-accent-700 font-extrabold text-[10px] group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
+                            Ver <ArrowRight className="w-3 h-3" />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-8 px-3 text-center rounded-2xl border border-dashed border-stone-200 bg-cream-50/50 space-y-2">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                    <p className="text-xs font-extrabold text-charcoal-800">
+                      ¡Al día con las entregas!
+                    </p>
+                    <p className="text-[10px] text-charcoal-500">
+                      No hay tareas pendientes con fecha de vencimiento próxima.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer de Próximas Tareas */}
+            <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-400 font-medium">
+              <span>Ordenado cronológicamente</span>
+              <span className="text-accent-700 font-bold">Producción CCV</span>
             </div>
           </div>
         </div>
