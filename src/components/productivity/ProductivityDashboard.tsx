@@ -480,7 +480,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
               <div>
                 <h3 className="text-lg font-black text-charcoal-900 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary-600" />
+                  <BarChart3 className="w-5 h-5 text-emerald-600" />
                   Distribución de Horas Invertidas por Fecha
                 </h3>
                 <p className="text-xs text-charcoal-500 mt-0.5">
@@ -489,7 +489,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-primary-800 bg-primary-50 px-3 py-1 rounded-full border border-primary-200">
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                   {tareasFiltradas.length} Tareas en Vista
                 </span>
               </div>
@@ -515,21 +515,21 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                       <div key={item.fecha} className="flex-1 flex flex-col items-center h-full justify-end group relative">
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 bg-charcoal-900 text-white text-[11px] font-bold py-1.5 px-3 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-20">
                           <div>{fechaFormateada}</div>
-                          <div className="text-accent-400 font-extrabold">{item.totalHoras.toFixed(1)} hrs ({item.conteoTareas} tareas)</div>
+                          <div className="text-emerald-400 font-extrabold">{item.totalHoras.toFixed(1)} hrs ({item.conteoTareas} tareas)</div>
                         </div>
 
-                        <span className="text-[11px] font-black text-primary-800 bg-primary-50/80 px-2 py-0.5 rounded-lg border border-primary-100 mb-1.5 shadow-2xs">
+                        <span className="text-[11px] font-black text-emerald-800 bg-emerald-50/90 px-2 py-0.5 rounded-lg border border-emerald-200 mb-1.5 shadow-2xs">
                           {item.totalHoras.toFixed(1)}h
                         </span>
 
                         <div className="w-full max-w-[48px] bg-stone-100/90 rounded-t-2xl border-x border-t border-stone-200/60 p-0.5 overflow-hidden flex flex-col justify-end h-full">
                           <div 
-                            className="bg-gradient-to-t from-primary-800 via-primary-600 to-accent-500 w-full rounded-t-xl transition-all duration-500 group-hover:from-primary-700 group-hover:to-accent-400 group-hover:shadow-md shadow-2xs"
+                            className="bg-gradient-to-t from-emerald-600 via-emerald-500 to-emerald-400 w-full rounded-t-xl transition-all duration-500 group-hover:from-emerald-700 group-hover:via-emerald-600 group-hover:to-teal-300 group-hover:shadow-md shadow-2xs"
                             style={{ height: `${Math.max(pctAltura, 8)}%` }}
                           />
                         </div>
 
-                        <span className="text-[10px] font-extrabold text-charcoal-600 group-hover:text-primary-700 mt-2 truncate w-full text-center capitalize transition-colors">
+                        <span className="text-[10px] font-extrabold text-charcoal-600 group-hover:text-emerald-700 mt-2 truncate w-full text-center capitalize transition-colors">
                           {fechaFormateada}
                         </span>
                       </div>
@@ -545,14 +545,14 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                     {desglosePorRol.map(item => {
                       const pct = totalHorasInvertidas > 0 ? Math.round((item.totalInvertido / totalHorasInvertidas) * 100) : 0;
                       return (
-                        <div key={item.rol} className="p-3 bg-cream-50 rounded-2xl border border-stone-200 space-y-1">
+                        <div key={item.rol} className="p-3 bg-cream-50 rounded-2xl border border-stone-200 space-y-1 hover:border-emerald-300 transition-colors">
                           <span className="text-[11px] font-bold text-charcoal-600 truncate block">{item.rol}</span>
                           <div className="flex justify-between items-baseline">
                             <span className="text-base font-black text-charcoal-900">{item.totalInvertido.toFixed(1)}h</span>
-                            <span className="text-[10px] font-bold text-primary-700">{pct}%</span>
+                            <span className="text-[10px] font-bold text-emerald-700">{pct}%</span>
                           </div>
                           <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-primary-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                            <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-[10px] text-charcoal-500 block pt-0.5">{item.conteoTareas} tareas asignadas</span>
                         </div>
