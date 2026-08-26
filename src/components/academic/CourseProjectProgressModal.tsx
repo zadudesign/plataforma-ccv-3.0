@@ -480,7 +480,12 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                               </div>
 
                               <div className="flex items-center gap-3 text-[11px] text-charcoal-600 mt-1 flex-wrap">
-                                <span>Responsable: <strong className="text-charcoal-900 font-bold">{t.responsable_nombre || 'Sin Asignar'}</strong></span>
+                                <span>
+                                  Responsable{t.responsable_secundario_nombre ? 's' : ''}: <strong className="text-charcoal-900 font-bold">{t.responsable_nombre || 'Sin Asignar'}</strong>
+                                  {t.responsable_secundario_nombre && (
+                                    <span className="text-blue-700 font-bold"> & {t.responsable_secundario_nombre}</span>
+                                  )}
+                                </span>
                                 <span>• Vence: {t.fecha_vencimiento}</span>
                                 {t.tiempo_estimado > 0 && <span>• {t.tiempo_invertido || 0}h / {t.tiempo_estimado}h est.</span>}
                                 {costoTarea !== undefined && costoTarea > 0 && (
@@ -583,11 +588,44 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
                 {/* Metrics Grid */}
                 <div className={`grid grid-cols-1 ${tareaSeleccionadaLocal.tipo_tarea === 'Proyecto' && tareaSeleccionadaLocal.tarifa_tarea !== undefined ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
-                  <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
-                    <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
-                      <User className="w-4 h-4 text-sage-600" /> Responsable Asignado
+                  <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm space-y-2">
+                    <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold">
+                      <User className="w-4 h-4 text-sage-600" /> {tareaSeleccionadaLocal.responsable_secundario_nombre ? 'Responsables Asignados' : 'Responsable Asignado'}
                     </div>
-                    <p className="text-sm font-extrabold text-charcoal-900">{tareaSeleccionadaLocal.responsable_nombre}</p>
+                    
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={tareaSeleccionadaLocal.responsable_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                        alt={tareaSeleccionadaLocal.responsable_nombre || 'Responsable'}
+                        className="w-6 h-6 rounded-full object-cover border border-stone-200"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-extrabold text-charcoal-900 truncate">
+                          {tareaSeleccionadaLocal.responsable_nombre || 'Sin Asignar'}
+                        </p>
+                        <p className="text-[10px] text-charcoal-500">
+                          Principal {tareaSeleccionadaLocal.rol_destino ? `• ${tareaSeleccionadaLocal.rol_destino}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    {tareaSeleccionadaLocal.responsable_secundario_nombre && (
+                      <div className="flex items-center gap-2 pt-1.5 border-t border-stone-100">
+                        <img
+                          src={tareaSeleccionadaLocal.responsable_secundario_avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150'}
+                          alt={tareaSeleccionadaLocal.responsable_secundario_nombre}
+                          className="w-6 h-6 rounded-full object-cover border border-stone-200"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-extrabold text-charcoal-900 truncate">
+                            {tareaSeleccionadaLocal.responsable_secundario_nombre}
+                          </p>
+                          <p className="text-[10px] text-blue-700">
+                            Co-responsable {tareaSeleccionadaLocal.rol_destino_secundario ? `• ${tareaSeleccionadaLocal.rol_destino_secundario}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">

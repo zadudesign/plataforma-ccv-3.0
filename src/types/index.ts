@@ -67,6 +67,8 @@ export interface ProyectoEspecial {
   area_id?: string;
   lider_id?: string;
   lider_nombre?: string;
+  lider_secundario_id?: string;
+  lider_secundario_nombre?: string;
   estado: 'Planificación' | 'En Proceso' | 'Completado' | 'Pausado';
   created_at?: string;
 }
@@ -112,6 +114,10 @@ export interface TareaCCV {
   responsable_nombre?: string;
   responsable_avatar?: string;
   rol_destino?: string;
+  responsable_secundario_id?: string;
+  responsable_secundario_nombre?: string;
+  responsable_secundario_avatar?: string;
+  rol_destino_secundario?: string;
   orden_tarea: number;
   estado: EstadoTarea;
   tipo_tarea: TipoTarea;

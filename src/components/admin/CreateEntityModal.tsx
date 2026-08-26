@@ -70,6 +70,8 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   const [areaId, setAreaId] = useState(
     (initialData as ProyectoEspecial)?.area_id || areas.find(a => a.nombre === 'CMU')?.id || areas[0]?.id || ''
   );
+  const [liderId, setLiderId] = useState((initialData as ProyectoEspecial)?.lider_id || '');
+  const [liderSecundarioId, setLiderSecundarioId] = useState((initialData as ProyectoEspecial)?.lider_secundario_id || '');
   const [estadoProyecto, setEstadoProyecto] = useState<'Planificación' | 'En Proceso' | 'Completado' | 'Pausado'>(
     (initialData as ProyectoEspecial)?.estado || 'En Proceso'
   );
@@ -133,6 +135,8 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           nombre,
           descripcion,
           area_id: areaId,
+          lider_id: liderId || undefined,
+          lider_secundario_id: liderSecundarioId || undefined,
           estado: estadoProyecto,
         });
       } else {
@@ -140,6 +144,8 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           nombre,
           descripcion,
           area_id: areaId,
+          lider_id: liderId || undefined,
+          lider_secundario_id: liderSecundarioId || undefined,
           estado: estadoProyecto,
         });
       }
@@ -426,6 +432,45 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     <option value="En Proceso">En Proceso</option>
                     <option value="Completado">Completado</option>
                     <option value="Pausado">Pausado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Responsables Duales del Proyecto */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+                    Líder / Responsable Principal
+                  </label>
+                  <select
+                    value={liderId}
+                    onChange={e => setLiderId(e.target.value)}
+                    className="w-full px-3 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900"
+                  >
+                    <option value="">-- Sin Asignar --</option>
+                    {usuarios.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'CCV'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+                    Segundo Responsable / Co-Líder (Opcional)
+                  </label>
+                  <select
+                    value={liderSecundarioId}
+                    onChange={e => setLiderSecundarioId(e.target.value)}
+                    className="w-full px-3 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900"
+                  >
+                    <option value="">-- Sin Segundo Responsable --</option>
+                    {usuarios.filter(u => u.id !== liderId).map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'CCV'})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

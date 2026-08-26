@@ -203,10 +203,10 @@ export const INITIAL_PROGRAMAS: Programa[] = [
 ];
 
 export const INITIAL_PROYECTOS: ProyectoEspecial[] = [
-  { id: 'pry-1', nombre: 'Renovación Curricular Educación Continua 2026', descripcion: 'Actualización y virtualización de microcredenciales institucionales', area_id: 'a-4-1', estado: 'En Proceso' },
-  { id: 'pry-2', nombre: 'Plataforma Interactiva de Simulación Clínica', descripcion: 'Desarrollo de escenarios inmersivos para posgrados de medicina', area_id: 'a-4-2', estado: 'Planificación' },
-  { id: 'pry-3', nombre: 'Banco Institucional de Objetos de Aprendizaje H5P', descripcion: 'Repositorio estandarizado de recursos didácticos interactivos', area_id: 'a-4-3', estado: 'En Proceso' },
-  { id: 'pry-4', nombre: 'Migración y Integración de Paquetes SCORM 2026', descripcion: 'Optimización de empaquetado para plataformas LMS Canvas y Moodle', area_id: 'a-4-1', estado: 'Completado' },
+  { id: 'pry-1', nombre: 'Renovación Curricular Educación Continua 2026', descripcion: 'Actualización y virtualización de microcredenciales institucionales', area_id: 'a-4-1', lider_id: 'u-diseno', lider_nombre: 'Lic. Carlic Bolomboy', lider_secundario_id: 'u-multi', lider_secundario_nombre: 'Ing. Carlos Mendoza', estado: 'En Proceso' },
+  { id: 'pry-2', nombre: 'Plataforma Interactiva de Simulación Clínica', descripcion: 'Desarrollo de escenarios inmersivos para posgrados de medicina', area_id: 'a-4-2', lider_id: 'u-multi', lider_nombre: 'Ing. Carlos Mendoza', estado: 'Planificación' },
+  { id: 'pry-3', nombre: 'Banco Institucional de Objetos de Aprendizaje H5P', descripcion: 'Repositorio estandarizado de recursos didácticos interactivos', area_id: 'a-4-3', lider_id: 'u-docente', lider_nombre: 'Prof. Ana María Silva', lider_secundario_id: 'u-diseno', lider_secundario_nombre: 'Lic. Carlic Bolomboy', estado: 'En Proceso' },
+  { id: 'pry-4', nombre: 'Migración y Integración de Paquetes SCORM 2026', descripcion: 'Optimización de empaquetado para plataformas LMS Canvas y Moodle', area_id: 'a-4-1', lider_id: 'u-coord', lider_nombre: 'Mg. Fernando Ríos', estado: 'Completado' },
 ];
 
 export const INITIAL_CURSOS: CursoVirtual[] = [
@@ -267,6 +267,10 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     responsable_nombre: 'Lic. Carlic Bolomboy',
     responsable_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     rol_destino: 'Diseño',
+    responsable_secundario_id: 'u-multi',
+    responsable_secundario_nombre: 'Ing. Carlos Mendoza',
+    responsable_secundario_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    rol_destino_secundario: 'Multimedia',
     orden_tarea: 1,
     estado: 'Completada',
     tipo_tarea: 'Curso Virtual',

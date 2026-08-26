@@ -90,7 +90,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       }
       
       // Filtro por Responsable / Usuario
-      if (filtroUsuario !== 'todos' && t.responsable_id !== filtroUsuario) {
+      if (filtroUsuario !== 'todos' && t.responsable_id !== filtroUsuario && t.responsable_secundario_id !== filtroUsuario) {
         return false;
       }
 
@@ -105,7 +105,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
         const coincideTitulo = t.titulo.toLowerCase().includes(term);
         const coincideCurso = t.curso_nombre?.toLowerCase().includes(term);
         const coincideProyecto = t.proyecto_nombre?.toLowerCase().includes(term);
-        const coincideResp = t.responsable_nombre?.toLowerCase().includes(term);
+        const coincideResp = t.responsable_nombre?.toLowerCase().includes(term) || t.responsable_secundario_nombre?.toLowerCase().includes(term);
         if (!coincideTitulo && !coincideCurso && !coincideProyecto && !coincideResp) return false;
       }
 
@@ -613,11 +613,21 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                           </span>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-sage-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                              {tarea.responsable_nombre?.charAt(0) || 'U'}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-sage-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                {tarea.responsable_nombre?.charAt(0) || 'U'}
+                              </div>
+                              <span className="truncate font-semibold">{tarea.responsable_nombre || 'Sin asignar'}</span>
                             </div>
-                            <span className="truncate">{tarea.responsable_nombre || 'Sin asignar'}</span>
+                            {tarea.responsable_secundario_nombre && (
+                              <div className="flex items-center gap-1.5 text-blue-700 text-[11px] ml-0.5">
+                                <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                                  {tarea.responsable_secundario_nombre.charAt(0)}
+                                </div>
+                                <span className="truncate font-medium">{tarea.responsable_secundario_nombre}</span>
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="p-4 w-48">
@@ -846,7 +856,10 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                               </span>
                             </div>
                             <p className="text-[11px] text-charcoal-500">
-                              {tarea.curso_nombre || tarea.proyecto_nombre || 'General CCV'} • Responsable: <strong className="text-charcoal-700">{tarea.responsable_nombre || 'Sin Asignar'}</strong>
+                              {tarea.curso_nombre || tarea.proyecto_nombre || 'General CCV'} • Responsable{tarea.responsable_secundario_nombre ? 's' : ''}: <strong className="text-charcoal-700">{tarea.responsable_nombre || 'Sin Asignar'}</strong>
+                              {tarea.responsable_secundario_nombre && (
+                                <span className="text-blue-700 font-bold"> & {tarea.responsable_secundario_nombre}</span>
+                              )}
                             </p>
                           </div>
 

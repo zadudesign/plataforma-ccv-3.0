@@ -490,8 +490,15 @@ export async function createProyectoDB(proyecto: Omit<ProyectoEspecial, 'id'>): 
     };
     if (proyecto.area_id && isGuid(proyecto.area_id)) payload.area_id = proyecto.area_id;
     if (proyecto.lider_id && isGuid(proyecto.lider_id)) payload.lider_id = proyecto.lider_id;
+    if (proyecto.lider_secundario_id && isGuid(proyecto.lider_secundario_id)) payload.lider_secundario_id = proyecto.lider_secundario_id;
 
-    const { data, error } = await supabase.from('proyectos').insert(payload).select().single();
+    let { data, error } = await supabase.from('proyectos').insert(payload).select().single();
+    if (error && error.code === 'PGRST204' && error.message.includes('lider_secundario_id')) {
+      delete payload.lider_secundario_id;
+      const res = await supabase.from('proyectos').insert(payload).select().single();
+      data = res.data;
+      error = res.error;
+    }
     if (error) return null;
     return data;
   } catch {
@@ -726,9 +733,15 @@ export async function updateProyectoFullDB(id: string, datos: Partial<ProyectoEs
     if (datos.descripcion !== undefined) payload.descripcion = datos.descripcion;
     if (datos.area_id !== undefined) payload.area_id = isGuid(datos.area_id) ? datos.area_id : null;
     if (datos.lider_id !== undefined) payload.lider_id = isGuid(datos.lider_id) ? datos.lider_id : null;
+    if (datos.lider_secundario_id !== undefined) payload.lider_secundario_id = isGuid(datos.lider_secundario_id) ? datos.lider_secundario_id : null;
     if (datos.estado) payload.estado = datos.estado;
 
-    const { error } = await supabase.from('proyectos').update(payload).eq('id', id);
+    let { error } = await supabase.from('proyectos').update(payload).eq('id', id);
+    if (error && error.code === 'PGRST204' && error.message.includes('lider_secundario_id')) {
+      delete payload.lider_secundario_id;
+      const res = await supabase.from('proyectos').update(payload).eq('id', id);
+      error = res.error;
+    }
     if (error) console.error('Error al actualizar proyecto en Supabase:', error);
     return !error;
   } catch (err) {
@@ -750,12 +763,11 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         proyectos(nombre),
         cursos(nombre),
         areas(nombre),
-        usuarios(nombre_completo, avatar_url)
+        usuarios!responsable_id(nombre_completo, avatar_url)
       `)
       .order('orden_tarea', { ascending: true });
 
     if (error || !data) {
-      if (error) console.error('Error al obtener tareas de Supabase (con joins):', error);
       // Fallback sin joins en caso de discrepancia en nombres de foreign keys:
       const { data: rawData, error: rawError } = await supabase
         .from('tareas')
@@ -776,6 +788,8 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         area_id: t.area_id,
         responsable_id: t.responsable_id,
         rol_destino: t.rol_destino,
+        responsable_secundario_id: t.responsable_secundario_id,
+        rol_destino_secundario: t.rol_destino_secundario,
         categoria_proyecto: t.categoria_proyecto,
         orden_tarea: t.orden_tarea || 0,
         estado: t.estado as EstadoTarea,
@@ -805,6 +819,8 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       responsable_nombre: t.usuarios?.nombre_completo,
       responsable_avatar: t.usuarios?.avatar_url,
       rol_destino: t.rol_destino,
+      responsable_secundario_id: t.responsable_secundario_id,
+      rol_destino_secundario: t.rol_destino_secundario,
       categoria_proyecto: t.categoria_proyecto,
       orden_tarea: t.orden_tarea || 0,
       estado: t.estado as EstadoTarea,
@@ -933,6 +949,8 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       if (rolFound?.id) resolvedRolDestinoId = rolFound.id;
     }
 
+    const validResponsableSecundarioId = isGuid(tarea.responsable_secundario_id) ? tarea.responsable_secundario_id : null;
+
     const basePayload: any = {
       titulo: tarea.titulo.trim(),
       descripcion: tarea.descripcion || '',
@@ -941,6 +959,8 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       area_id: validAreaId,
       responsable_id: validResponsableId,
       rol_destino: tarea.rol_destino || null,
+      responsable_secundario_id: validResponsableSecundarioId,
+      rol_destino_secundario: tarea.rol_destino_secundario || null,
       categoria_proyecto: tarea.tipo_tarea === 'Proyecto' ? (tarea.categoria_proyecto || 'Diseño') : null,
       orden_tarea: tarea.orden_tarea || 0,
       estado: tarea.estado || 'Pendiente',
@@ -977,6 +997,8 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
 
       // Si falló por columnas inexistentes (código PGRST204)
       if (res.error && res.error.code === 'PGRST204') {
+        if (res.error.message.includes('responsable_secundario_id')) delete currentPayload.responsable_secundario_id;
+        if (res.error.message.includes('rol_destino_secundario')) delete currentPayload.rol_destino_secundario;
         if (res.error.message.includes('categoria_proyecto')) delete currentPayload.categoria_proyecto;
         if (res.error.message.includes('tarifa_hora')) delete currentPayload.tarifa_hora;
         if (res.error.message.includes('tarifa_tarea')) delete currentPayload.tarifa_tarea;
@@ -1017,6 +1039,10 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
         responsable_id: data.responsable_id || validResponsableId || tarea.responsable_id,
         responsable_nombre: tarea.responsable_nombre,
         responsable_avatar: tarea.responsable_avatar,
+        responsable_secundario_id: data.responsable_secundario_id || validResponsableSecundarioId || tarea.responsable_secundario_id,
+        responsable_secundario_nombre: tarea.responsable_secundario_nombre,
+        responsable_secundario_avatar: tarea.responsable_secundario_avatar,
+        rol_destino_secundario: data.rol_destino_secundario || tarea.rol_destino_secundario,
         tipo_tarea: (data.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
         enlace_recurso: data.enlace_recurso || tarea.enlace_recurso,
         created_at: data.created_at
@@ -1061,8 +1087,16 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     if (datos.tarifa_tarea !== undefined) payload.tarifa_tarea = datos.tarifa_tarea;
     if (datos.responsable_id !== undefined && isGuid(datos.responsable_id)) payload.responsable_id = datos.responsable_id;
     if (datos.rol_destino !== undefined) payload.rol_destino = datos.rol_destino;
+    if (datos.responsable_secundario_id !== undefined) payload.responsable_secundario_id = isGuid(datos.responsable_secundario_id) ? datos.responsable_secundario_id : null;
+    if (datos.rol_destino_secundario !== undefined) payload.rol_destino_secundario = datos.rol_destino_secundario;
 
-    const { error } = await supabase.from('tareas').update(payload).eq('id', id);
+    let { error } = await supabase.from('tareas').update(payload).eq('id', id);
+    if (error && error.code === 'PGRST204') {
+      if (error.message.includes('responsable_secundario_id')) delete payload.responsable_secundario_id;
+      if (error.message.includes('rol_destino_secundario')) delete payload.rol_destino_secundario;
+      const res = await supabase.from('tareas').update(payload).eq('id', id);
+      error = res.error;
+    }
     if (error) console.error('Error al actualizar tarea en Supabase:', error);
     return !error;
   } catch (err) {

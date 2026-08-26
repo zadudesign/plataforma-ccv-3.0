@@ -109,6 +109,7 @@ interface AuthContextType {
   asignarDocenteCurso: (cursoId: string, docenteId: string) => void;
   asignarEvaluadorCurso: (cursoId: string, evaluadorId: string) => void;
   asignarLiderProyecto: (proyectoId: string, liderId: string) => void;
+  asignarCoLiderProyecto: (proyectoId: string, liderSecundarioId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -708,9 +709,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const crearProyecto = async (datos: Omit<ProyectoEspecial, 'id'>) => {
     const dbItem = await createProyectoDB(datos);
+    const lid = datos.lider_id ? usuarios.find(u => u.id === datos.lider_id) : undefined;
+    const lidSec = datos.lider_secundario_id ? usuarios.find(u => u.id === datos.lider_secundario_id) : undefined;
     const nuevo: ProyectoEspecial = {
       ...datos,
       id: dbItem?.id || `pry-${Date.now()}`,
+      lider_nombre: lid ? lid.nombre_completo : (datos.lider_nombre || 'Sin Asignar'),
+      lider_secundario_nombre: lidSec ? lidSec.nombre_completo : datos.lider_secundario_nombre,
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setProyectos(prev => [nuevo, ...prev]);
@@ -762,11 +767,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const editarProyecto = async (id: string, datos: Partial<ProyectoEspecial>) => {
-    const lid = datos.lider_id ? usuarios.find(u => u.id === datos.lider_id) : undefined;
+    const lid = datos.lider_id !== undefined ? (datos.lider_id ? usuarios.find(u => u.id === datos.lider_id) : undefined) : undefined;
+    const lidSec = datos.lider_secundario_id !== undefined ? (datos.lider_secundario_id ? usuarios.find(u => u.id === datos.lider_secundario_id) : undefined) : undefined;
     setProyectos(prev => prev.map(p => p.id === id ? {
       ...p,
       ...datos,
-      lider_nombre: lid ? lid.nombre_completo : (datos.lider_id === '' ? 'Sin Asignar' : p.lider_nombre),
+      lider_nombre: datos.lider_id !== undefined ? (lid ? lid.nombre_completo : (datos.lider_id === '' ? 'Sin Asignar' : p.lider_nombre)) : p.lider_nombre,
+      lider_secundario_nombre: datos.lider_secundario_id !== undefined ? (lidSec ? lidSec.nombre_completo : (datos.lider_secundario_id === '' ? undefined : p.lider_secundario_nombre)) : p.lider_secundario_nombre,
     } : p));
     await updateProyectoFullDB(id, datos);
   };
@@ -811,13 +818,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await updateCursoDB(cursoId, { evaluador_id: evaluadorId });
   };
 
-  const asignarLiderProyecto = (proyectoId: string, liderId: string) => {
+  const asignarLiderProyecto = async (proyectoId: string, liderId: string) => {
     const lid = usuarios.find(u => u.id === liderId);
     setProyectos(prev => prev.map(p => p.id === proyectoId ? {
       ...p,
       lider_id: liderId,
       lider_nombre: lid?.nombre_completo || 'Sin Asignar'
     } : p));
+    await updateProyectoFullDB(proyectoId, { lider_id: liderId });
+  };
+
+  const asignarCoLiderProyecto = async (proyectoId: string, liderSecundarioId: string) => {
+    const lid = usuarios.find(u => u.id === liderSecundarioId);
+    setProyectos(prev => prev.map(p => p.id === proyectoId ? {
+      ...p,
+      lider_secundario_id: liderSecundarioId || undefined,
+      lider_secundario_nombre: lid?.nombre_completo || undefined
+    } : p));
+    await updateProyectoFullDB(proyectoId, { lider_secundario_id: liderSecundarioId });
   };
 
   const actualizarTarifaProyecto = (categoria: CategoriaTareaProyecto, nuevaTarifa: number) => {
@@ -878,7 +896,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         asignarCoordinador,
         asignarDocenteCurso,
         asignarEvaluadorCurso,
-        asignarLiderProyecto
+        asignarLiderProyecto,
+        asignarCoLiderProyecto
       }}
     >
       {children}

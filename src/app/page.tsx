@@ -188,15 +188,23 @@ export default function Home() {
     // 1. Administrador y Jefe CCV ven todas las tareas
     if (isSupervisorGlobal) return true;
 
-    // 2. Asignado directamente al usuario actual
-    if (t.responsable_id === usuarioActual.id) return true;
+    // 2. Asignado directamente al usuario actual (Principal o Secundario)
+    if (t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id) return true;
 
-    // 3. Coincidencia exacta de Rol Destino con el Rol del usuario
+    // 3. Coincidencia de Rol Destino con el Rol del usuario (Principal o Secundario)
     if (t.rol_destino && rolNombre && t.rol_destino.toLowerCase().trim() === rolNombre.toLowerCase().trim()) {
       return true;
     }
+    if (t.rol_destino_secundario && rolNombre && t.rol_destino_secundario.toLowerCase().trim() === rolNombre.toLowerCase().trim()) {
+      return true;
+    }
 
-    // 4. Decano: Tareas asociadas a cursos o proyectos de su facultad
+    // 4. Líder o Co-Líder de Proyecto asignado ve las tareas de su proyecto
+    if (t.proyecto_id && proyectos.some(p => p.id === t.proyecto_id && (p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id))) {
+      return true;
+    }
+
+    // 5. Decano: Tareas asociadas a cursos o proyectos de su facultad
     const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
     if (decanoFacultad) {
       if (t.curso_id && cursos.some(c => c.id === t.curso_id && c.facultad_nombre === decanoFacultad.nombre)) {
@@ -207,7 +215,7 @@ export default function Home() {
       }
     }
 
-    // 5. Coordinador: Tareas asociadas a cursos de su programa
+    // 6. Coordinador: Tareas asociadas a cursos de su programa
     const coordPrograma = programas.find(p => p.coordinador_id === usuarioActual.id);
     if (coordPrograma) {
       if (t.curso_id && cursos.some(c => c.id === t.curso_id && c.programa_id === coordPrograma.id)) {
@@ -215,7 +223,7 @@ export default function Home() {
       }
     }
 
-    // 6. Docente / Evaluador asignado al curso de la tarea
+    // 7. Docente / Evaluador asignado al curso de la tarea
     if (t.curso_id) {
       const cursoDeTarea = cursos.find(c => c.id === t.curso_id);
       if (cursoDeTarea) {
@@ -235,6 +243,7 @@ export default function Home() {
   const tareasFiltradas = tareasVisiblesPorRol.filter(t => 
     t.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
     t.responsable_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    t.responsable_secundario_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
     t.curso_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
     t.proyecto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -256,10 +265,10 @@ export default function Home() {
     return false;
   });
 
-  // 3. Proyectos Visibles por Rol
+  // 3. Proyectos Visibles por Rol (Líder o Co-Líder)
   const proyectosVisiblesPorRol = proyectos.filter(p => {
     if (nivelArea >= 5) return true;
-    if (p.lider_id === usuarioActual.id) return true;
+    if (p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id) return true;
     return tareasVisiblesPorRol.some(t => t.proyecto_id === p.id);
   });
 

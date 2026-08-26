@@ -162,11 +162,46 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
           {/* Metrics Grid */}
           <div className={`grid grid-cols-1 ${tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
-            <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
-              <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
-                <User className="w-4 h-4 text-sage-600" /> Responsable
+            <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm space-y-2">
+              <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold">
+                <User className="w-4 h-4 text-sage-600" /> {tarea.responsable_secundario_nombre ? 'Responsables Asignados' : 'Responsable'}
               </div>
-              <p className="text-sm font-extrabold text-charcoal-900">{tarea.responsable_nombre}</p>
+              
+              {/* Responsable Principal */}
+              <div className="flex items-center gap-2.5">
+                <img
+                  src={tarea.responsable_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                  alt={tarea.responsable_nombre || 'Responsable'}
+                  className="w-7 h-7 rounded-full object-cover border border-stone-200 shadow-2xs"
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold text-charcoal-900 truncate">
+                    {tarea.responsable_nombre || 'Sin Asignar'}
+                  </p>
+                  <p className="text-[10px] text-charcoal-500 font-medium">
+                    Principal {tarea.rol_destino ? `• ${tarea.rol_destino}` : ''}
+                  </p>
+                </div>
+              </div>
+
+              {/* Segundo Responsable si existe */}
+              {tarea.responsable_secundario_nombre && (
+                <div className="flex items-center gap-2.5 pt-1.5 border-t border-stone-100">
+                  <img
+                    src={tarea.responsable_secundario_avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150'}
+                    alt={tarea.responsable_secundario_nombre}
+                    className="w-7 h-7 rounded-full object-cover border border-stone-200 shadow-2xs"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-extrabold text-charcoal-900 truncate">
+                      {tarea.responsable_secundario_nombre}
+                    </p>
+                    <p className="text-[10px] text-blue-700 font-medium">
+                      Co-responsable {tarea.rol_destino_secundario ? `• ${tarea.rol_destino_secundario}` : ''}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">

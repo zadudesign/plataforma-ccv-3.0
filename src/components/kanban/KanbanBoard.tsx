@@ -181,12 +181,29 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         {/* Footer details & state transfer controls */}
                         <div className="flex items-center justify-between mt-3 pt-2 border-t border-stone-200/60">
                           <div className="flex items-center gap-2">
-                            <img
-                              src={tarea.responsable_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                              alt={tarea.responsable_nombre}
-                              className="w-7 h-7 rounded-full object-cover border border-white shadow-sm"
-                              title={tarea.responsable_nombre}
-                            />
+                            {tarea.responsable_secundario_nombre ? (
+                              <div className="flex items-center -space-x-2" title={`Responsables: ${tarea.responsable_nombre} y ${tarea.responsable_secundario_nombre}`}>
+                                <img
+                                  src={tarea.responsable_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                                  alt={tarea.responsable_nombre || 'Responsable 1'}
+                                  className="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"
+                                  title={`Principal: ${tarea.responsable_nombre || 'Sin Asignar'}`}
+                                />
+                                <img
+                                  src={tarea.responsable_secundario_avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150'}
+                                  alt={tarea.responsable_secundario_nombre}
+                                  className="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-blue-300"
+                                  title={`Co-responsable: ${tarea.responsable_secundario_nombre}`}
+                                />
+                              </div>
+                            ) : (
+                              <img
+                                src={tarea.responsable_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                                alt={tarea.responsable_nombre}
+                                className="w-7 h-7 rounded-full object-cover border border-white shadow-sm"
+                                title={tarea.responsable_nombre || 'Responsable'}
+                              />
+                            )}
                             <span className="text-[11px] text-charcoal-600 flex items-center gap-1 font-medium">
                               <CalendarIcon className="w-3 h-3" /> {tarea.fecha_vencimiento}
                             </span>
