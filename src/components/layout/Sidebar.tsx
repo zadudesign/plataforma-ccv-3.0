@@ -24,12 +24,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
   const { usuarioActual, isAdmin, isRealAdmin, setIsDevSimulatorOpen, logout } = useAuth();
 
   const allNavItems: { id: VistaNavegacion; label: string; icon: React.ReactNode; requiresAdmin?: boolean }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutGrid className="w-5 h-5" /> },
-    { id: 'academic', label: 'Estructura Académica', icon: <FolderTree className="w-5 h-5" /> },
-    { id: 'kanban', label: 'Tablero Kanban', icon: <Kanban className="w-5 h-5" /> },
-    { id: 'calendar', label: 'Calendario', icon: <Calendar className="w-5 h-5" /> },
-    { id: 'productivity', label: 'Productividad', icon: <TrendingUp className="w-5 h-5" /> },
-    { id: 'admin', label: 'Administración RBAC', icon: <ShieldCheck className="w-5 h-5" />, requiresAdmin: true },
+    { id: 'dashboard', label: 'Métricas Institucionales CCV', icon: <LayoutGrid className="w-5 h-5" /> },
+    { id: 'calendar', label: 'Calendario de Entregas & Vencimientos CCV', icon: <Calendar className="w-5 h-5" /> },
+    { id: 'kanban', label: 'Tablero Kanban de Producción CCV', icon: <Kanban className="w-5 h-5" /> },
+    { id: 'productivity', label: 'Panel de Productividad y Control de Entregas', icon: <TrendingUp className="w-5 h-5" /> },
+    { id: 'academic', label: 'Estructura Académica e Institucional CCV', icon: <FolderTree className="w-5 h-5" /> },
+    { id: 'admin', label: 'Panel de Administración RBAC & Asignaciones CCV', icon: <ShieldCheck className="w-5 h-5" />, requiresAdmin: true },
   ];
 
   // Filter items based on user role (Admin section is exclusive to Nivel 6 / Admin)

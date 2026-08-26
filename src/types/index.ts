@@ -156,4 +156,4 @@ export interface RegistroHoras {
   created_at?: string;
 }
 
-export type VistaNavegacion = 'dashboard' | 'academic' | 'kanban' | 'calendar' | 'productivity' | 'admin';
+export type VistaNavegacion = 'dashboard' | 'calendar' | 'kanban' | 'productivity' | 'academic' | 'admin';
