@@ -11,7 +11,7 @@ import { CalendarView } from '@/components/calendar/CalendarView';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { TaskDetailModal } from '@/components/tasks/TaskDetailModal';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
-import { LoginForm } from '@/components/auth/LoginForm';
+import { LandingHome } from '@/components/home/LandingHome';
 import { DevRoleSimulatorModal } from '@/components/auth/DevRoleSimulatorModal';
 import { DigitalSignatureModal } from '@/components/auth/DigitalSignatureModal';
 import { useAuth } from '@/context/AuthContext';
@@ -117,9 +117,9 @@ export default function Home() {
     }));
   };
 
-  // If no user is logged in, show Login Form
+  // If no user is logged in, show Landing Home with modal login trigger
   if (!usuarioActual) {
-    return <LoginForm />;
+    return <LandingHome />;
   }
 
   // Handlers
