@@ -123,6 +123,7 @@ export interface TareaCCV {
   tipo_tarea: TipoTarea;
   categoria_proyecto?: CategoriaTareaProyecto;
   fecha_vencimiento: string;
+  hora_vencimiento?: string; // Formato HH:mm (ej. "18:00")
   fecha_completada?: string;
   tiempo_invertido: number; // en horas (responsable principal)
   tiempo_invertido_secundario?: number; // en horas (co-responsable)

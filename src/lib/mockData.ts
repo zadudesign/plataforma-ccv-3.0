@@ -275,6 +275,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-08-01',
+    hora_vencimiento: '18:00',
     fecha_completada: '2026-08-04', // 3 días de retraso
     tiempo_invertido: 12.5,
     tiempo_invertido_secundario: 8.0,
@@ -295,6 +296,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-08-05',
+    hora_vencimiento: '16:30',
     fecha_completada: '2026-08-03', // 2 días antes (A tiempo)
     tiempo_invertido: 16.5,
   },
@@ -314,6 +316,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     estado: 'En Revisión',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-08-02', // Pendiente con retraso respecto a 2026-08-07
+    hora_vencimiento: '20:00',
     tiempo_invertido: 8.5,
   },
   {
@@ -332,6 +335,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-07-25',
+    hora_vencimiento: '12:00',
     fecha_completada: '2026-07-24', // A tiempo (1 día antes)
     tiempo_invertido: 9.5,
   },
@@ -352,6 +356,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Diseño',
     fecha_vencimiento: '2026-08-15',
+    hora_vencimiento: '17:00',
     tiempo_invertido: 10.0,
     tarifa_hora: 35000,
     tarifa_tarea: 1400000,
@@ -372,6 +377,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     estado: 'Completada',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-07-30',
+    hora_vencimiento: '19:30',
     fecha_completada: '2026-08-05',
     tiempo_invertido: 13.0,
   },
@@ -392,6 +398,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Multimedia',
     fecha_vencimiento: '2026-09-01',
+    hora_vencimiento: '14:00',
     tiempo_invertido: 22.0,
     tarifa_hora: 45000,
     tarifa_tarea: 2250000,
@@ -413,6 +420,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Diseño',
     fecha_vencimiento: '2026-08-30',
+    hora_vencimiento: '18:00',
     tiempo_invertido: 15.0,
     tarifa_hora: 35000,
     tarifa_tarea: 1225000,
@@ -434,6 +442,7 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Soporte',
     fecha_vencimiento: '2026-08-10',
+    hora_vencimiento: '11:00',
     fecha_completada: '2026-08-09',
     tiempo_invertido: 24.0,
     tarifa_hora: 25000,

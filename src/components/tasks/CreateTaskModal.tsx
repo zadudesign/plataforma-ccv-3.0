@@ -37,6 +37,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     d.setDate(d.getDate() + 7);
     return d.toISOString().split('T')[0];
   });
+  const [horaVencimiento, setHoraVencimiento] = useState('18:00');
 
   const activeCursoId = cursoId || cursos[0]?.id;
   const activeProyectoId = proyectoId || proyectos[0]?.id;
@@ -81,6 +82,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       orden_tarea: 1,
       estado: 'Pendiente',
       fecha_vencimiento: fechaVencimiento,
+      hora_vencimiento: horaVencimiento || '18:00',
       tiempo_invertido: 0,
       tiempo_invertido_secundario: responsableSecundarioId ? 0 : undefined,
       tarifa_hora: tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined,
@@ -295,15 +297,35 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Date */}
-          <div>
-            <label className="block font-bold text-charcoal-800 mb-1">Fecha Vencimiento</label>
-            <input
-              type="date"
-              value={fechaVencimiento}
-              onChange={(e) => setFechaVencimiento(e.target.value)}
-              className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
-            />
+          {/* Fecha y Hora de Vencimiento */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-charcoal-800 mb-1 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-sage-600" />
+                <span>Fecha Vencimiento *</span>
+              </label>
+              <input
+                type="date"
+                value={fechaVencimiento}
+                onChange={(e) => setFechaVencimiento(e.target.value)}
+                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-semibold"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-charcoal-800 mb-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-sage-600" />
+                <span>Hora de Vencimiento *</span>
+              </label>
+              <input
+                type="time"
+                value={horaVencimiento}
+                onChange={(e) => setHoraVencimiento(e.target.value)}
+                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold"
+                required
+              />
+            </div>
           </div>
 
           {/* Calculated Cost Card for Projects */}

@@ -58,7 +58,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-stone-200 flex justify-between items-start bg-cream-50/50">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800">
                 {tarea.tipo_tarea}
               </span>
@@ -69,6 +69,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 'bg-emerald-600 text-white border-emerald-700'
               }`}>
                 {tarea.estado}
+              </span>
+              <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-stone-100 text-charcoal-800 border border-stone-200 flex items-center gap-1 font-mono">
+                📅 {tarea.fecha_vencimiento} • ⏰ {tarea.hora_vencimiento || '18:00'}
               </span>
             </div>
             <h3 className="text-xl font-extrabold text-charcoal-900">{tarea.titulo}</h3>

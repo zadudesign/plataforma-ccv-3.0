@@ -105,7 +105,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     };
   }, [currentYear, currentMonth]);
 
-  // Mapa de tareas por fecha para acceso O(1)
+  // Mapa de tareas por fecha para acceso O(1) con orden descendente por hora de vencimiento
   const tareasPorFecha = useMemo(() => {
     const map: Record<string, TareaCCV[]> = {};
     tareas.forEach(tarea => {
@@ -116,14 +116,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       }
       map[fecha].push(tarea);
     });
+
+    // Ordenar tareas de cada día en orden descendente por hora de vencimiento
+    Object.keys(map).forEach(fecha => {
+      map[fecha].sort((a, b) => (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00'));
+    });
+
     return map;
   }, [tareas]);
 
-  // Tareas filtradas para la fecha seleccionada
+  // Tareas filtradas para la fecha seleccionada (orden descendente por hora)
   const tareasDelDiaSeleccionado = useMemo(() => {
-    const lista = tareasPorFecha[fechaSeleccionada] || [];
-    if (filtroEstado === 'todos') return lista;
-    return lista.filter(t => t.estado === filtroEstado);
+    let lista = tareasPorFecha[fechaSeleccionada] || [];
+    if (filtroEstado !== 'todos') {
+      lista = lista.filter(t => t.estado === filtroEstado);
+    }
+    return [...lista].sort((a, b) => (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00'));
   }, [tareasPorFecha, fechaSeleccionada, filtroEstado]);
 
   // Formato amigable en español de la fecha seleccionada
@@ -161,7 +169,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return { total, completadas, pendientes, enRevision, enProceso };
   }, [tareas, currentYear, currentMonth]);
 
-  // Próximas Tareas ordenadas cronológicamente para fechas venideras o activas
+  // Próximas Tareas ordenadas cronológicamente (fechas más próximas primero y orden descendente por hora)
   const proximasTareas = useMemo(() => {
     return tareas
       .filter(t => {
@@ -169,7 +177,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         // Tareas con fecha vencimiento futura o de hoy, y que aún no estén completadas
         return t.fecha_vencimiento >= hoyStr && t.estado !== 'Completada';
       })
-      .sort((a, b) => (a.fecha_vencimiento || '').localeCompare(b.fecha_vencimiento || ''))
+      .sort((a, b) => {
+        const compFecha = (a.fecha_vencimiento || '').localeCompare(b.fecha_vencimiento || '');
+        if (compFecha !== 0) return compFecha;
+        return (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00');
+      })
       .slice(0, 6); // Top 6 próximas tareas
   }, [tareas, hoyStr]);
 
@@ -386,10 +398,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               setFechaSeleccionada(fechaStr);
                               onSelectTask(t);
                             }}
-                            className={`p-1 rounded-md text-[9.5px] font-bold leading-tight truncate cursor-pointer transition-transform hover:scale-102 shadow-2xs ${bgBadge}`}
-                            title={`${t.titulo} (${t.estado}) - Clic para ver detalle`}
+                            className={`p-1 rounded-md text-[9.5px] font-bold leading-tight truncate cursor-pointer transition-transform hover:scale-102 shadow-2xs flex items-center gap-1 ${bgBadge}`}
+                            title={`${t.titulo} (${t.estado}) - Hora límite: ${t.hora_vencimiento || '18:00'} - Clic para ver detalle`}
                           >
-                            {t.titulo}
+                            <span className="opacity-90 font-mono text-[8.5px] shrink-0">⏰ {t.hora_vencimiento || '18:00'}</span>
+                            <span className="truncate">{t.titulo}</span>
                           </div>
                         );
                       })}
@@ -441,7 +454,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   Pendiente
                 </span>
               </div>
-
               <div className="flex items-center gap-2 text-[11px] text-charcoal-500">
                 <span className="w-2 h-2 rounded-full bg-accent-500 animate-pulse"></span>
                 <span>Hoy</span>
@@ -501,7 +513,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 ))}
               </div>
 
-              {/* Listado de Tareas */}
+              {/* Listado de Tareas (Ordenadas en orden descendente por hora) */}
               <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-2 mt-1">
                 {tareasDelDiaSeleccionado.length > 0 ? (
                   tareasDelDiaSeleccionado.map((tarea) => {
@@ -518,9 +530,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         className="p-2.5 sm:p-3 rounded-xl border border-stone-200 bg-white hover:border-primary-400 hover:shadow-sm transition-all cursor-pointer group space-y-1.5"
                       >
                         <div className="flex items-center justify-between gap-1.5">
-                          <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md border ${badgeClass}`}>
-                            {tarea.estado}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md border ${badgeClass}`}>
+                              {tarea.estado}
+                            </span>
+                            <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-charcoal-800 border border-stone-200 font-mono">
+                              ⏰ {tarea.hora_vencimiento || '18:00'}
+                            </span>
+                          </div>
                           <span className="text-[10px] font-bold text-charcoal-400">
                             {tarea.tipo_tarea}
                           </span>
@@ -595,8 +612,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md border ${badgeClass}`}>
                               {tarea.estado}
                             </span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-charcoal-700 border border-stone-200">
-                              📅 {tarea.fecha_vencimiento}
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-charcoal-700 border border-stone-200 font-mono">
+                              📅 {tarea.fecha_vencimiento} • ⏰ {tarea.hora_vencimiento || '18:00'}
                             </span>
                           </div>
                           <span className={`text-[10px] font-extrabold ${
@@ -627,7 +644,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               </div>
             </div>
             <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-400 font-medium shrink-0">
-              <span>Cronológico</span>
+              <span>Cronológico (Hora Desc.)</span>
               <span className="text-accent-700 font-bold">Producción CCV</span>
             </div>
           </div>
