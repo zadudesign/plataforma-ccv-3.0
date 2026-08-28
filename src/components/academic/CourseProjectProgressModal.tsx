@@ -82,20 +82,19 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
   const porcentaje = totalTareas > 0 ? Math.round((completadas / totalTareas) * 100) : 0;
 
-  const horasEstimadas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_estimado || 0), 0);
-  const horasInvertidas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_invertido || 0), 0);
+  const horasInvertidas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
 
   // Cálculos Financieros Exclusivos para Proyectos
   const costoTotalProyecto = tareasEntidad.reduce((sum, t) => {
     const tarifa = t.tarifa_tarea !== undefined 
       ? t.tarifa_tarea 
-      : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_estimado || 0) : 0);
+      : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_invertido || 1) : 0);
     return sum + tarifa;
   }, 0);
 
   const costoEjecutadoProyecto = tareasEntidad.reduce((sum, t) => {
     const tarifaHora = t.tarifa_hora || 0;
-    return sum + (tarifaHora * (t.tiempo_invertido || 0));
+    return sum + (tarifaHora * ((t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0)));
   }, 0);
 
   // Filtrar según pestaña seleccionada
@@ -190,7 +189,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                     </span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-200 text-charcoal-700 flex items-center gap-1">
                       <Clock className="w-3 h-3 text-amber-600" />
-                      {horasInvertidas}h / {horasEstimadas}h est.
+                      {horasInvertidas} hrs invertidas
                     </span>
                   </>
                 )}
@@ -329,17 +328,16 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                         <span className="text-[10px] text-blue-700 font-medium">Según {horasInvertidas}h invertidas</span>
                       </div>
 
-                      {/* KPI Proyecto 3: Horas Estimadas vs Reales */}
+                      {/* KPI Proyecto 3: Tiempo Invertido */}
                       <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between">
                         <div className="flex justify-between items-center text-amber-800">
                           <span className="text-[11px] font-black uppercase tracking-wider">Tiempo Invertido</span>
                           <Timer className="w-4 h-4 text-amber-600" />
                         </div>
                         <div className="mt-1 flex items-baseline gap-1">
-                          <span className="text-xl font-black text-amber-950">{horasInvertidas}h</span>
-                          <span className="text-xs font-semibold text-amber-700">/ {horasEstimadas}h est.</span>
+                          <span className="text-xl font-black text-amber-950">{horasInvertidas} hrs</span>
                         </div>
-                        <span className="text-[10px] text-amber-700 font-medium">Inversión de horas</span>
+                        <span className="text-[10px] text-amber-700 font-medium">Inversión acumulada</span>
                       </div>
 
                       {/* KPI Proyecto 4: Tareas del Proyecto */}
@@ -386,14 +384,13 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
                       <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200/80 shadow-xs flex flex-col justify-between">
                         <div className="flex justify-between items-center text-purple-700">
-                          <span className="text-[11px] font-bold uppercase tracking-wider">Horas Estimadas vs Reales</span>
+                          <span className="text-[11px] font-bold uppercase tracking-wider">Tiempo Invertido</span>
                           <Timer className="w-4 h-4 text-purple-600" />
                         </div>
                         <div className="mt-1 flex items-baseline gap-1">
-                          <span className="text-xl font-black text-purple-950">{horasInvertidas}h</span>
-                          <span className="text-xs font-semibold text-purple-700">/ {horasEstimadas}h est.</span>
+                          <span className="text-xl font-black text-purple-950">{horasInvertidas} hrs</span>
                         </div>
-                        <span className="text-[10px] text-purple-700 font-medium">Inversión de tiempo</span>
+                        <span className="text-[10px] text-purple-700 font-medium">Inversión acumulada</span>
                       </div>
                     </>
                   )}
@@ -444,7 +441,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                       const isDone = t.estado === 'Completada';
                       const costoTarea = t.tarifa_tarea !== undefined 
                         ? t.tarifa_tarea 
-                        : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_estimado || 0) : undefined);
+                        : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_invertido || 1) : undefined);
 
                       return (
                         <div
@@ -487,7 +484,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                                   )}
                                 </span>
                                 <span>• Vence: {t.fecha_vencimiento}</span>
-                                {t.tiempo_estimado > 0 && <span>• {t.tiempo_invertido || 0}h / {t.tiempo_estimado}h est.</span>}
+                                <span>• {t.tiempo_invertido || 0} hrs</span>
                                 {costoTarea !== undefined && costoTarea > 0 && (
                                   <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
                                     ${costoTarea.toLocaleString('es-CO')} COP
@@ -630,10 +627,10 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
                   <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
                     <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
-                      <Clock className="w-4 h-4 text-amber-600" /> Registro de Tiempos
+                      <Clock className="w-4 h-4 text-amber-600" /> Tiempo Invertido
                     </div>
                     <p className="text-sm font-extrabold text-charcoal-900">
-                      {tareaSeleccionadaLocal.tiempo_invertido}h / {tareaSeleccionadaLocal.tiempo_estimado}h est.
+                      {tareaSeleccionadaLocal.tiempo_invertido || 0} hrs
                     </p>
                   </div>
 

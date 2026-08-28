@@ -1,25 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Clock, AlertCircle, CheckCircle2, User, Users, UserCheck } from 'lucide-react';
 import { TareaCCV, Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
 interface LogHoursModalProps {
   tareas: TareaCCV[];
   usuarioActual: Usuario | null;
+  initialTaskId?: string;
+  initialIsSecondary?: boolean;
   onClose: () => void;
-  onUpdateTaskHours: (tareaId: string, horasAñadir: number) => void;
+  onUpdateTaskHours: (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean) => void;
 }
 
 export const LogHoursModal: React.FC<LogHoursModalProps> = ({
   tareas,
   usuarioActual,
+  initialTaskId,
+  initialIsSecondary = false,
   onClose,
   onUpdateTaskHours,
 }) => {
   const { roles, usuarios } = useAuth();
-  const [tareaId, setTareaId] = useState<string>(tareas[0]?.id || '');
+  const [tareaId, setTareaId] = useState<string>(initialTaskId || tareas[0]?.id || '');
+  const [esSecundario, setEsSecundario] = useState<boolean>(initialIsSecondary);
   const [horas, setHoras] = useState<string>('2.5');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -37,6 +42,25 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
 
   const tareaSeleccionada = tareas.find(t => t.id === tareaId);
 
+  // Auto-ajustar si el usuario actual coincide con el co-responsable
+  useEffect(() => {
+    if (tareaSeleccionada) {
+      if (initialIsSecondary) {
+        setEsSecundario(true);
+      } else if (usuarioActual && tareaSeleccionada.responsable_secundario_id === usuarioActual.id) {
+        setEsSecundario(true);
+      } else if (usuarioActual && tareaSeleccionada.responsable_id === usuarioActual.id) {
+        setEsSecundario(false);
+      } else if (!tareaSeleccionada.responsable_secundario_nombre && !tareaSeleccionada.responsable_secundario_id) {
+        setEsSecundario(false);
+      }
+    }
+  }, [tareaId, tareaSeleccionada, usuarioActual, initialIsSecondary]);
+
+  const tieneDosResponsables = Boolean(
+    tareaSeleccionada && (tareaSeleccionada.responsable_secundario_nombre || tareaSeleccionada.responsable_secundario_id)
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numHoras = parseFloat(horas);
@@ -49,9 +73,21 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
       return;
     }
 
-    onUpdateTaskHours(tareaId, numHoras);
+    onUpdateTaskHours(tareaId, numHoras, tieneDosResponsables ? esSecundario : false);
     onClose();
   };
+
+  const horasActualesResp = tareaSeleccionada
+    ? (esSecundario ? (tareaSeleccionada.tiempo_invertido_secundario || 0) : (tareaSeleccionada.tiempo_invertido || 0))
+    : 0;
+
+  const rolActivoImputacion = tareaSeleccionada
+    ? (esSecundario ? getNombreRol(tareaSeleccionada.rol_destino_secundario || tareaSeleccionada.rol_destino) : getNombreRol(tareaSeleccionada.rol_destino))
+    : 'General';
+
+  const usuarioActivoNombre = tareaSeleccionada
+    ? (esSecundario ? (tareaSeleccionada.responsable_secundario_nombre || 'Co-responsable') : (tareaSeleccionada.responsable_nombre || 'Responsable Principal'))
+    : '';
 
   return (
     <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
@@ -68,8 +104,8 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
             <Clock className="w-5 h-5 text-sage-600" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-charcoal-900">Imputar Tiempo a Tarea</h3>
-            <p className="text-xs text-charcoal-500">Actualiza el tiempo invertido directamente en la tabla de Tareas</p>
+            <h3 className="text-lg font-black text-charcoal-900">Imputar Tiempo Individual</h3>
+            <p className="text-xs text-charcoal-500">Contabilización individual de horas por usuario y rol asignado</p>
           </div>
         </div>
 
@@ -88,28 +124,105 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
             </label>
             <select
               value={tareaId}
-              onChange={e => setTareaId(e.target.value)}
+              onChange={e => {
+                setTareaId(e.target.value);
+                setEsSecundario(false);
+              }}
               className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
               required
             >
               {tareas.map(t => (
                 <option key={t.id} value={t.id}>
-                  {t.titulo} ({t.curso_nombre || t.proyecto_nombre || 'General'}) — Rol: {getNombreRol(t.rol_destino)}
+                  {t.titulo} ({t.curso_nombre || t.proyecto_nombre || 'General'})
+                  {t.responsable_secundario_nombre ? ' [2 Responsables]' : ''}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Información Actual de la Tarea */}
-          {tareaSeleccionada && (
-            <div className="p-3 bg-sage-50/60 rounded-2xl border border-sage-200/80 text-xs space-y-1 text-charcoal-700">
-              <div className="flex justify-between font-bold">
-                <span>Rol Destino: <strong className="text-sage-800">{getNombreRol(tareaSeleccionada.rol_destino)}</strong></span>
-                <span>Estado: <strong className="text-sage-800">{tareaSeleccionada.estado}</strong></span>
+          {/* Selector de Responsable cuando la tarea tiene dos asignados */}
+          {tareaSeleccionada && tieneDosResponsables && (
+            <div className="space-y-2 p-3.5 bg-cream-50 rounded-2xl border border-stone-200">
+              <label className="block text-xs font-extrabold text-charcoal-800 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-sage-600" />
+                <span>¿A qué responsable o rol deseas sumar este tiempo? *</span>
+              </label>
+              <p className="text-[11px] text-charcoal-500">
+                Esta tarea tiene dos responsables. El tiempo se contabilizará de forma individual e independiente.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {/* Opción 1: Responsable Principal */}
+                <button
+                  type="button"
+                  onClick={() => setEsSecundario(false)}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-1.5 ${
+                    !esSecundario
+                      ? 'bg-sage-50/90 border-sage-500 shadow-xs ring-2 ring-sage-400/40 text-sage-950'
+                      : 'bg-white border-stone-200 hover:border-stone-300 text-charcoal-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-sage-200 text-sage-900">
+                      Principal
+                    </span>
+                    {!esSecundario && <CheckCircle2 className="w-3.5 h-3.5 text-sage-600 shrink-0" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-black truncate">{tareaSeleccionada.responsable_nombre || 'Principal'}</p>
+                    <p className="text-[10px] text-charcoal-500 font-bold">Rol: {getNombreRol(tareaSeleccionada.rol_destino)}</p>
+                  </div>
+                  <div className="text-[10px] text-charcoal-600 font-semibold pt-1 border-t border-stone-100">
+                    Acumulado: <strong>{tareaSeleccionada.tiempo_invertido || 0} hrs</strong>
+                  </div>
+                </button>
+
+                {/* Opción 2: Co-responsable */}
+                <button
+                  type="button"
+                  onClick={() => setEsSecundario(true)}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-1.5 ${
+                    esSecundario
+                      ? 'bg-blue-50/90 border-blue-500 shadow-xs ring-2 ring-blue-400/40 text-blue-950'
+                      : 'bg-white border-stone-200 hover:border-stone-300 text-charcoal-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-200 text-blue-900">
+                      Co-responsable
+                    </span>
+                    {esSecundario && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-black truncate">{tareaSeleccionada.responsable_secundario_nombre || 'Co-responsable'}</p>
+                    <p className="text-[10px] text-blue-700 font-bold">Rol: {getNombreRol(tareaSeleccionada.rol_destino_secundario || tareaSeleccionada.rol_destino)}</p>
+                  </div>
+                  <div className="text-[10px] text-charcoal-600 font-semibold pt-1 border-t border-stone-100">
+                    Acumulado: <strong>{tareaSeleccionada.tiempo_invertido_secundario || 0} hrs</strong>
+                  </div>
+                </button>
               </div>
-              <div className="flex justify-between text-[11px] pt-1 border-t border-sage-200/50">
-                <span>Tiempo Invertido Actual: <strong>{tareaSeleccionada.tiempo_invertido || 0} hrs</strong></span>
-                <span>Tiempo Estimado: <strong>{tareaSeleccionada.tiempo_estimado || 0} hrs</strong></span>
+            </div>
+          )}
+
+          {/* Información Actual del Responsable Seleccionado */}
+          {tareaSeleccionada && (
+            <div className={`p-3 rounded-2xl border text-xs space-y-1 ${
+              esSecundario && tieneDosResponsables 
+                ? 'bg-blue-50/60 border-blue-200 text-charcoal-800' 
+                : 'bg-sage-50/60 border-sage-200 text-charcoal-800'
+            }`}>
+              <div className="flex justify-between font-bold">
+                <span className="flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-sage-600" />
+                  Imputando a: <strong className={esSecundario && tieneDosResponsables ? 'text-blue-900' : 'text-sage-900'}>{usuarioActivoNombre}</strong>
+                </span>
+                <span className="text-[11px] px-2 py-0.5 rounded-md bg-white border border-stone-200 font-black">
+                  Rol: {rolActivoImputacion}
+                </span>
+              </div>
+              <div className="flex justify-between text-[11px] pt-1 border-t border-stone-200/50">
+                <span>Tiempo Invertido Actual: <strong>{horasActualesResp} hrs</strong></span>
               </div>
             </div>
           )}
@@ -117,7 +230,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
           {/* Horas a Incrementar */}
           <div>
             <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
-              Horas a Añadir al Tiempo Invertido *
+              Horas a Añadir al Tiempo Invertido de {usuarioActivoNombre} *
             </label>
             <div className="relative">
               <input
@@ -134,7 +247,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
               <span className="absolute right-3 top-2.5 text-xs text-charcoal-400 font-bold">hrs</span>
             </div>
             <p className="text-[11px] text-charcoal-500 mt-1">
-              Estas horas se sumarán al acumulado de <strong className="text-charcoal-700">tiempo_invertido</strong> de la tarea.
+              Estas horas se sumarán <strong className="text-charcoal-800">únicamente al tiempo individual</strong> de {usuarioActivoNombre} ({rolActivoImputacion}).
             </p>
           </div>
 

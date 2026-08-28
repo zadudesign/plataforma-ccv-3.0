@@ -124,10 +124,10 @@ export interface TareaCCV {
   categoria_proyecto?: CategoriaTareaProyecto;
   fecha_vencimiento: string;
   fecha_completada?: string;
-  tiempo_estimado: number; // en horas
-  tiempo_invertido: number; // en horas
+  tiempo_invertido: number; // en horas (responsable principal)
+  tiempo_invertido_secundario?: number; // en horas (co-responsable)
   tarifa_hora?: number; // valor por hora asignado
-  tarifa_tarea?: number; // valor monetario total (tiempo_estimado * tarifa_hora)
+  tarifa_tarea?: number; // valor monetario total (tiempo_invertido * tarifa_hora o asignado)
   enlace_recurso?: string; // URL externa a material, Google Drive, OneDrive, Figma, etc.
   created_at?: string;
 }

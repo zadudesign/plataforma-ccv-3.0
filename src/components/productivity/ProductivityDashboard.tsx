@@ -30,7 +30,7 @@ interface ProductivityDashboardProps {
   tareas: TareaCCV[];
   usuarios: Usuario[];
   usuarioActual: Usuario | null;
-  onUpdateTaskHours: (tareaId: string, horasAñadir: number) => void;
+  onUpdateTaskHours: (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean) => void;
   onSelectTask?: (tarea: TareaCCV) => void;
 }
 
@@ -65,6 +65,14 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState<string>('');
   const [isLogModalOpen, setIsLogModalOpen] = useState<boolean>(false);
+  const [modalInitialTaskId, setModalInitialTaskId] = useState<string | undefined>(undefined);
+  const [modalInitialIsSecondary, setModalInitialIsSecondary] = useState<boolean>(false);
+
+  const handleOpenImputarModal = (tareaId?: string, isSecondary: boolean = false) => {
+    setModalInitialTaskId(tareaId);
+    setModalInitialIsSecondary(isSecondary);
+    setIsLogModalOpen(true);
+  };
 
   // Filtros específicos para el Dumbbell Plot de Entregas
   const [filtroRangoEntregas, setFiltroRangoEntregas] = useState<'este_mes' | 'trimestre' | 'historico'>('este_mes');
@@ -72,11 +80,12 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
 
   const hoyFechaStr = '2026-08-07'; // Fecha del sistema
 
-  // Extraer roles de destino únicos disponibles en las tareas
+  // Extraer roles de destino únicos disponibles en las tareas (incluyendo roles secundarios)
   const rolesDestinoDisponibles = useMemo(() => {
     const rolesSet = new Set<string>(['Diseño', 'Multimedia', 'Soporte', 'Docente', 'Par Evaluador']);
     tareas.forEach(t => {
       if (t.rol_destino) rolesSet.add(getNombreRol(t.rol_destino));
+      if (t.rol_destino_secundario) rolesSet.add(getNombreRol(t.rol_destino_secundario));
     });
     return Array.from(rolesSet);
   }, [tareas, roles, usuarios]);
@@ -84,9 +93,19 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   // Filtrado de tareas general
   const tareasFiltradas = useMemo(() => {
     return tareas.filter(t => {
-      // Filtro por Rol Destino
-      if (filtroRol !== 'todos' && getNombreRol(t.rol_destino) !== filtroRol && t.rol_destino !== filtroRol) {
-        return false;
+      // Filtro por Rol Destino: incluye tareas donde el rol principal O el rol secundario coincidan
+      if (filtroRol !== 'todos') {
+        const rolP = getNombreRol(t.rol_destino);
+        const rolS = (t.responsable_secundario_id || t.responsable_secundario_nombre)
+          ? getNombreRol(t.rol_destino_secundario || t.rol_destino)
+          : null;
+
+        const coincideP = rolP === filtroRol || t.rol_destino === filtroRol;
+        const coincideS = rolS ? (rolS === filtroRol || (t.rol_destino_secundario && t.rol_destino_secundario === filtroRol)) : false;
+
+        if (!coincideP && !coincideS) {
+          return false;
+        }
       }
       
       // Filtro por Responsable / Usuario
@@ -113,26 +132,60 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     });
   }, [tareas, filtroRol, filtroUsuario, filtroEstado, busqueda]);
 
+  // Helper para computar las horas invertidas individualizadas según los filtros activos
+  const getHorasDeTarea = (t: TareaCCV): number => {
+    // Si se filtra por un usuario específico
+    if (filtroUsuario !== 'todos') {
+      let inv = 0;
+      if (t.responsable_id === filtroUsuario) {
+        inv += t.tiempo_invertido || 0;
+      }
+      if (t.responsable_secundario_id === filtroUsuario) {
+        inv += t.tiempo_invertido_secundario || 0;
+      }
+      return inv;
+    }
+
+    // Si se filtra por un rol específico
+    if (filtroRol !== 'todos') {
+      let inv = 0;
+      const coincidePrincipal = getNombreRol(t.rol_destino) === filtroRol || t.rol_destino === filtroRol;
+      const coincideSecundario = (t.responsable_secundario_id || t.responsable_secundario_nombre) && 
+        (getNombreRol(t.rol_destino_secundario || t.rol_destino) === filtroRol || (t.rol_destino_secundario && t.rol_destino_secundario === filtroRol));
+      
+      if (coincidePrincipal) {
+        inv += t.tiempo_invertido || 0;
+      }
+      if (coincideSecundario) {
+        inv += t.tiempo_invertido_secundario || 0;
+      }
+      return inv;
+    }
+
+    // Sin filtro específico (todos): contabilizar ambos responsables por separado y sumarlos al total global
+    return (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0);
+  };
+
   // Métricas de la Pestaña 1 (Horas)
   const totalHorasInvertidas = useMemo(() => {
-    return tareasFiltradas.reduce((acc, t) => acc + (t.tiempo_invertido || 0), 0);
+    return tareasFiltradas.reduce((acc, t) => acc + getHorasDeTarea(t), 0);
+  }, [tareasFiltradas, filtroUsuario, filtroRol]);
+
+  const tareasConHorasRegistradas = useMemo(() => {
+    return tareasFiltradas.filter(t => (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0) > 0).length;
   }, [tareasFiltradas]);
 
-  const totalHorasEstimadas = useMemo(() => {
-    return tareasFiltradas.reduce((acc, t) => acc + (t.tiempo_estimado || 0), 0);
-  }, [tareasFiltradas]);
+  const promedioHorasPorTarea = useMemo(() => {
+    return tareasFiltradas.length > 0 ? (totalHorasInvertidas / tareasFiltradas.length).toFixed(1) : '0';
+  }, [tareasFiltradas, totalHorasInvertidas]);
 
-  const porcentajeEficiencia = totalHorasEstimadas > 0 
-    ? Math.round((totalHorasInvertidas / totalHorasEstimadas) * 100) 
-    : 100;
-
-  // Agrupamiento por fecha para el gráfico de Horas
+  // Agrupamiento por fecha para el gráfico de Horas (contabilizando tiempo_invertido)
   const datosGraficoDiario = useMemo(() => {
     const mapaFechas: Record<string, { fecha: string; totalHoras: number; conteoTareas: number }> = {};
 
     tareasFiltradas.forEach(t => {
       const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : '2026-08-07');
-      const horas = t.tiempo_invertido || 0;
+      const horas = getHorasDeTarea(t);
 
       if (!mapaFechas[fechaClave]) {
         mapaFechas[fechaClave] = {
@@ -149,24 +202,44 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     const maxHoras = Math.max(...ordenado.map(d => d.totalHoras), 1);
 
     return { datos: ordenado, maxHoras };
-  }, [tareasFiltradas]);
+  }, [tareasFiltradas, filtroUsuario, filtroRol]);
 
-  // Desglose de Horas por Rol Destino
+  // Desglose de Horas por Rol Destino con contabilización individual de tiempo_invertido por rol asignado
   const desglosePorRol = useMemo(() => {
-    const mapa: Record<string, { rol: string; totalInvertido: number; totalEstimado: number; conteoTareas: number }> = {};
+    const mapa: Record<string, { rol: string; totalInvertido: number; conteoTareas: number }> = {};
     
-    tareasFiltradas.forEach(t => {
-      const rolKey = getNombreRol(t.rol_destino);
-      if (!mapa[rolKey]) {
-        mapa[rolKey] = { rol: rolKey, totalInvertido: 0, totalEstimado: 0, conteoTareas: 0 };
+    const acumularRol = (rol: string, inv: number) => {
+      if (!mapa[rol]) {
+        mapa[rol] = { rol, totalInvertido: 0, conteoTareas: 0 };
       }
-      mapa[rolKey].totalInvertido += (t.tiempo_invertido || 0);
-      mapa[rolKey].totalEstimado += (t.tiempo_estimado || 0);
-      mapa[rolKey].conteoTareas += 1;
+      mapa[rol].totalInvertido += inv;
+      mapa[rol].conteoTareas += 1;
+    };
+
+    tareasFiltradas.forEach(t => {
+      if (filtroUsuario !== 'todos') {
+        if (t.responsable_id === filtroUsuario) {
+          acumularRol(getNombreRol(t.rol_destino), t.tiempo_invertido || 0);
+        }
+        if (t.responsable_secundario_id === filtroUsuario) {
+          const rolSec = getNombreRol(t.rol_destino_secundario || t.rol_destino);
+          acumularRol(rolSec, t.tiempo_invertido_secundario || 0);
+        }
+      } else {
+        // Rol Principal
+        const rolPrincipal = getNombreRol(t.rol_destino);
+        acumularRol(rolPrincipal, t.tiempo_invertido || 0);
+
+        // Rol Secundario (si existe responsable secundario o rol secundario)
+        if (t.responsable_secundario_nombre || t.responsable_secundario_id) {
+          const rolSecundario = getNombreRol(t.rol_destino_secundario || t.rol_destino);
+          acumularRol(rolSecundario, t.tiempo_invertido_secundario || 0);
+        }
+      }
     });
 
     return Object.values(mapa).sort((a, b) => b.totalInvertido - a.totalInvertido);
-  }, [tareasFiltradas, roles, usuarios]);
+  }, [tareasFiltradas, filtroUsuario, roles, usuarios]);
 
   const rolMasActivo = desglosePorRol[0]?.rol || 'Sin Asignar';
 
@@ -437,30 +510,30 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
               </div>
               <div className="text-3xl font-black">{totalHorasInvertidas.toFixed(1)} <span className="text-sm font-normal text-sage-300">hrs</span></div>
               <p className="text-[11px] text-sage-200/80 flex items-center gap-1 pt-1">
-                <ArrowUpRight className="w-3.5 h-3.5 text-sage-400" /> Acumulado de tareas filtradas
+                <ArrowUpRight className="w-3.5 h-3.5 text-sage-400" /> Total horas registradas en tareas filtradas
               </p>
             </div>
 
             <div className="ccv-card p-5 bg-white space-y-2 border-l-4 border-l-blue-500">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-bold text-charcoal-600 uppercase tracking-wider">Tiempo Estimado</span>
+                <span className="text-xs font-bold text-charcoal-600 uppercase tracking-wider">Promedio por Tarea</span>
                 <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
                   <Calendar className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-3xl font-black text-charcoal-900">{totalHorasEstimadas.toFixed(1)} <span className="text-sm font-semibold text-charcoal-500">hrs</span></div>
-              <p className="text-[11px] text-charcoal-500">Proyección planificada de carga</p>
+              <div className="text-3xl font-black text-charcoal-900">{promedioHorasPorTarea} <span className="text-sm font-semibold text-charcoal-500">hrs/tarea</span></div>
+              <p className="text-[11px] text-charcoal-500">Intensidad media de esfuerzo por entregable</p>
             </div>
 
             <div className="ccv-card p-5 bg-white space-y-2 border-l-4 border-l-amber-500">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-bold text-charcoal-600 uppercase tracking-wider">Eficiencia Ejecución</span>
+                <span className="text-xs font-bold text-charcoal-600 uppercase tracking-wider">Tareas con Imputación</span>
                 <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
                   <BarChart3 className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-3xl font-black text-charcoal-900">{porcentajeEficiencia}%</div>
-              <p className="text-[11px] text-charcoal-500">Invertido respecto al tiempo estimado</p>
+              <div className="text-3xl font-black text-charcoal-900">{tareasConHorasRegistradas} <span className="text-sm font-semibold text-charcoal-500">/ {tareasFiltradas.length}</span></div>
+              <p className="text-[11px] text-charcoal-500">Tareas con avance de horas cargado</p>
             </div>
 
             <div className="ccv-card p-5 bg-white space-y-2 border-l-4 border-l-purple-500">
@@ -583,7 +656,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                     <th className="p-4">Tarea / Contexto</th>
                     <th className="p-4">Rol Destino</th>
                     <th className="p-4">Responsable</th>
-                    <th className="p-4">Progreso Horas</th>
+                    <th className="p-4">Tiempo Invertido</th>
                     <th className="p-4">Estado</th>
                     <th className="p-4 text-right">Acción</th>
                   </tr>
@@ -591,8 +664,6 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                 <tbody className="divide-y divide-stone-100 text-xs font-medium text-charcoal-800">
                   {tareasFiltradas.map((tarea) => {
                     const inv = tarea.tiempo_invertido || 0;
-                    const est = tarea.tiempo_estimado || 1;
-                    const pctHoras = Math.min(Math.round((inv / est) * 100), 100);
 
                     return (
                       <tr key={tarea.id} className="hover:bg-cream-50/50 transition-colors">
@@ -606,40 +677,85 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                           <div className="text-[11px] text-charcoal-500 truncate">
                             {tarea.curso_nombre || tarea.proyecto_nombre || 'General CCV'}
                           </div>
+                          {tarea.responsable_secundario_nombre && (
+                            <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                              2 Responsables Asignados
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">
-                          <span className="bg-sage-100 text-sage-800 border border-sage-200 px-2.5 py-1 rounded-full text-[11px] font-bold">
-                            {getNombreRol(tarea.rol_destino)}
-                          </span>
+                          {tarea.responsable_secundario_nombre ? (
+                            <div className="flex flex-col gap-1.5">
+                              <span className="bg-sage-100 text-sage-900 border border-sage-200 px-2 py-0.5 rounded-lg text-[10px] font-extrabold inline-block">
+                                P: {getNombreRol(tarea.rol_destino)}
+                              </span>
+                              <span className="bg-blue-100 text-blue-900 border border-blue-200 px-2 py-0.5 rounded-lg text-[10px] font-extrabold inline-block">
+                                Co: {getNombreRol(tarea.rol_destino_secundario || tarea.rol_destino)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="bg-sage-100 text-sage-800 border border-sage-200 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                              {getNombreRol(tarea.rol_destino)}
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">
-                          <div className="flex flex-col gap-1">
+                          {tarea.responsable_secundario_nombre ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-sage-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 shadow-2xs">
+                                  {tarea.responsable_nombre?.charAt(0) || 'U'}
+                                </div>
+                                <span className="truncate font-bold text-[11px] text-charcoal-900">{tarea.responsable_nombre || 'Principal'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-blue-700">
+                                <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 shadow-2xs">
+                                  {tarea.responsable_secundario_nombre.charAt(0)}
+                                </div>
+                                <span className="truncate font-bold text-[11px] text-blue-950">{tarea.responsable_secundario_nombre}</span>
+                              </div>
+                            </div>
+                          ) : (
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded-full bg-sage-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                                 {tarea.responsable_nombre?.charAt(0) || 'U'}
                               </div>
                               <span className="truncate font-semibold">{tarea.responsable_nombre || 'Sin asignar'}</span>
                             </div>
-                            {tarea.responsable_secundario_nombre && (
-                              <div className="flex items-center gap-1.5 text-blue-700 text-[11px] ml-0.5">
-                                <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
-                                  {tarea.responsable_secundario_nombre.charAt(0)}
-                                </div>
-                                <span className="truncate font-medium">{tarea.responsable_secundario_nombre}</span>
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </td>
-                        <td className="p-4 w-48">
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[11px] font-bold">
-                              <span className="text-amber-800">{inv}h invertidas</span>
-                              <span className="text-charcoal-500">de {est}h</span>
+                        <td className="p-4 w-56">
+                          {tarea.responsable_secundario_nombre ? (
+                            <div className="space-y-1.5 p-2 bg-stone-50 rounded-xl border border-stone-200/80">
+                              {/* Fila 1: Principal */}
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-sage-900 font-bold truncate max-w-[100px]">{tarea.responsable_nombre?.split(' ')[0] || 'Principal'}:</span>
+                                <span className="font-extrabold text-sage-900 bg-sage-100/80 px-2 py-0.5 rounded-md border border-sage-200">
+                                  {tarea.tiempo_invertido || 0} hrs
+                                </span>
+                              </div>
+
+                              {/* Fila 2: Co-responsable */}
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-blue-900 font-bold truncate max-w-[100px]">{tarea.responsable_secundario_nombre.split(' ')[0]}:</span>
+                                <span className="font-extrabold text-blue-900 bg-blue-100/80 px-2 py-0.5 rounded-md border border-blue-200">
+                                  {tarea.tiempo_invertido_secundario || 0} hrs
+                                </span>
+                              </div>
+
+                              {/* Total combinado */}
+                              <div className="text-[10px] text-charcoal-500 font-bold text-right pt-1 border-t border-stone-200/60">
+                                Total: <strong className="text-charcoal-900">{(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs</strong>
+                              </div>
                             </div>
-                            <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-amber-600 h-full rounded-full" style={{ width: `${pctHoras}%` }} />
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black text-charcoal-900 bg-sage-50 border border-sage-200 px-3 py-1 rounded-xl">
+                                {inv} hrs
+                              </span>
+                              <span className="text-[10px] text-charcoal-500 font-semibold">acumuladas</span>
                             </div>
-                          </div>
+                          )}
                         </td>
                         <td className="p-4">
                           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
@@ -652,12 +768,31 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <button
-                            onClick={() => setIsLogModalOpen(true)}
-                            className="px-3 py-1.5 bg-sage-50 text-sage-700 border border-sage-200 rounded-xl hover:bg-sage-600 hover:text-white font-bold text-[11px] transition-all"
-                          >
-                            + Imputar Horas
-                          </button>
+                          {tarea.responsable_secundario_nombre ? (
+                            <div className="flex flex-col gap-1.5 items-end">
+                              <button
+                                onClick={() => handleOpenImputarModal(tarea.id, false)}
+                                className="px-2.5 py-1 bg-sage-50 text-sage-800 border border-sage-200 rounded-lg hover:bg-sage-600 hover:text-white font-bold text-[10px] transition-all whitespace-nowrap shadow-2xs"
+                                title={`Imputar horas a ${tarea.responsable_nombre}`}
+                              >
+                                + Horas Principal
+                              </button>
+                              <button
+                                onClick={() => handleOpenImputarModal(tarea.id, true)}
+                                className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white font-bold text-[10px] transition-all whitespace-nowrap shadow-2xs"
+                                title={`Imputar horas a ${tarea.responsable_secundario_nombre}`}
+                              >
+                                + Horas Co-resp.
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenImputarModal(tarea.id, false)}
+                              className="px-3 py-1.5 bg-sage-50 text-sage-700 border border-sage-200 rounded-xl hover:bg-sage-600 hover:text-white font-bold text-[11px] transition-all"
+                            >
+                              + Imputar Horas
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -986,7 +1121,13 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
         <LogHoursModal
           tareas={tareasFiltradas}
           usuarioActual={usuarioActual}
-          onClose={() => setIsLogModalOpen(false)}
+          initialTaskId={modalInitialTaskId}
+          initialIsSecondary={modalInitialIsSecondary}
+          onClose={() => {
+            setIsLogModalOpen(false);
+            setModalInitialTaskId(undefined);
+            setModalInitialIsSecondary(false);
+          }}
           onUpdateTaskHours={onUpdateTaskHours}
         />
       )}

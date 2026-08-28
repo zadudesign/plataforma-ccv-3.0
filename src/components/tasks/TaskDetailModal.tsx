@@ -204,13 +204,30 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               )}
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
-              <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
-                <Clock className="w-4 h-4 text-amber-600" /> Registro de Tiempos
+            <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm space-y-1.5">
+              <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-0.5">
+                <Clock className="w-4 h-4 text-amber-600" /> Tiempo Invertido
               </div>
-              <p className="text-sm font-extrabold text-charcoal-900">
-                {tarea.tiempo_invertido}h / {tarea.tiempo_estimado}h est.
-              </p>
+              {tarea.responsable_secundario_nombre ? (
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-charcoal-600 font-medium">Principal ({tarea.rol_destino || 'General'}):</span>
+                    <strong className="text-charcoal-900">{tarea.tiempo_invertido || 0} hrs</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700 font-medium">Co-resp ({tarea.rol_destino_secundario || 'General'}):</span>
+                    <strong className="text-blue-900">{tarea.tiempo_invertido_secundario || 0} hrs</strong>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-stone-100 text-[11px] font-bold text-charcoal-500">
+                    <span>Total acumulado:</span>
+                    <span className="text-charcoal-900 font-extrabold">{(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm font-extrabold text-charcoal-900">
+                  {tarea.tiempo_invertido || 0} hrs invertidas
+                </p>
+              )}
             </div>
 
             {tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined && (
@@ -221,7 +238,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 <p className="text-sm font-extrabold text-sage-700">${tarea.tarifa_tarea.toLocaleString('es-CO')} COP</p>
                 {tarea.tarifa_hora && (
                   <p className="text-[10px] text-charcoal-500 font-medium mt-0.5">
-                    {tarea.categoria_proyecto || 'Proyecto'}: ${tarea.tarifa_hora.toLocaleString('es-CO')} COP/h × {tarea.tiempo_estimado}h
+                    {tarea.categoria_proyecto || 'Proyecto'}: ${tarea.tarifa_hora.toLocaleString('es-CO')} COP/h
                   </p>
                 )}
               </div>

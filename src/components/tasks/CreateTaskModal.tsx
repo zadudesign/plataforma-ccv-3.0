@@ -37,7 +37,6 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     d.setDate(d.getDate() + 7);
     return d.toISOString().split('T')[0];
   });
-  const [tiempoEstimado, setTiempoEstimado] = useState(1);
 
   const activeCursoId = cursoId || cursos[0]?.id;
   const activeProyectoId = proyectoId || proyectos[0]?.id;
@@ -51,7 +50,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   const tarifaConfig = tarifasProyecto.find(t => t.categoria === categoriaProyecto);
   const tarifaHoraActual = tarifaConfig ? tarifaConfig.tarifa_hora : 35000;
-  const costoTotalCalculado = tipoTarea === 'Proyecto' ? Number(tiempoEstimado) * tarifaHoraActual : undefined;
+  const costoTotalCalculado = tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,8 +81,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       orden_tarea: 1,
       estado: 'Pendiente',
       fecha_vencimiento: fechaVencimiento,
-      tiempo_estimado: Number(tiempoEstimado),
       tiempo_invertido: 0,
+      tiempo_invertido_secundario: responsableSecundarioId ? 0 : undefined,
       tarifa_hora: tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined,
       tarifa_tarea: costoTotalCalculado,
       enlace_recurso: enlaceRecurso.trim() || undefined,
@@ -296,28 +295,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Date & Hours */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-charcoal-800 mb-1">Fecha Vencimiento</label>
-              <input
-                type="date"
-                value={fechaVencimiento}
-                onChange={(e) => setFechaVencimiento(e.target.value)}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-charcoal-800 mb-1">Horas Estimadas</label>
-              <input
-                type="number"
-                min="1"
-                value={tiempoEstimado}
-                onChange={(e) => setTiempoEstimado(Number(e.target.value))}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold"
-              />
-            </div>
+          {/* Date */}
+          <div>
+            <label className="block font-bold text-charcoal-800 mb-1">Fecha Vencimiento</label>
+            <input
+              type="date"
+              value={fechaVencimiento}
+              onChange={(e) => setFechaVencimiento(e.target.value)}
+              className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
+            />
           </div>
 
           {/* Calculated Cost Card for Projects */}
@@ -328,15 +314,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <div>
-                  <h5 className="font-extrabold text-charcoal-900 text-xs">Costo Estimado de Proyecto ({categoriaProyecto})</h5>
+                  <h5 className="font-extrabold text-charcoal-900 text-xs">Tarifa de Proyecto ({categoriaProyecto})</h5>
                   <p className="text-[11px] text-charcoal-600">
-                    Tarifa Oficial: <span className="font-bold text-sage-800">${tarifaHoraActual.toLocaleString('es-CO')} COP / 1 hr</span> × {tiempoEstimado} {tiempoEstimado === 1 ? 'hora' : 'horas'}
+                    Tarifa Oficial: <span className="font-bold text-sage-800">${tarifaHoraActual.toLocaleString('es-CO')} COP / 1 hr</span>
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] font-bold text-charcoal-500 block uppercase">Total Tarea (COP)</span>
-                <span className="text-base font-black text-sage-700">${costoTotalCalculado?.toLocaleString('es-CO')} COP</span>
+                <span className="text-[10px] font-bold text-charcoal-500 block uppercase">Tarifa por Hora</span>
+                <span className="text-base font-black text-sage-700">${tarifaHoraActual.toLocaleString('es-CO')} COP/h</span>
               </div>
             </div>
           )}

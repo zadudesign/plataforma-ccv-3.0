@@ -796,8 +796,8 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         tipo_tarea: (t.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
         fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
         fecha_completada: t.fecha_completada,
-        tiempo_estimado: Number(t.tiempo_estimado || 0),
         tiempo_invertido: Number(t.tiempo_invertido || 0),
+        tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? Number(t.tiempo_invertido_secundario) : undefined,
         tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
         tarifa_tarea: Number(t.tarifa_tarea || 0),
         enlace_recurso: t.enlace_recurso || undefined,
@@ -827,8 +827,8 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       tipo_tarea: (t.tipo_tarea === 'Curso Virtual' ? 'Curso Virtual' : 'Proyecto') as TipoTarea,
       fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
       fecha_completada: t.fecha_completada,
-      tiempo_estimado: Number(t.tiempo_estimado || 0),
       tiempo_invertido: Number(t.tiempo_invertido || 0),
+      tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? Number(t.tiempo_invertido_secundario) : undefined,
       tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
       tarifa_tarea: Number(t.tarifa_tarea || 0),
       enlace_recurso: t.enlace_recurso || undefined,
@@ -967,8 +967,8 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       tipo_tarea: tarea.tipo_tarea === 'Proyecto' ? 'Proyecto Especial' : (tarea.tipo_tarea || 'Curso Virtual'),
       fecha_vencimiento: tarea.fecha_vencimiento || new Date().toISOString().split('T')[0],
       fecha_completada: tarea.fecha_completada || null,
-      tiempo_estimado: Number(tarea.tiempo_estimado) || 0,
       tiempo_invertido: Number(tarea.tiempo_invertido) || 0,
+      tiempo_invertido_secundario: tarea.tiempo_invertido_secundario !== undefined && tarea.tiempo_invertido_secundario !== null ? Number(tarea.tiempo_invertido_secundario) : null,
       tarifa_hora: tarea.tarifa_hora !== undefined && tarea.tarifa_hora !== null ? Number(tarea.tarifa_hora) : null,
       tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0,
       enlace_recurso: tarea.enlace_recurso || null
@@ -1002,7 +1002,7 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
         if (res.error.message.includes('categoria_proyecto')) delete currentPayload.categoria_proyecto;
         if (res.error.message.includes('tarifa_hora')) delete currentPayload.tarifa_hora;
         if (res.error.message.includes('tarifa_tarea')) delete currentPayload.tarifa_tarea;
-        if (res.error.message.includes('tiempo_estimado')) delete currentPayload.tiempo_estimado;
+        if (res.error.message.includes('tiempo_invertido_secundario')) delete currentPayload.tiempo_invertido_secundario;
         if (res.error.message.includes('tiempo_invertido')) delete currentPayload.tiempo_invertido;
         if (res.error.message.includes('fecha_completada')) delete currentPayload.fecha_completada;
         if (res.error.message.includes('enlace_recurso')) delete currentPayload.enlace_recurso;
@@ -1081,8 +1081,8 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     if (datos.descripcion !== undefined) payload.descripcion = datos.descripcion;
     if (datos.estado !== undefined) payload.estado = datos.estado;
     if (datos.fecha_vencimiento !== undefined) payload.fecha_vencimiento = datos.fecha_vencimiento;
-    if (datos.tiempo_estimado !== undefined) payload.tiempo_estimado = Number(datos.tiempo_estimado);
     if (datos.tiempo_invertido !== undefined) payload.tiempo_invertido = Number(datos.tiempo_invertido);
+    if (datos.tiempo_invertido_secundario !== undefined) payload.tiempo_invertido_secundario = Number(datos.tiempo_invertido_secundario);
     if (datos.tarifa_hora !== undefined) payload.tarifa_hora = datos.tarifa_hora;
     if (datos.tarifa_tarea !== undefined) payload.tarifa_tarea = datos.tarifa_tarea;
     if (datos.responsable_id !== undefined && isGuid(datos.responsable_id)) payload.responsable_id = datos.responsable_id;
@@ -1094,6 +1094,7 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     if (error && error.code === 'PGRST204') {
       if (error.message.includes('responsable_secundario_id')) delete payload.responsable_secundario_id;
       if (error.message.includes('rol_destino_secundario')) delete payload.rol_destino_secundario;
+      if (error.message.includes('tiempo_invertido_secundario')) delete payload.tiempo_invertido_secundario;
       const res = await supabase.from('tareas').update(payload).eq('id', id);
       error = res.error;
     }
@@ -1190,7 +1191,7 @@ export async function fetchRegistroHorasDB(): Promise<RegistroHoras[]> {
   }
 }
 
-export async function addRegistroHorasDB(registro: Omit<RegistroHoras, 'id'>): Promise<RegistroHoras | null> {
+export async function addRegistroHorasDB(registro: Omit<RegistroHoras, 'id'>, esResponsableSecundario?: boolean): Promise<RegistroHoras | null> {
   try {
     const payload = {
       tarea_id: registro.tarea_id,
@@ -1203,11 +1204,16 @@ export async function addRegistroHorasDB(registro: Omit<RegistroHoras, 'id'>): P
     const { data, error } = await supabase.from('registro_horas').insert(payload).select().single();
     if (error) return null;
     
-    // Además actualizar tiempo_invertido en la tarea en Supabase
-    const { data: tareaAtual } = await supabase.from('tareas').select('tiempo_invertido').eq('id', registro.tarea_id).single();
+    // Además actualizar tiempo_invertido o tiempo_invertido_secundario en la tarea en Supabase
+    const { data: tareaAtual } = await supabase.from('tareas').select('tiempo_invertido, tiempo_invertido_secundario, responsable_secundario_id').eq('id', registro.tarea_id).single();
     if (tareaAtual) {
-      const nuevoTiempo = Number(tareaAtual.tiempo_invertido || 0) + Number(registro.horas_registradas);
-      await supabase.from('tareas').update({ tiempo_invertido: nuevoTiempo }).eq('id', registro.tarea_id);
+      const updatePayload: any = {};
+      if (esResponsableSecundario || (tareaAtual.responsable_secundario_id && tareaAtual.responsable_secundario_id === registro.usuario_id)) {
+        updatePayload.tiempo_invertido_secundario = Number(tareaAtual.tiempo_invertido_secundario || 0) + Number(registro.horas_registradas);
+      } else {
+        updatePayload.tiempo_invertido = Number(tareaAtual.tiempo_invertido || 0) + Number(registro.horas_registradas);
+      }
+      await supabase.from('tareas').update(updatePayload).eq('id', registro.tarea_id);
     }
 
     return {

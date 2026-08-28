@@ -276,8 +276,8 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-08-01',
     fecha_completada: '2026-08-04', // 3 días de retraso
-    tiempo_estimado: 24,
-    tiempo_invertido: 20.5,
+    tiempo_invertido: 12.5,
+    tiempo_invertido_secundario: 8.0,
   },
   {
     id: 't-102',
@@ -296,7 +296,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-08-05',
     fecha_completada: '2026-08-03', // 2 días antes (A tiempo)
-    tiempo_estimado: 16,
     tiempo_invertido: 16.5,
   },
   {
@@ -315,7 +314,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     estado: 'En Revisión',
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-08-02', // Pendiente con retraso respecto a 2026-08-07
-    tiempo_estimado: 12,
     tiempo_invertido: 8.5,
   },
   {
@@ -335,7 +333,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-07-25',
     fecha_completada: '2026-07-24', // A tiempo (1 día antes)
-    tiempo_estimado: 30,
     tiempo_invertido: 9.5,
   },
   {
@@ -355,7 +352,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Diseño',
     fecha_vencimiento: '2026-08-15',
-    tiempo_estimado: 40,
     tiempo_invertido: 10.0,
     tarifa_hora: 35000,
     tarifa_tarea: 1400000,
@@ -377,7 +373,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Curso Virtual',
     fecha_vencimiento: '2026-07-30',
     fecha_completada: '2026-08-05',
-    tiempo_estimado: 18,
     tiempo_invertido: 13.0,
   },
   {
@@ -397,7 +392,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Multimedia',
     fecha_vencimiento: '2026-09-01',
-    tiempo_estimado: 50,
     tiempo_invertido: 22.0,
     tarifa_hora: 45000,
     tarifa_tarea: 2250000,
@@ -419,7 +413,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tipo_tarea: 'Proyecto',
     categoria_proyecto: 'Diseño',
     fecha_vencimiento: '2026-08-30',
-    tiempo_estimado: 35,
     tiempo_invertido: 15.0,
     tarifa_hora: 35000,
     tarifa_tarea: 1225000,
@@ -442,7 +435,6 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     categoria_proyecto: 'Soporte',
     fecha_vencimiento: '2026-08-10',
     fecha_completada: '2026-08-09',
-    tiempo_estimado: 25,
     tiempo_invertido: 24.0,
     tarifa_hora: 25000,
     tarifa_tarea: 625000,
@@ -482,6 +474,18 @@ export const INITIAL_REGISTRO_HORAS: RegistroHoras[] = [
     fecha: '2026-08-01',
     descripcion_avance: 'Elaboración de esquemas conceptuales y diagramas pedagógicos',
     created_at: '2026-08-01 17:00'
+  },
+  {
+    id: 'log-1b',
+    tarea_id: 't-101',
+    tarea_titulo: 'Diseño de Guiones Didácticos - Módulo 2 IA',
+    usuario_id: 'u-multi',
+    usuario_nombre: 'Ing. Carlos Mendoza',
+    rol_destino: 'Multimedia',
+    horas_registradas: 8.0,
+    fecha: '2026-08-01',
+    descripcion_avance: 'Integración y animación de gráficos para guiones interactivos',
+    created_at: '2026-08-01 17:30'
   },
   {
     id: 'log-2',

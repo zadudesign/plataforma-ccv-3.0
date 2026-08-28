@@ -137,7 +137,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                             )}
                           </div>
                           {tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined && (
-                            <span className="text-xs font-extrabold text-sage-700" title={tarea.tarifa_hora ? `$${tarea.tarifa_hora.toLocaleString('es-CO')} COP/h × ${tarea.tiempo_estimado}h` : undefined}>
+                            <span className="text-xs font-extrabold text-sage-700" title={tarea.tarifa_hora ? `$${tarea.tarifa_hora.toLocaleString('es-CO')} COP/h` : undefined}>
                               ${tarea.tarifa_tarea.toLocaleString('es-CO')} COP
                             </span>
                           )}

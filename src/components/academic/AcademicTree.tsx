@@ -298,12 +298,11 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                             const pctProy = tareasProy.length > 0 ? Math.round((completadasProy / tareasProy.length) * 100) : 0;
                             
                             // Cálculos Financieros y de Tiempo para el Proyecto
-                            const horasEstimadasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_estimado || 0), 0);
-                            const horasInvertidasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0), 0);
+                            const horasInvertidasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
                             const costoTotalProy = tareasProy.reduce((sum, t) => {
                               const tarifa = t.tarifa_tarea !== undefined 
                                 ? t.tarifa_tarea 
-                                : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_estimado || 0) : 0);
+                                : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_invertido || 1) : 0);
                               return sum + tarifa;
                             }, 0);
 
@@ -344,7 +343,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                       Tiempo
                                     </span>
                                     <p className="text-xs font-black text-charcoal-900">
-                                      {horasInvertidasProy}h <span className="text-[10px] font-medium text-charcoal-500">/ {horasEstimadasProy}h</span>
+                                      {horasInvertidasProy} hrs
                                     </p>
                                   </div>
 

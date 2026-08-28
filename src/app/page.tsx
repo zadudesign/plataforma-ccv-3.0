@@ -94,20 +94,33 @@ export default function Home() {
     }
   }, [tareaSeleccionada]);
 
-  const handleUpdateTaskHours = async (tareaId: string, horasAñadir: number) => {
+  const handleUpdateTaskHours = async (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean) => {
     const tareaObj = tareas.find(t => t.id === tareaId);
     if (tareaObj) {
+      const targetRol = esResponsableSecundario 
+        ? (tareaObj.rol_destino_secundario || tareaObj.rol_destino || 'General')
+        : (tareaObj.rol_destino || 'General');
+      const targetUserId = esResponsableSecundario
+        ? (tareaObj.responsable_secundario_id || usuarioActual?.id)
+        : (tareaObj.responsable_id || usuarioActual?.id);
+
       await addRegistroHorasDB({
         tarea_id: tareaId,
-        usuario_id: usuarioActual?.id,
-        rol_destino: tareaObj.rol_destino || 'General',
+        usuario_id: targetUserId,
+        rol_destino: targetRol,
         horas_registradas: horasAñadir,
         fecha: new Date().toISOString().split('T')[0],
-        descripcion_avance: `Imputación de ${horasAñadir} horas de trabajo`
-      });
+        descripcion_avance: `Imputación de ${horasAñadir} horas (${esResponsableSecundario ? 'Co-responsable' : 'Responsable Principal'})`
+      }, esResponsableSecundario);
     }
     setTareas(prev => prev.map(t => {
       if (t.id === tareaId) {
+        if (esResponsableSecundario) {
+          return {
+            ...t,
+            tiempo_invertido_secundario: (t.tiempo_invertido_secundario || 0) + horasAñadir
+          };
+        }
         return {
           ...t,
           tiempo_invertido: (t.tiempo_invertido || 0) + horasAñadir
