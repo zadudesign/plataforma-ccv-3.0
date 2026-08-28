@@ -27,6 +27,7 @@ interface TaskDetailModalProps {
   onClose: () => void;
   onUpdateStatus: (tareaId: string, nuevoEstado: EstadoTarea) => void;
   onAddComment: (tareaId: string, texto: string) => void;
+  onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => void;
   onOpenCursoOProyecto?: (entidadId: string, tipo: 'curso' | 'proyecto') => void;
 }
 
@@ -37,9 +38,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onClose,
   onUpdateStatus,
   onAddComment,
+  onAddHours,
   onOpenCursoOProyecto,
 }) => {
   const [nuevoComentario, setNuevoComentario] = useState('');
+  const [horasInput, setHorasInput] = useState<number | string>('1');
+  const [notasHoras, setNotasHoras] = useState('');
+  const [imputarParaSecundario, setImputarParaSecundario] = useState(false);
+  const [mostrarExitoHoras, setMostrarExitoHoras] = useState(false);
 
   if (!tarea) return null;
 
@@ -50,6 +56,27 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     if (!nuevoComentario.trim()) return;
     onAddComment(tarea.id, nuevoComentario);
     setNuevoComentario('');
+  };
+
+  const handleSumarHoras = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cant = typeof horasInput === 'number' ? horasInput : parseFloat(horasInput);
+    if (!cant || isNaN(cant) || cant <= 0) return;
+    if (onAddHours) {
+      onAddHours(tarea.id, cant, imputarParaSecundario, notasHoras.trim() || undefined);
+      setMostrarExitoHoras(true);
+      setNotasHoras('');
+      setTimeout(() => setMostrarExitoHoras(false), 3000);
+    }
+  };
+
+  const handlePresetHoras = (horasPreset: number) => {
+    if (onAddHours) {
+      onAddHours(tarea.id, horasPreset, imputarParaSecundario, notasHoras.trim() || undefined);
+      setMostrarExitoHoras(true);
+      setNotasHoras('');
+      setTimeout(() => setMostrarExitoHoras(false), 3000);
+    }
   };
 
   return (
@@ -164,7 +191,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           )}
 
           {/* Metrics Grid */}
-          <div className={`grid grid-cols-1 ${tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
+          <div className={`grid grid-cols-1 ${tarea.tipo_tarea === 'Proyecto' ? (tarea.tarifa_tarea !== undefined ? 'sm:grid-cols-3' : 'sm:grid-cols-2') : 'sm:grid-cols-1'} gap-4`}>
             <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm space-y-2">
               <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold">
                 <User className="w-4 h-4 text-sage-600" /> {tarea.responsable_secundario_nombre ? 'Responsables Asignados' : 'Responsable'}
@@ -207,32 +234,36 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               )}
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm space-y-1.5">
-              <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-0.5">
-                <Clock className="w-4 h-4 text-amber-600" /> Tiempo Invertido
-              </div>
-              {tarea.responsable_secundario_nombre ? (
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-charcoal-600 font-medium">Principal ({tarea.rol_destino || 'General'}):</span>
-                    <strong className="text-charcoal-900">{tarea.tiempo_invertido || 0} hrs</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700 font-medium">Co-resp ({tarea.rol_destino_secundario || 'General'}):</span>
-                    <strong className="text-blue-900">{tarea.tiempo_invertido_secundario || 0} hrs</strong>
-                  </div>
-                  <div className="flex justify-between pt-1 border-t border-stone-100 text-[11px] font-bold text-charcoal-500">
-                    <span>Total acumulado:</span>
-                    <span className="text-charcoal-900 font-extrabold">{(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs</span>
-                  </div>
+            {/* Exclusivo para Proyectos: Tarjeta de Tiempo Invertido */}
+            {tarea.tipo_tarea === 'Proyecto' && (
+              <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm space-y-1.5">
+                <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-0.5">
+                  <Clock className="w-4 h-4 text-amber-600" /> Tiempo Invertido Acumulado
                 </div>
-              ) : (
-                <p className="text-sm font-extrabold text-charcoal-900">
-                  {tarea.tiempo_invertido || 0} hrs invertidas
-                </p>
-              )}
-            </div>
+                {tarea.responsable_secundario_nombre ? (
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-charcoal-600 font-medium">Principal ({tarea.rol_destino || 'General'}):</span>
+                      <strong className="text-charcoal-900">{tarea.tiempo_invertido || 0} hrs</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-blue-700 font-medium">Co-resp ({tarea.rol_destino_secundario || 'General'}):</span>
+                      <strong className="text-blue-900">{tarea.tiempo_invertido_secundario || 0} hrs</strong>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-stone-100 text-[11px] font-bold text-charcoal-500">
+                      <span>Total acumulado:</span>
+                      <span className="text-charcoal-900 font-extrabold">{(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm font-extrabold text-charcoal-900">
+                    {tarea.tiempo_invertido || 0} hrs invertidas
+                  </p>
+                )}
+              </div>
+            )}
 
+            {/* Exclusivo para Proyectos: Tarjeta de Costo Financiero */}
             {tarea.tipo_tarea === 'Proyecto' && tarea.tarifa_tarea !== undefined && (
               <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
                 <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
@@ -248,9 +279,139 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             )}
           </div>
 
+          {/* EXCLUSIVO PROYECTOS: Sección Interactiva para Imputar / Sumar Horas de Trabajo */}
+          {tarea.tipo_tarea === 'Proyecto' && onAddHours && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3.5 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-2xs">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-extrabold text-charcoal-900 flex items-center gap-1.5">
+                      <span>Imputar Tiempo de Trabajo</span>
+                      <span className="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.2 rounded-full font-black uppercase">
+                        Proyecto
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-charcoal-600">
+                      Suma bloques de horas trabajadas durante el desarrollo de la tarea.
+                    </p>
+                  </div>
+                </div>
+
+                {mostrarExitoHoras && (
+                  <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full animate-bounce flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> ¡Horas sumadas!
+                  </span>
+                )}
+              </div>
+
+              {/* Selector de responsable si hay co-responsable */}
+              {tarea.responsable_secundario_nombre && (
+                <div className="flex items-center gap-2 text-xs bg-white p-2 rounded-xl border border-amber-200">
+                  <span className="text-charcoal-600 font-bold text-[11px]">Imputar a:</span>
+                  <button
+                    type="button"
+                    onClick={() => setImputarParaSecundario(false)}
+                    className={`px-2.5 py-1 rounded-lg font-extrabold text-xs transition-all ${
+                      !imputarParaSecundario
+                        ? 'bg-amber-600 text-white shadow-2xs'
+                        : 'bg-stone-100 text-charcoal-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    Principal: {tarea.responsable_nombre}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImputarParaSecundario(true)}
+                    className={`px-2.5 py-1 rounded-lg font-extrabold text-xs transition-all ${
+                      imputarParaSecundario
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'bg-stone-100 text-charcoal-700 hover:bg-stone-200'
+                    }`}
+                  >
+                    Co-resp: {tarea.responsable_secundario_nombre}
+                  </button>
+                </div>
+              )}
+
+              {/* Botones de incremento rápido */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-charcoal-600">Suma rápida:</span>
+                {[0.5, 1, 2, 4].map(h => (
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => handlePresetHoras(h)}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 font-black text-xs hover:bg-amber-600 hover:text-white transition-all shadow-2xs"
+                  >
+                    +{h} {h === 1 ? 'hora' : 'horas'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Formulario de entrada personalizada y nota */}
+              <form onSubmit={handleSumarHoras} className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-amber-200/60">
+                <div className="sm:col-span-3">
+                  <label className="block text-[10px] font-black text-charcoal-700 uppercase mb-0.5">Horas a sumar</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    max="24"
+                    value={horasInput}
+                    onChange={(e) => setHorasInput(e.target.value)}
+                    className="w-full p-2 rounded-xl border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none text-charcoal-900 text-xs font-extrabold"
+                    placeholder="Ej. 1.5"
+                    required
+                  />
+                </div>
+
+                <div className="sm:col-span-6">
+                  <label className="block text-[10px] font-black text-charcoal-700 uppercase mb-0.5">Detalle / Nota de avance (Opcional)</label>
+                  <input
+                    type="text"
+                    value={notasHoras}
+                    onChange={(e) => setNotasHoras(e.target.value)}
+                    className="w-full p-2 rounded-xl border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none text-charcoal-900 text-xs"
+                    placeholder="Ej. Ajustes visuales, render 3D, correcciones..."
+                  />
+                </div>
+
+                <div className="sm:col-span-3 flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full p-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs transition-all shadow-xs hover:shadow flex items-center justify-center gap-1.5"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Sumar Horas</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* MENSAJE PARA TAREAS DE CURSO VIRTUAL */}
+          {tarea.tipo_tarea === 'Curso Virtual' && (
+            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-charcoal-600 text-xs flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-sage-600 shrink-0" />
+              <span>
+                <strong>Tarea de Curso Virtual:</strong> El seguimiento se realiza mediante el flujo de estados. No requiere imputación horaria.
+              </span>
+            </div>
+          )}
+
           {/* Estado Selector */}
           <div>
-            <h4 className="text-xs font-bold text-charcoal-500 uppercase tracking-wider mb-2">Cambiar Estado de la Tarea</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-bold text-charcoal-500 uppercase tracking-wider">Cambiar Estado de la Tarea</h4>
+              {tarea.tipo_tarea === 'Proyecto' && tarea.estado !== 'Completada' && (
+                <span className="text-[10px] text-amber-800 font-medium">
+                  Al marcar como <strong className="text-emerald-700">Completada</strong> se consolidarán {(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs invertidas.
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {(['Pendiente', 'En Proceso', 'En Revisión', 'Completada'] as EstadoTarea[]).map((est) => {
                 const isActive = tarea.estado === est;

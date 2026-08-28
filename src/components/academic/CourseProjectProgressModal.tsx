@@ -625,14 +625,16 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                     )}
                   </div>
 
-                  <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
-                    <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
-                      <Clock className="w-4 h-4 text-amber-600" /> Tiempo Invertido
+                  {tareaSeleccionadaLocal.tipo_tarea === 'Proyecto' && (
+                    <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">
+                      <div className="flex items-center gap-2 text-charcoal-500 text-xs font-semibold mb-1">
+                        <Clock className="w-4 h-4 text-amber-600" /> Tiempo Invertido
+                      </div>
+                      <p className="text-sm font-extrabold text-charcoal-900">
+                        {tareaSeleccionadaLocal.tiempo_invertido || 0} hrs
+                      </p>
                     </div>
-                    <p className="text-sm font-extrabold text-charcoal-900">
-                      {tareaSeleccionadaLocal.tiempo_invertido || 0} hrs
-                    </p>
-                  </div>
+                  )}
 
                   {tareaSeleccionadaLocal.tipo_tarea === 'Proyecto' && tareaSeleccionadaLocal.tarifa_tarea !== undefined && (
                     <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm">

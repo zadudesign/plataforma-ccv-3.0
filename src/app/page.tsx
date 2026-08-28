@@ -20,6 +20,7 @@ import {
   fetchTareasDB, 
   createTareaDB, 
   updateTareaEstadoDB, 
+  updateTareaFullDB,
   fetchComentariosDB, 
   addComentarioDB,
   addRegistroHorasDB
@@ -94,40 +95,65 @@ export default function Home() {
     }
   }, [tareaSeleccionada]);
 
-  const handleUpdateTaskHours = async (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean) => {
+  const handleUpdateTaskHours = async (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean, notas?: string) => {
     const tareaObj = tareas.find(t => t.id === tareaId);
-    if (tareaObj) {
-      const targetRol = esResponsableSecundario 
-        ? (tareaObj.rol_destino_secundario || tareaObj.rol_destino || 'General')
-        : (tareaObj.rol_destino || 'General');
-      const targetUserId = esResponsableSecundario
-        ? (tareaObj.responsable_secundario_id || usuarioActual?.id)
-        : (tareaObj.responsable_id || usuarioActual?.id);
+    if (!tareaObj || tareaObj.tipo_tarea !== 'Proyecto') return;
 
-      await addRegistroHorasDB({
-        tarea_id: tareaId,
-        usuario_id: targetUserId,
-        rol_destino: targetRol,
-        horas_registradas: horasAñadir,
-        fecha: new Date().toISOString().split('T')[0],
-        descripcion_avance: `Imputación de ${horasAñadir} horas (${esResponsableSecundario ? 'Co-responsable' : 'Responsable Principal'})`
-      }, esResponsableSecundario);
-    }
+    const targetRol = esResponsableSecundario 
+      ? (tareaObj.rol_destino_secundario || tareaObj.rol_destino || 'General')
+      : (tareaObj.rol_destino || 'General');
+    const targetUserId = esResponsableSecundario
+      ? (tareaObj.responsable_secundario_id || usuarioActual?.id)
+      : (tareaObj.responsable_id || usuarioActual?.id);
+
+    // Registrar en tabla de auditoría
+    await addRegistroHorasDB({
+      tarea_id: tareaId,
+      usuario_id: targetUserId,
+      rol_destino: targetRol,
+      horas_registradas: horasAñadir,
+      fecha: new Date().toISOString().split('T')[0],
+      descripcion_avance: notas || `Imputación de ${horasAñadir} horas (${esResponsableSecundario ? 'Co-responsable' : 'Responsable Principal'})`
+    }, esResponsableSecundario);
+
+    // Calcular nuevos tiempos invertidos individuales
+    const nuevoTPrincipal = esResponsableSecundario 
+      ? (tareaObj.tiempo_invertido || 0) 
+      : ((tareaObj.tiempo_invertido || 0) + horasAñadir);
+    const nuevoTSecundario = esResponsableSecundario 
+      ? ((tareaObj.tiempo_invertido_secundario || 0) + horasAñadir) 
+      : tareaObj.tiempo_invertido_secundario;
+    
+    const totalHorasCalculadas = nuevoTPrincipal + (nuevoTSecundario || 0);
+    const nuevaTarifaTarea = tareaObj.tarifa_hora ? totalHorasCalculadas * tareaObj.tarifa_hora : tareaObj.tarifa_tarea;
+
+    // Actualizar tarea en base de datos Supabase
+    await updateTareaFullDB(tareaId, {
+      tiempo_invertido: nuevoTPrincipal,
+      tiempo_invertido_secundario: nuevoTSecundario,
+      tarifa_tarea: nuevaTarifaTarea
+    });
+
     setTareas(prev => prev.map(t => {
       if (t.id === tareaId) {
-        if (esResponsableSecundario) {
-          return {
-            ...t,
-            tiempo_invertido_secundario: (t.tiempo_invertido_secundario || 0) + horasAñadir
-          };
-        }
         return {
           ...t,
-          tiempo_invertido: (t.tiempo_invertido || 0) + horasAñadir
+          tiempo_invertido: nuevoTPrincipal,
+          tiempo_invertido_secundario: nuevoTSecundario,
+          tarifa_tarea: nuevaTarifaTarea
         };
       }
       return t;
     }));
+
+    if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
+      setTareaSeleccionada(prev => prev ? {
+        ...prev,
+        tiempo_invertido: nuevoTPrincipal,
+        tiempo_invertido_secundario: nuevoTSecundario,
+        tarifa_tarea: nuevaTarifaTarea
+      } : null);
+    }
   };
 
   // If no user is logged in, show Landing Home with modal login trigger
@@ -138,18 +164,45 @@ export default function Home() {
   // Handlers
   const handleUpdateStatus = async (tareaId: string, nuevoEstado: EstadoTarea) => {
     await updateTareaEstadoDB(tareaId, nuevoEstado);
+
     setTareas(prev => prev.map(t => {
       if (t.id === tareaId) {
+        const fechaCompletada = nuevoEstado === 'Completada' ? new Date().toISOString().split('T')[0] : undefined;
+        // Consolidación de costos si es Proyecto y pasa a completado
+        const totalHoras = (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0);
+        const tarifaConsolidada = (t.tipo_tarea === 'Proyecto' && t.tarifa_hora) ? totalHoras * t.tarifa_hora : t.tarifa_tarea;
+
+        if (nuevoEstado === 'Completada' && t.tipo_tarea === 'Proyecto') {
+          updateTareaFullDB(tareaId, {
+            estado: 'Completada',
+            tarifa_tarea: tarifaConsolidada,
+            tiempo_invertido: t.tiempo_invertido,
+            tiempo_invertido_secundario: t.tiempo_invertido_secundario
+          });
+        }
+
         return {
           ...t,
           estado: nuevoEstado,
-          fecha_completada: nuevoEstado === 'Completada' ? new Date().toISOString().split('T')[0] : undefined
+          fecha_completada: fechaCompletada,
+          tarifa_tarea: tarifaConsolidada
         };
       }
       return t;
     }));
+
     if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
-      setTareaSeleccionada(prev => prev ? { ...prev, estado: nuevoEstado } : null);
+      setTareaSeleccionada(prev => {
+        if (!prev) return null;
+        const totalHoras = (prev.tiempo_invertido || 0) + (prev.tiempo_invertido_secundario || 0);
+        const tarifaConsolidada = (prev.tipo_tarea === 'Proyecto' && prev.tarifa_hora) ? totalHoras * prev.tarifa_hora : prev.tarifa_tarea;
+        return { 
+          ...prev, 
+          estado: nuevoEstado,
+          fecha_completada: nuevoEstado === 'Completada' ? new Date().toISOString().split('T')[0] : undefined,
+          tarifa_tarea: tarifaConsolidada
+        };
+      });
     }
   };
 
@@ -419,6 +472,7 @@ export default function Home() {
             onClose={() => setTareaSeleccionada(null)}
             onUpdateStatus={handleUpdateStatus}
             onAddComment={handleAddComment}
+            onAddHours={handleUpdateTaskHours}
             onOpenCursoOProyecto={(entidadId, tipo) => {
               if (tipo === 'curso') {
                 const c = cursos.find(x => x.id === entidadId);

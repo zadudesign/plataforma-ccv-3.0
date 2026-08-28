@@ -23,7 +23,8 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
   onUpdateTaskHours,
 }) => {
   const { roles, usuarios } = useAuth();
-  const [tareaId, setTareaId] = useState<string>(initialTaskId || tareas[0]?.id || '');
+  const tareasProyecto = React.useMemo(() => tareas.filter(t => t.tipo_tarea === 'Proyecto'), [tareas]);
+  const [tareaId, setTareaId] = useState<string>(initialTaskId || tareasProyecto[0]?.id || '');
   const [esSecundario, setEsSecundario] = useState<boolean>(initialIsSecondary);
   const [horas, setHoras] = useState<string>('2.5');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
     return rolDestinoOrId;
   };
 
-  const tareaSeleccionada = tareas.find(t => t.id === tareaId);
+  const tareaSeleccionada = tareasProyecto.find(t => t.id === tareaId) || tareas.find(t => t.id === tareaId);
 
   // Auto-ajustar si el usuario actual coincide con el co-responsable
   useEffect(() => {
@@ -120,7 +121,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
           {/* Seleccionar Tarea */}
           <div>
             <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
-              Seleccionar Tarea CCV *
+              Seleccionar Tarea de Proyecto *
             </label>
             <select
               value={tareaId}
@@ -131,12 +132,16 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
               className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
               required
             >
-              {tareas.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.titulo} ({t.curso_nombre || t.proyecto_nombre || 'General'})
-                  {t.responsable_secundario_nombre ? ' [2 Responsables]' : ''}
-                </option>
-              ))}
+              {tareasProyecto.length === 0 ? (
+                <option value="">No hay tareas de proyecto disponibles</option>
+              ) : (
+                tareasProyecto.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.titulo} ({t.proyecto_nombre || 'Proyecto Especial'})
+                    {t.responsable_secundario_nombre ? ' [2 Responsables]' : ''}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
