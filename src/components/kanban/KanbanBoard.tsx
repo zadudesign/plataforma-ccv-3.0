@@ -101,7 +101,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             Tablero Kanban de Producción CCV
           </h2>
           <p className="text-xs text-charcoal-500 mt-0.5">
-            Tareas agrupadas por día en <strong className="text-charcoal-800">orden descendente</strong> cronológico y organizadas por etapas: <strong className="text-rose-700">Pendiente</strong>, <strong className="text-blue-700">En Proceso</strong>, <strong className="text-amber-700">En Revisión</strong> y <strong className="text-emerald-700">Completada</strong>.
+            Tareas agrupadas por día (de la más próxima a la más lejana) y organizadas por etapas: <strong className="text-rose-700">Pendiente</strong>, <strong className="text-blue-700">En Proceso</strong>, <strong className="text-amber-700">En Revisión</strong> y <strong className="text-emerald-700">Completada</strong>.
           </p>
         </div>
       </div>
@@ -111,7 +111,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         {columnas.map((col) => {
           const tareasCol = tareas.filter(t => t.estado === col.estado);
 
-          // Agrupación por día clasificada en orden descendente
+          // Agrupación por día clasificada de la fecha más próxima a la más lejana
           const gruposPorFecha: Record<string, TareaCCV[]> = {};
           tareasCol.forEach(t => {
             const fecha = t.fecha_vencimiento?.trim() || 'Sin fecha';
@@ -119,12 +119,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             gruposPorFecha[fecha].push(t);
           });
 
-          // Ordenar las fechas en orden descendente
-          const fechasOrdenadas = Object.keys(gruposPorFecha).sort((a, b) => b.localeCompare(a));
+          // Ordenar las fechas de la más próxima a la más lejana (fechas sin asignar al final)
+          const fechasOrdenadas = Object.keys(gruposPorFecha).sort((a, b) => {
+            if (a === 'Sin fecha') return 1;
+            if (b === 'Sin fecha') return -1;
+            return a.localeCompare(b);
+          });
 
-          // Ordenar tareas dentro de cada día en orden descendente por hora
+          // Ordenar tareas dentro de cada día de la más próxima a la más lejana por hora
           fechasOrdenadas.forEach(fecha => {
-            gruposPorFecha[fecha].sort((a, b) => (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00'));
+            gruposPorFecha[fecha].sort((a, b) => (a.hora_vencimiento || '18:00').localeCompare(b.hora_vencimiento || '18:00'));
           });
 
           return (
