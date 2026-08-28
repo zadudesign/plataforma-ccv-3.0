@@ -157,8 +157,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     ? Math.round(totalPonderadoProyectos / numProyectos)
     : 0;
 
-  // 4. ACTIVIDAD RECIENTE
-  const ultimasTareas = [...tareas].slice(-5).reverse();
+  // 4. ACTIVIDAD RECIENTE (Excluyendo tareas completadas)
+  const tareasActivas = tareas.filter(t => t.estado !== 'Completada');
+  const ultimasTareas = [...tareasActivas].slice(-5).reverse();
   const ultimosComentarios = [...comentarios].slice(-5).reverse();
 
   return (
@@ -346,13 +347,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <h4 className="text-base font-extrabold text-charcoal-900">Últimas Tareas Registradas</h4>
               </div>
               <span className="text-xs text-sage-700 font-bold bg-sage-50 px-2.5 py-0.5 rounded-full">
-                {tareas.length} Tareas
+                {tareasActivas.length} Activas
               </span>
             </div>
 
             <div className="space-y-3">
               {ultimasTareas.length === 0 ? (
-                <p className="text-xs text-charcoal-500 text-center py-6">No hay tareas registradas recientemente.</p>
+                <p className="text-xs text-charcoal-500 text-center py-6">No hay tareas pendientes o en desarrollo activas.</p>
               ) : (
                 ultimasTareas.map((tarea) => {
                   const getCardStyle = (estado: EstadoTarea) => {
