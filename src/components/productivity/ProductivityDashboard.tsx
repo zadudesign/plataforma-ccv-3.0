@@ -30,7 +30,7 @@ interface ProductivityDashboardProps {
   tareas: TareaCCV[];
   usuarios: Usuario[];
   usuarioActual: Usuario | null;
-  onUpdateTaskHours: (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean) => void;
+  onUpdateTaskHours: (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean, notas?: string) => void;
   onSelectTask?: (tarea: TareaCCV) => void;
 }
 

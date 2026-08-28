@@ -447,19 +447,42 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <MessageSquare className="w-4 h-4 text-sage-600" /> Discusión & Comentarios ({comentariosTarea.length})
             </h4>
 
-            <div className="space-y-3 max-h-48 overflow-y-auto pr-1 mb-4">
-              {comentariosTarea.map((com) => (
-                <div key={com.id} className="p-3 bg-cream-50 rounded-xl border border-stone-200/60 flex items-start gap-3">
-                  <img src={com.usuario_avatar} alt={com.usuario_nombre} className="w-8 h-8 rounded-full object-cover mt-0.5" />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <span className="font-extrabold text-charcoal-900 text-xs">{com.usuario_nombre}</span>
-                      <span className="text-[10px] text-charcoal-400">{com.created_at}</span>
+            <div className="space-y-3 max-h-56 overflow-y-auto pr-1 mb-4 scrollbar-thin">
+              {comentariosTarea.map((com) => {
+                const isLogAvance = com.comentario.startsWith('⏱️');
+                return (
+                  <div 
+                    key={com.id} 
+                    className={`p-3 rounded-xl border flex items-start gap-3 transition-all ${
+                      isLogAvance 
+                        ? 'bg-amber-50/70 border-amber-200/90 shadow-2xs' 
+                        : 'bg-cream-50 border-stone-200/60'
+                    }`}
+                  >
+                    <img 
+                      src={com.usuario_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} 
+                      alt={com.usuario_nombre} 
+                      className="w-8 h-8 rounded-full object-cover mt-0.5 border border-stone-200 shadow-2xs shrink-0" 
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-extrabold text-charcoal-900 text-xs">{com.usuario_nombre}</span>
+                          {isLogAvance && (
+                            <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded-md bg-amber-200 text-amber-900 border border-amber-300">
+                              Imputación Horaria
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-charcoal-400 shrink-0 font-mono">{com.created_at}</span>
+                      </div>
+                      <p className={`text-xs mt-1 leading-relaxed ${isLogAvance ? 'text-charcoal-900 font-semibold' : 'text-charcoal-700'}`}>
+                        {com.comentario}
+                      </p>
                     </div>
-                    <p className="text-xs text-charcoal-700 mt-1 leading-relaxed">{com.comentario}</p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Comment Form */}

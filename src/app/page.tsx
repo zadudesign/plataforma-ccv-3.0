@@ -154,6 +154,32 @@ export default function Home() {
         tarifa_tarea: nuevaTarifaTarea
       } : null);
     }
+
+    // Publicar automáticamente en la sección de Discusión & Comentarios
+    if (usuarioActual) {
+      const autorNombre = esResponsableSecundario
+        ? (tareaObj.responsable_secundario_nombre || usuarioActual.nombre_completo)
+        : (tareaObj.responsable_nombre || usuarioActual.nombre_completo);
+      const autorAvatar = esResponsableSecundario
+        ? tareaObj.responsable_secundario_avatar
+        : (tareaObj.responsable_avatar || usuarioActual.avatar_url);
+
+      const textoComentario = notas && notas.trim()
+        ? `⏱️ Registro de Avance (+${horasAñadir}h): ${notas.trim()}`
+        : `⏱️ Registro de Avance: Se sumaron +${horasAñadir} hrs trabajadas al proyecto (${esResponsableSecundario ? 'Co-responsable' : 'Responsable Principal'}).`;
+
+      const dbCom = await addComentarioDB(tareaId, usuarioActual.id, textoComentario);
+      const nuevoComentarioObj: TareaComentario = dbCom || {
+        id: `com-${Date.now()}`,
+        tarea_id: tareaId,
+        usuario_id: usuarioActual.id,
+        usuario_nombre: autorNombre,
+        usuario_avatar: autorAvatar,
+        comentario: textoComentario,
+        created_at: new Date().toISOString().replace('T', ' ').substring(0, 16)
+      };
+      setComentarios(prev => [nuevoComentarioObj, ...prev]);
+    }
   };
 
   // If no user is logged in, show Landing Home with modal login trigger

@@ -11,7 +11,7 @@ interface LogHoursModalProps {
   initialTaskId?: string;
   initialIsSecondary?: boolean;
   onClose: () => void;
-  onUpdateTaskHours: (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean) => void;
+  onUpdateTaskHours: (tareaId: string, horasAñadir: number, esResponsableSecundario?: boolean, notas?: string) => void;
 }
 
 export const LogHoursModal: React.FC<LogHoursModalProps> = ({
@@ -27,6 +27,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
   const [tareaId, setTareaId] = useState<string>(initialTaskId || tareasProyecto[0]?.id || '');
   const [esSecundario, setEsSecundario] = useState<boolean>(initialIsSecondary);
   const [horas, setHoras] = useState<string>('2.5');
+  const [notas, setNotas] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const getNombreRol = (rolDestinoOrId?: string): string => {
@@ -74,7 +75,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
       return;
     }
 
-    onUpdateTaskHours(tareaId, numHoras, tieneDosResponsables ? esSecundario : false);
+    onUpdateTaskHours(tareaId, numHoras, tieneDosResponsables ? esSecundario : false, notas.trim() || undefined);
     onClose();
   };
 
@@ -253,6 +254,23 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
             </div>
             <p className="text-[11px] text-charcoal-500 mt-1">
               Estas horas se sumarán <strong className="text-charcoal-800">únicamente al tiempo individual</strong> de {usuarioActivoNombre} ({rolActivoImputacion}).
+            </p>
+          </div>
+
+          {/* Detalle / Nota de Avance (Opcional) */}
+          <div>
+            <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+              Detalle / Nota de avance (Opcional)
+            </label>
+            <input
+              type="text"
+              value={notas}
+              onChange={e => setNotas(e.target.value)}
+              placeholder="Ej. Diseño de interfaz, ajuste de audio, corrección de guión..."
+              className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+            />
+            <p className="text-[10px] text-charcoal-400 mt-1">
+              Esta nota se publicará automáticamente en la sección de <strong className="text-charcoal-600">Discusión & Comentarios</strong> de la tarea.
             </p>
           </div>
 
