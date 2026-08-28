@@ -178,11 +178,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         return t.fecha_vencimiento >= hoyStr && t.estado !== 'Completada';
       })
       .sort((a, b) => {
-        const compFecha = (a.fecha_vencimiento || '').localeCompare(b.fecha_vencimiento || '');
+        const compFecha = (b.fecha_vencimiento || '').localeCompare(a.fecha_vencimiento || '');
         if (compFecha !== 0) return compFecha;
         return (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00');
       })
-      .slice(0, 6); // Top 6 próximas tareas
+      .slice(0, 6); // Top 6 próximas tareas orden descendente
   }, [tareas, hoyStr]);
 
   const formatDiasRestantes = (fechaStr: string) => {
