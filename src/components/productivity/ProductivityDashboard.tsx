@@ -78,7 +78,31 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   const [filtroRangoEntregas, setFiltroRangoEntregas] = useState<'este_mes' | 'trimestre' | 'historico'>('este_mes');
   const [filtroPuntualidad, setFiltroPuntualidad] = useState<'todas' | 'a_tiempo' | 'con_retraso' | 'pendientes_atrasadas'>('todas');
 
+  // Clasificación del Gráfico de Horas: 'dias' (días del mes), 'semanas', 'meses'
+  const [tipoAgrupacionHoras, setTipoAgrupacionHoras] = useState<'dias' | 'semanas' | 'meses'>('dias');
+  const [mesSeleccionadoHoras, setMesSeleccionadoHoras] = useState<string>('2026-08');
+
   const hoyFechaStr = '2026-08-07'; // Fecha del sistema
+
+  // Meses disponibles con tareas registradas
+  const mesesDisponibles = useMemo(() => {
+    const setMeses = new Set<string>(['2026-08', '2026-07', '2026-09']);
+    tareas.forEach(t => {
+      const f = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : null);
+      if (f && f.length >= 7) {
+        setMeses.add(f.substring(0, 7));
+      }
+    });
+    return Array.from(setMeses).sort((a, b) => b.localeCompare(a));
+  }, [tareas]);
+
+  const getNombreMes = (mesStr: string) => {
+    const [y, m] = mesStr.split('-').map(Number);
+    if (!y || !m) return mesStr;
+    const date = new Date(y, m - 1, 1);
+    const nombre = date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+    return nombre.charAt(0).toUpperCase() + nombre.slice(1);
+  };
 
   // Extraer roles de destino únicos disponibles en las tareas (incluyendo roles secundarios)
   const rolesDestinoDisponibles = useMemo(() => {
@@ -179,30 +203,144 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     return tareasFiltradas.length > 0 ? (totalHorasInvertidas / tareasFiltradas.length).toFixed(1) : '0';
   }, [tareasFiltradas, totalHorasInvertidas]);
 
-  // Agrupamiento por fecha para el gráfico de Horas (contabilizando tiempo_invertido)
-  const datosGraficoDiario = useMemo(() => {
-    const mapaFechas: Record<string, { fecha: string; totalHoras: number; conteoTareas: number }> = {};
+  // Agrupamiento dinámico para el gráfico de Horas: por Días del mes, Semanas o Meses
+  const datosGraficoHoras = useMemo(() => {
+    if (tipoAgrupacionHoras === 'dias') {
+      // 1. DÍAS DEL MES SELECCIONADO (Todos los días del mes: 1 al 28/30/31)
+      const [y, m] = (mesSeleccionadoHoras || '2026-08').split('-').map(Number);
+      const numDias = new Date(y, m, 0).getDate(); // Total de días del mes
+
+      const diasMap: Record<string, { clave: string; etiquetaCorta: string; etiquetaCompleta: string; totalHoras: number; conteoTareas: number; esFinDeSemana: boolean }> = {};
+      
+      for (let d = 1; d <= numDias; d++) {
+        const diaStr = String(d).padStart(2, '0');
+        const fechaFull = `${mesSeleccionadoHoras}-${diaStr}`;
+        const dateObj = new Date(`${fechaFull}T00:00:00`);
+        const diaSemanaNum = dateObj.getDay();
+        const nombreDiaCorto = dateObj.toLocaleDateString('es-CO', { weekday: 'short' });
+        const nombreMesCorto = dateObj.toLocaleDateString('es-CO', { month: 'short' });
+        
+        diasMap[fechaFull] = {
+          clave: fechaFull,
+          etiquetaCorta: `${d}`,
+          etiquetaCompleta: `${nombreDiaCorto} ${d} ${nombreMesCorto}`,
+          totalHoras: 0,
+          conteoTareas: 0,
+          esFinDeSemana: diaSemanaNum === 0 || diaSemanaNum === 6
+        };
+      }
+
+      tareasFiltradas.forEach(t => {
+        const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : '2026-08-07');
+        if (fechaClave && diasMap[fechaClave]) {
+          const horas = getHorasDeTarea(t);
+          diasMap[fechaClave].totalHoras += horas;
+          diasMap[fechaClave].conteoTareas += 1;
+        }
+      });
+
+      const lista = Object.values(diasMap);
+      const maxHoras = Math.max(...lista.map(d => d.totalHoras), 1);
+      const totalPeriodo = lista.reduce((acc, d) => acc + d.totalHoras, 0);
+
+      return {
+        tipo: 'dias' as const,
+        datos: lista,
+        maxHoras,
+        totalPeriodo,
+        tituloPeriodo: getNombreMes(mesSeleccionadoHoras)
+      };
+    }
+
+    if (tipoAgrupacionHoras === 'semanas') {
+      // 2. SEMANAS DEL MES SELECCIONADO
+      const [y, m] = (mesSeleccionadoHoras || '2026-08').split('-').map(Number);
+      const numDias = new Date(y, m, 0).getDate();
+      const nombreMesCorto = new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month: 'short' });
+
+      const semanas = [
+        { semNum: 1, diaIni: 1, diaFin: 7, label: `Sem 1 (1 - 7 ${nombreMesCorto})`, totalHoras: 0, conteoTareas: 0 },
+        { semNum: 2, diaIni: 8, diaFin: 14, label: `Sem 2 (8 - 14 ${nombreMesCorto})`, totalHoras: 0, conteoTareas: 0 },
+        { semNum: 3, diaIni: 15, diaFin: 21, label: `Sem 3 (15 - 21 ${nombreMesCorto})`, totalHoras: 0, conteoTareas: 0 },
+        { semNum: 4, diaIni: 22, diaFin: 28, label: `Sem 4 (22 - 28 ${nombreMesCorto})`, totalHoras: 0, conteoTareas: 0 },
+        { semNum: 5, diaIni: 29, diaFin: numDias, label: `Sem 5 (29 - ${numDias} ${nombreMesCorto})`, totalHoras: 0, conteoTareas: 0 }
+      ];
+
+      tareasFiltradas.forEach(t => {
+        const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : '2026-08-07');
+        if (fechaClave && fechaClave.startsWith(mesSeleccionadoHoras)) {
+          const dia = parseInt(fechaClave.split('-')[2], 10);
+          const horas = getHorasDeTarea(t);
+          const targetSem = semanas.find(s => dia >= s.diaIni && dia <= s.diaFin);
+          if (targetSem) {
+            targetSem.totalHoras += horas;
+            targetSem.conteoTareas += 1;
+          }
+        }
+      });
+
+      const lista = semanas.map(s => ({
+        clave: `sem-${s.semNum}`,
+        etiquetaCorta: `Sem ${s.semNum}`,
+        etiquetaCompleta: s.label,
+        totalHoras: s.totalHoras,
+        conteoTareas: s.conteoTareas,
+        esFinDeSemana: false
+      }));
+
+      const maxHoras = Math.max(...lista.map(d => d.totalHoras), 1);
+      const totalPeriodo = lista.reduce((acc, d) => acc + d.totalHoras, 0);
+
+      return {
+        tipo: 'semanas' as const,
+        datos: lista,
+        maxHoras,
+        totalPeriodo,
+        tituloPeriodo: `${getNombreMes(mesSeleccionadoHoras)} (Por Semanas)`
+      };
+    }
+
+    // 3. CONSOLIDADO POR MESES
+    const mesesMap: Record<string, { clave: string; etiquetaCorta: string; etiquetaCompleta: string; totalHoras: number; conteoTareas: number; esFinDeSemana: boolean }> = {};
+    
+    [...mesesDisponibles].sort((a, b) => a.localeCompare(b)).forEach(mesStr => {
+      const [y, m] = mesStr.split('-').map(Number);
+      const nombreMesCorto = new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month: 'short' });
+      const nombreMesLargo = getNombreMes(mesStr);
+      mesesMap[mesStr] = {
+        clave: mesStr,
+        etiquetaCorta: `${nombreMesCorto} '${String(y).substring(2)}`,
+        etiquetaCompleta: nombreMesLargo,
+        totalHoras: 0,
+        conteoTareas: 0,
+        esFinDeSemana: false
+      };
+    });
 
     tareasFiltradas.forEach(t => {
       const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : '2026-08-07');
-      const horas = getHorasDeTarea(t);
-
-      if (!mapaFechas[fechaClave]) {
-        mapaFechas[fechaClave] = {
-          fecha: fechaClave,
-          totalHoras: 0,
-          conteoTareas: 0
-        };
+      if (fechaClave && fechaClave.length >= 7) {
+        const mesKey = fechaClave.substring(0, 7);
+        if (mesesMap[mesKey]) {
+          const horas = getHorasDeTarea(t);
+          mesesMap[mesKey].totalHoras += horas;
+          mesesMap[mesKey].conteoTareas += 1;
+        }
       }
-      mapaFechas[fechaClave].totalHoras += horas;
-      mapaFechas[fechaClave].conteoTareas += 1;
     });
 
-    const ordenado = Object.values(mapaFechas).sort((a, b) => a.fecha.localeCompare(b.fecha));
-    const maxHoras = Math.max(...ordenado.map(d => d.totalHoras), 1);
+    const lista = Object.values(mesesMap);
+    const maxHoras = Math.max(...lista.map(d => d.totalHoras), 1);
+    const totalPeriodo = lista.reduce((acc, d) => acc + d.totalHoras, 0);
 
-    return { datos: ordenado, maxHoras };
-  }, [tareasFiltradas, filtroUsuario, filtroRol]);
+    return {
+      tipo: 'meses' as const,
+      datos: lista,
+      maxHoras,
+      totalPeriodo,
+      tituloPeriodo: 'Consolidado Anual por Meses'
+    };
+  }, [tareasFiltradas, tipoAgrupacionHoras, mesSeleccionadoHoras, mesesDisponibles, filtroUsuario, filtroRol]);
 
   // Desglose de Horas por Rol Destino con contabilización individual de tiempo_invertido por rol asignado
   const desglosePorRol = useMemo(() => {
@@ -548,66 +686,152 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
             </div>
           </div>
 
-          {/* Gráfico de Productividad */}
+          {/* Gráfico de Productividad: Distribución de Horas */}
           <div className="ccv-card p-6 bg-white space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-stone-100">
               <div>
                 <h3 className="text-lg font-black text-charcoal-900 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-emerald-600" />
                   Distribución de Horas Invertidas por Fecha
                 </h3>
                 <p className="text-xs text-charcoal-500 mt-0.5">
-                  Consolidado de tiempo invertido (`tiempo_invertido`) extraído directamente de la tabla `tareas`.
+                  Visualización interactiva: <strong className="text-charcoal-800">{datosGraficoHoras.tituloPeriodo}</strong> • Total: <strong className="text-emerald-700">{datosGraficoHoras.totalPeriodo.toFixed(1)} hrs</strong> registradas.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                  {tareasFiltradas.length} Tareas en Vista
-                </span>
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Selector de Mes (visible en vista por Días o por Semanas) */}
+                {(tipoAgrupacionHoras === 'dias' || tipoAgrupacionHoras === 'semanas') && (
+                  <div className="flex items-center gap-1.5 bg-cream-50 px-2.5 py-1 rounded-xl border border-stone-200">
+                    <Calendar className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+                    <select
+                      value={mesSeleccionadoHoras}
+                      onChange={(e) => setMesSeleccionadoHoras(e.target.value)}
+                      className="bg-transparent text-xs font-bold text-charcoal-800 focus:outline-none cursor-pointer"
+                      title="Seleccionar mes para visualizar"
+                    >
+                      {mesesDisponibles.map(m => (
+                        <option key={m} value={m}>
+                          {getNombreMes(m)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Control de Clasificación: Por Días, Por Semanas, Por Meses */}
+                <div className="bg-cream-100 p-1 rounded-xl flex items-center gap-1 border border-stone-200/80 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setTipoAgrupacionHoras('dias')}
+                    className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+                      tipoAgrupacionHoras === 'dias'
+                        ? 'bg-emerald-600 text-white shadow-2xs font-extrabold'
+                        : 'text-charcoal-600 hover:text-charcoal-900 font-semibold hover:bg-white/60'
+                    }`}
+                  >
+                    Días del Mes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipoAgrupacionHoras('semanas')}
+                    className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+                      tipoAgrupacionHoras === 'semanas'
+                        ? 'bg-emerald-600 text-white shadow-2xs font-extrabold'
+                        : 'text-charcoal-600 hover:text-charcoal-900 font-semibold hover:bg-white/60'
+                    }`}
+                  >
+                    Por Semanas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipoAgrupacionHoras('meses')}
+                    className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+                      tipoAgrupacionHoras === 'meses'
+                        ? 'bg-emerald-600 text-white shadow-2xs font-extrabold'
+                        : 'text-charcoal-600 hover:text-charcoal-900 font-semibold hover:bg-white/60'
+                    }`}
+                  >
+                    Por Mes
+                  </button>
+                </div>
               </div>
             </div>
 
-            {datosGraficoDiario.datos.length === 0 ? (
+            {datosGraficoHoras.datos.length === 0 ? (
               <div className="p-12 text-center bg-cream-50/50 rounded-2xl border border-dashed border-stone-200">
                 <Clock className="w-10 h-10 text-stone-300 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-charcoal-600">No se encontraron tareas con tiempo invertido en los filtros aplicados.</p>
+                <p className="text-sm font-semibold text-charcoal-600">No se encontraron tareas con tiempo invertido en el período seleccionado.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="h-64 flex items-end justify-between gap-2 sm:gap-4 pt-8 px-2 border-b border-stone-200">
-                  {datosGraficoDiario.datos.map((item) => {
-                    const pctAltura = Math.round((item.totalHoras / datosGraficoDiario.maxHoras) * 100);
-                    const fechaFormateada = new Date(item.fecha + 'T00:00:00').toLocaleDateString('es-ES', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short'
-                    });
+                {/* Contenedor del Gráfico con soporte responsivo y scroll horizontal si hay 31 días en móvil */}
+                <div className="overflow-x-auto pb-2 scrollbar-thin">
+                  <div className={`h-64 flex items-end justify-between gap-1 sm:gap-2 pt-8 px-1 border-b border-stone-200 ${
+                    tipoAgrupacionHoras === 'dias' ? 'min-w-[680px] sm:min-w-full' : 'w-full'
+                  }`}>
+                    {datosGraficoHoras.datos.map((item) => {
+                      const tieneHoras = item.totalHoras > 0;
+                      const pctAltura = tieneHoras ? Math.round((item.totalHoras / datosGraficoHoras.maxHoras) * 100) : 0;
 
-                    return (
-                      <div key={item.fecha} className="flex-1 flex flex-col items-center h-full justify-end group relative">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 bg-charcoal-900 text-white text-[11px] font-bold py-1.5 px-3 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-20">
-                          <div>{fechaFormateada}</div>
-                          <div className="text-emerald-400 font-extrabold">{item.totalHoras.toFixed(1)} hrs ({item.conteoTareas} tareas)</div>
+                      return (
+                        <div key={item.clave} className="flex-1 flex flex-col items-center h-full justify-end group relative min-w-[16px]">
+                          {/* Tooltip interactivo flotante */}
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 bg-charcoal-900 text-white text-[11px] font-bold py-1.5 px-3 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-30">
+                            <div>{item.etiquetaCompleta}</div>
+                            <div className="text-emerald-400 font-extrabold">
+                              {item.totalHoras.toFixed(1)} hrs ({item.conteoTareas} {item.conteoTareas === 1 ? 'tarea' : 'tareas'})
+                            </div>
+                          </div>
+
+                          {/* Badge de Horas sobre la barra */}
+                          <div className="h-5 flex items-center justify-center mb-1">
+                            {tieneHoras ? (
+                              <span className="text-[10px] sm:text-[11px] font-black text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded-md border border-emerald-200 shadow-2xs">
+                                {item.totalHoras.toFixed(1)}h
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-stone-300 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                                0h
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Barra de altura proporcional */}
+                          <div className={`w-full ${
+                            tipoAgrupacionHoras === 'dias' ? 'max-w-[28px]' : tipoAgrupacionHoras === 'semanas' ? 'max-w-[72px]' : 'max-w-[64px]'
+                          } bg-stone-100/80 rounded-t-xl border-x border-t ${
+                            tieneHoras ? 'border-emerald-300/80' : 'border-stone-200/50'
+                          } p-0.5 overflow-hidden flex flex-col justify-end h-full`}>
+                            {tieneHoras ? (
+                              <div 
+                                className="bg-gradient-to-t from-emerald-600 via-emerald-500 to-emerald-400 w-full rounded-t-lg transition-all duration-500 group-hover:from-emerald-700 group-hover:via-emerald-600 group-hover:to-teal-300 group-hover:shadow-md shadow-2xs"
+                                style={{ height: `${Math.max(pctAltura, 8)}%` }}
+                              />
+                            ) : (
+                              <div 
+                                className="bg-stone-200/60 w-full rounded-t-sm"
+                                style={{ height: '4%' }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Etiqueta inferior del eje X */}
+                          <div className="mt-2 text-center w-full">
+                            <span className={`text-[10px] font-bold block truncate transition-colors ${
+                              tieneHoras 
+                                ? 'text-charcoal-900 group-hover:text-emerald-700 font-black' 
+                                : item.esFinDeSemana 
+                                ? 'text-charcoal-400' 
+                                : 'text-charcoal-500'
+                            }`}>
+                              {item.etiquetaCorta}
+                            </span>
+                          </div>
                         </div>
-
-                        <span className="text-[11px] font-black text-emerald-800 bg-emerald-50/90 px-2 py-0.5 rounded-lg border border-emerald-200 mb-1.5 shadow-2xs">
-                          {item.totalHoras.toFixed(1)}h
-                        </span>
-
-                        <div className="w-full max-w-[48px] bg-stone-100/90 rounded-t-2xl border-x border-t border-stone-200/60 p-0.5 overflow-hidden flex flex-col justify-end h-full">
-                          <div 
-                            className="bg-gradient-to-t from-emerald-600 via-emerald-500 to-emerald-400 w-full rounded-t-xl transition-all duration-500 group-hover:from-emerald-700 group-hover:via-emerald-600 group-hover:to-teal-300 group-hover:shadow-md shadow-2xs"
-                            style={{ height: `${Math.max(pctAltura, 8)}%` }}
-                          />
-                        </div>
-
-                        <span className="text-[10px] font-extrabold text-charcoal-600 group-hover:text-emerald-700 mt-2 truncate w-full text-center capitalize transition-colors">
-                          {fechaFormateada}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="pt-2">

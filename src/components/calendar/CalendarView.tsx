@@ -105,7 +105,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     };
   }, [currentYear, currentMonth]);
 
-  // Mapa de tareas por fecha para acceso O(1) con orden descendente por hora de vencimiento
+  // Mapa de tareas por fecha para acceso O(1) con orden cronológico por hora de vencimiento
   const tareasPorFecha = useMemo(() => {
     const map: Record<string, TareaCCV[]> = {};
     tareas.forEach(tarea => {
@@ -117,21 +117,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       map[fecha].push(tarea);
     });
 
-    // Ordenar tareas de cada día en orden descendente por hora de vencimiento
+    // Ordenar tareas de cada día en orden cronológico por hora de vencimiento (08:00 -> 18:00)
     Object.keys(map).forEach(fecha => {
-      map[fecha].sort((a, b) => (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00'));
+      map[fecha].sort((a, b) => (a.hora_vencimiento || '18:00').localeCompare(b.hora_vencimiento || '18:00'));
     });
 
     return map;
   }, [tareas]);
 
-  // Tareas filtradas para la fecha seleccionada (orden descendente por hora)
+  // Tareas filtradas para la fecha seleccionada (orden cronológico por hora)
   const tareasDelDiaSeleccionado = useMemo(() => {
     let lista = tareasPorFecha[fechaSeleccionada] || [];
     if (filtroEstado !== 'todos') {
       lista = lista.filter(t => t.estado === filtroEstado);
     }
-    return [...lista].sort((a, b) => (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00'));
+    return [...lista].sort((a, b) => (a.hora_vencimiento || '18:00').localeCompare(b.hora_vencimiento || '18:00'));
   }, [tareasPorFecha, fechaSeleccionada, filtroEstado]);
 
   // Formato amigable en español de la fecha seleccionada
@@ -169,7 +169,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return { total, completadas, pendientes, enRevision, enProceso };
   }, [tareas, currentYear, currentMonth]);
 
-  // Próximas Tareas ordenadas cronológicamente (fechas más próximas primero y orden descendente por hora)
+  // Próximas Tareas ordenadas cronológicamente (fechas más próximas primero y hora)
   const proximasTareas = useMemo(() => {
     return tareas
       .filter(t => {
@@ -178,11 +178,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         return t.fecha_vencimiento >= hoyStr && t.estado !== 'Completada';
       })
       .sort((a, b) => {
-        const compFecha = (b.fecha_vencimiento || '').localeCompare(a.fecha_vencimiento || '');
+        const compFecha = (a.fecha_vencimiento || '').localeCompare(b.fecha_vencimiento || '');
         if (compFecha !== 0) return compFecha;
-        return (b.hora_vencimiento || '18:00').localeCompare(a.hora_vencimiento || '18:00');
+        return (a.hora_vencimiento || '18:00').localeCompare(b.hora_vencimiento || '18:00');
       })
-      .slice(0, 6); // Top 6 próximas tareas orden descendente
+      .slice(0, 6); // Top 6 próximas tareas
   }, [tareas, hoyStr]);
 
   const formatDiasRestantes = (fechaStr: string) => {
