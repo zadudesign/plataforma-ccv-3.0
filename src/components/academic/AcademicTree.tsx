@@ -72,7 +72,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
     }));
   };
 
-  // Agrupar proyectos por Departamento (Subáreas del área DEPARTAMENTO)
+  // Agrupar proyectos por Departamento y calcular costos/horas departamentales
   const proyectosPorDepartamento = React.useMemo(() => {
     const mapa: Record<string, { departamentoNombre: string; areaObj?: Area; proyectos: ProyectoEspecial[] }> = {};
 
@@ -93,13 +93,40 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
       mapa[areaKey].proyectos.push(proy);
     });
 
-    return Object.entries(mapa).map(([departamentoId, data]) => ({
-      departamentoId,
-      departamentoNombre: data.departamentoNombre,
-      areaObj: data.areaObj,
-      proyectos: data.proyectos
-    }));
-  }, [proyectos, areas]);
+    return Object.entries(mapa).map(([departamentoId, data]) => {
+      // Calcular costo total financiero acumulado del departamento
+      const costoTotalDepartamento = data.proyectos.reduce((acc, proy) => {
+        const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
+        const costoProy = tareasProy.reduce((sum, t) => {
+          const tarifa = t.tarifa_tarea !== undefined 
+            ? t.tarifa_tarea 
+            : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_invertido || 1) : 0);
+          return sum + tarifa;
+        }, 0);
+        return acc + costoProy;
+      }, 0);
+
+      // Calcular horas totales invertidas en los proyectos del departamento
+      const horasTotalesDepartamento = data.proyectos.reduce((acc, proy) => {
+        const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
+        const horasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
+        return acc + horasProy;
+      }, 0);
+
+      return {
+        departamentoId,
+        departamentoNombre: data.departamentoNombre,
+        areaObj: data.areaObj,
+        proyectos: data.proyectos,
+        costoTotalDepartamento,
+        horasTotalesDepartamento,
+      };
+    });
+  }, [proyectos, areas, tareas]);
+
+  const costoTotalGlobalProyectos = React.useMemo(() => {
+    return proyectosPorDepartamento.reduce((acc, d) => acc + d.costoTotalDepartamento, 0);
+  }, [proyectosPorDepartamento]);
 
   const expandirTodo = () => {
     setProyectosAbiertos(true);
@@ -214,9 +241,13 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
               {proyectosPorDepartamento.length} {proyectosPorDepartamento.length === 1 ? 'Departamento' : 'Departamentos'} • {proyectos.length} Proyectos
+            </span>
+            <span className="text-xs font-black text-emerald-900 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1 shadow-2xs">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
+              Total Proyectos: ${costoTotalGlobalProyectos.toLocaleString('es-CO')} COP
             </span>
             {proyectosAbiertos ? <ChevronDown className="w-5 h-5 text-charcoal-500" /> : <ChevronRight className="w-5 h-5 text-charcoal-500" />}
           </div>
@@ -256,7 +287,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                           </h4>
                           <div className="flex items-center gap-2 flex-wrap mt-0.5">
                             <span className="text-[11px] text-charcoal-500">
-                              {grupo.proyectos.length} {grupo.proyectos.length === 1 ? 'Proyecto asignado' : 'Proyectos asignados'}
+                              {grupo.proyectos.length} {grupo.proyectos.length === 1 ? 'Proyecto asignado' : 'Proyectos asignados'} • {grupo.horasTotalesDepartamento} hrs invertidas
                             </span>
                             {grupo.areaObj?.jefe_nombre && (
                               <span className="text-[10.5px] font-bold text-amber-900 bg-amber-50 px-2 py-0.2 rounded-md border border-amber-200 shadow-2xs flex items-center gap-1">
@@ -267,7 +298,18 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+                        {/* KPI Costo Total del Departamento */}
+                        <div className="flex items-center gap-1.5 bg-white/90 border border-emerald-300/80 text-emerald-950 px-3 py-1 rounded-xl shadow-2xs">
+                          <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <div className="flex flex-col text-left">
+                            <span className="text-[9px] font-black uppercase text-emerald-700 tracking-wider">Costo Depto</span>
+                            <span className="text-xs font-black text-emerald-950 leading-tight">
+                              ${grupo.costoTotalDepartamento.toLocaleString('es-CO')} <span className="text-[10px] text-emerald-700 font-bold">COP</span>
+                            </span>
+                          </div>
+                        </div>
+
                         {isAdmin() && grupo.areaObj && (
                           <button
                             type="button"
@@ -284,7 +326,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                         )}
 
                         <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
-                          {grupo.proyectos.length} Proyectos
+                          {grupo.proyectos.length} {grupo.proyectos.length === 1 ? 'Proyecto' : 'Proyectos'}
                         </span>
                         <button
                           type="button"
