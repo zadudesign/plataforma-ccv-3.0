@@ -91,6 +91,29 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return txt.charAt(0).toUpperCase() + txt.slice(1);
   };
 
+  // Función para ordenar tareas de la más próxima a vencer a la más lejana
+  const ordenarTareasPorVencimiento = (lista: TareaCCV[]) => {
+    return [...lista].sort((a, b) => {
+      const fechaA = a.fecha_vencimiento?.trim() || '';
+      const fechaB = b.fecha_vencimiento?.trim() || '';
+
+      const sinFechaA = !fechaA || fechaA === 'Sin fecha';
+      const sinFechaB = !fechaB || fechaB === 'Sin fecha';
+
+      if (sinFechaA && !sinFechaB) return 1;
+      if (!sinFechaA && sinFechaB) return -1;
+      if (sinFechaA && sinFechaB) return 0;
+
+      if (fechaA !== fechaB) {
+        return fechaA.localeCompare(fechaB);
+      }
+
+      const horaA = (a.hora_vencimiento?.trim() || '18:00').padStart(5, '0');
+      const horaB = (b.hora_vencimiento?.trim() || '18:00').padStart(5, '0');
+      return horaA.localeCompare(horaB);
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn font-sans">
       {/* Kanban Top Header */}
@@ -101,7 +124,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             Tablero Kanban de Producción CCV
           </h2>
           <p className="text-xs text-charcoal-500 mt-0.5">
-            Tareas agrupadas por día (de la más próxima a la más lejana) y organizadas por etapas: <strong className="text-rose-700">Pendiente</strong>, <strong className="text-blue-700">En Proceso</strong>, <strong className="text-amber-700">En Revisión</strong> y <strong className="text-emerald-700">Completada</strong>.
+            Tareas ordenadas cronológicamente de la más próxima a vencer a la última en vencer, agrupadas por día y por estados del flujo.
           </p>
         </div>
       </div>
@@ -109,7 +132,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       {/* 4 Columns Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {columnas.map((col) => {
-          const tareasCol = tareas.filter(t => t.estado === col.estado);
+          const tareasCol = ordenarTareasPorVencimiento(tareas.filter(t => t.estado === col.estado));
 
           // Agrupación por día clasificada de la fecha más próxima a la más lejana
           const gruposPorFecha: Record<string, TareaCCV[]> = {};
@@ -126,9 +149,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             return a.localeCompare(b);
           });
 
-          // Ordenar tareas dentro de cada día de la más próxima a la más lejana por hora
+          // Asegurar que las tareas dentro de cada día estén ordenadas por hora de la más temprana a la más tardía
           fechasOrdenadas.forEach(fecha => {
-            gruposPorFecha[fecha].sort((a, b) => (a.hora_vencimiento || '18:00').localeCompare(b.hora_vencimiento || '18:00'));
+            gruposPorFecha[fecha] = ordenarTareasPorVencimiento(gruposPorFecha[fecha]);
           });
 
           return (

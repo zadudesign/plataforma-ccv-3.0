@@ -765,14 +765,16 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         areas(nombre),
         usuarios!responsable_id(nombre_completo, avatar_url)
       `)
-      .order('orden_tarea', { ascending: true });
+      .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
+      .order('hora_vencimiento', { ascending: true, nullsFirst: false });
 
     if (error || !data) {
       // Fallback sin joins en caso de discrepancia en nombres de foreign keys:
       const { data: rawData, error: rawError } = await supabase
         .from('tareas')
         .select('*')
-        .order('orden_tarea', { ascending: true });
+        .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
+        .order('hora_vencimiento', { ascending: true, nullsFirst: false });
 
       if (rawError || !rawData) {
         if (rawError) console.error('Error al obtener tareas (raw) de Supabase:', rawError);

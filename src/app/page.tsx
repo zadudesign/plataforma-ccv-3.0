@@ -70,11 +70,34 @@ export default function Home() {
     }
   }, [usuarioActual?.id]);
 
+  // Función helper para ordenar tareas de la más próxima a vencer a la última en vencer
+  const ordenarTareasPorVencimiento = (lista: TareaCCV[]) => {
+    return [...lista].sort((a, b) => {
+      const fechaA = a.fecha_vencimiento?.trim() || '';
+      const fechaB = b.fecha_vencimiento?.trim() || '';
+
+      const sinFechaA = !fechaA || fechaA === 'Sin fecha';
+      const sinFechaB = !fechaB || fechaB === 'Sin fecha';
+
+      if (sinFechaA && !sinFechaB) return 1;
+      if (!sinFechaA && sinFechaB) return -1;
+      if (sinFechaA && sinFechaB) return 0;
+
+      if (fechaA !== fechaB) {
+        return fechaA.localeCompare(fechaB);
+      }
+
+      const horaA = (a.hora_vencimiento?.trim() || '18:00').padStart(5, '0');
+      const horaB = (b.hora_vencimiento?.trim() || '18:00').padStart(5, '0');
+      return horaA.localeCompare(horaB);
+    });
+  };
+
   // Cargar tareas iniciales exclusivamente desde Supabase DB
   useEffect(() => {
     const loadTareas = async () => {
       const dbTareas = await fetchTareasDB();
-      setTareas(dbTareas || []);
+      setTareas(ordenarTareasPorVencimiento(dbTareas || []));
     };
     loadTareas();
   }, []);
@@ -250,11 +273,11 @@ export default function Home() {
   const handleCreateTask = async (nuevaTarea: Omit<TareaCCV, 'id'>) => {
     const res = await createTareaDB(nuevaTarea);
     if (res.success && res.data) {
-      setTareas(prev => [res.data!, ...prev]);
+      setTareas(prev => ordenarTareasPorVencimiento([res.data!, ...prev]));
     } else {
       alert(`⚠️ Error al guardar tarea en Supabase:\n\n${res.error || 'No se pudo conectar con la base de datos.'}\n\nRevisa que el archivo .env.local esté configurado o que se hayan ejecutado las tablas en Supabase.`);
       const fallbackTarea: TareaCCV = { ...nuevaTarea, id: `t-${Date.now()}` };
-      setTareas(prev => [fallbackTarea, ...prev]);
+      setTareas(prev => ordenarTareasPorVencimiento([fallbackTarea, ...prev]));
     }
   };
 
