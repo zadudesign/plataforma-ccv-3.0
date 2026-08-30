@@ -304,10 +304,15 @@ export default function Home() {
   const areaIdsSupervisadasPorJefe = React.useMemo(() => {
     const ids = new Set<string>();
     const agregarAreaYSubareas = (areaId: string) => {
+      if (!areaId || ids.has(areaId)) return;
       ids.add(areaId);
-      areas.filter(sub => sub.parent_id === areaId).forEach(sub => agregarAreaYSubareas(sub.id));
+      areas
+        .filter(sub => sub.parent_id === areaId && sub.id && sub.id !== areaId && !ids.has(sub.id))
+        .forEach(sub => agregarAreaYSubareas(sub.id));
     };
-    areasDondeEsJefe.forEach(a => agregarAreaYSubareas(a.id));
+    areasDondeEsJefe.forEach(a => {
+      if (a.id) agregarAreaYSubareas(a.id);
+    });
     return ids;
   }, [areasDondeEsJefe, areas]);
 
