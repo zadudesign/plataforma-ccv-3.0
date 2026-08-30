@@ -205,11 +205,6 @@ export default function Home() {
     }
   };
 
-  // If no user is logged in, show Landing Home with modal login trigger
-  if (!usuarioActual) {
-    return <LandingHome />;
-  }
-
   // Handlers
   const handleUpdateStatus = async (tareaId: string, nuevoEstado: EstadoTarea) => {
     await updateTareaEstadoDB(tareaId, nuevoEstado);

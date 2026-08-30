@@ -71,6 +71,35 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
     }));
   };
 
+  // Agrupar proyectos por Departamento (Subáreas del área DEPARTAMENTO)
+  const proyectosPorDepartamento = React.useMemo(() => {
+    const mapa: Record<string, { departamentoNombre: string; areaObj?: Area; proyectos: ProyectoEspecial[] }> = {};
+
+    proyectos.forEach(proy => {
+      const areaObj = areas.find(a => a.id === proy.area_id);
+      const areaKey = proy.area_id || 'sin-departamento';
+      const departamentoNombre = areaObj 
+        ? areaObj.nombre 
+        : (proy.area_id ? `Departamento (${proy.area_id})` : 'General / Sin Departamento Asignado');
+
+      if (!mapa[areaKey]) {
+        mapa[areaKey] = {
+          departamentoNombre,
+          areaObj,
+          proyectos: []
+        };
+      }
+      mapa[areaKey].proyectos.push(proy);
+    });
+
+    return Object.entries(mapa).map(([departamentoId, data]) => ({
+      departamentoId,
+      departamentoNombre: data.departamentoNombre,
+      areaObj: data.areaObj,
+      proyectos: data.proyectos
+    }));
+  }, [proyectos, areas]);
+
   const expandirTodo = () => {
     setProyectosAbiertos(true);
     const newAreas: Record<string, boolean> = {};
@@ -126,35 +155,6 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
         return null;
     }
   };
-
-  // Agrupar proyectos por Departamento (Subáreas del área DEPARTAMENTO)
-  const proyectosPorDepartamento = React.useMemo(() => {
-    const mapa: Record<string, { departamentoNombre: string; areaObj?: Area; proyectos: ProyectoEspecial[] }> = {};
-
-    proyectos.forEach(proy => {
-      const areaObj = areas.find(a => a.id === proy.area_id);
-      const areaKey = proy.area_id || 'sin-departamento';
-      const departamentoNombre = areaObj 
-        ? areaObj.nombre 
-        : (proy.area_id ? `Departamento (${proy.area_id})` : 'General / Sin Departamento Asignado');
-
-      if (!mapa[areaKey]) {
-        mapa[areaKey] = {
-          departamentoNombre,
-          areaObj,
-          proyectos: []
-        };
-      }
-      mapa[areaKey].proyectos.push(proy);
-    });
-
-    return Object.entries(mapa).map(([departamentoId, data]) => ({
-      departamentoId,
-      departamentoNombre: data.departamentoNombre,
-      areaObj: data.areaObj,
-      proyectos: data.proyectos
-    }));
-  }, [proyectos, areas]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
