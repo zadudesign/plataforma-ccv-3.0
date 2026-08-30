@@ -21,6 +21,7 @@ import {
   deleteUsuarioDB,
   createAreaDB,
   updateAreaIdentidadDB,
+  updateAreaJefeDB,
   createFacultadDB,
   updateFacultadDB,
   deleteFacultadDB,
@@ -80,8 +81,9 @@ interface AuthContextType {
   eliminarUsuario: (id: string) => void;
   actualizarPermisosRol: (rolId: string, permisos: string[]) => void;
   crearRol: (nombre: string, areaId: string, permisos?: string[]) => void;
-  crearArea: (nombre: string, nivel: NivelArea, parentId?: string | null) => void;
+  crearArea: (nombre: string, nivel: NivelArea, parentId?: string | null, jefeId?: string | null, color?: string, icono?: string) => Promise<void>;
   actualizarIdentidadArea: (areaId: string, color: string, icono: string) => Promise<void>;
+  asignarJefeArea: (areaId: string, jefeId: string | null) => Promise<void>;
   eliminarArea: (areaId: string) => void;
   adminResetPassword: (userId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 
@@ -588,18 +590,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const crearArea = async (nombre: string, nivel: NivelArea, parentId?: string | null) => {
+  const crearArea = async (
+    nombre: string, 
+    nivel: NivelArea, 
+    parentId?: string | null,
+    jefeId?: string | null,
+    color?: string,
+    icono?: string
+  ) => {
     const areaPadre = parentId ? areas.find(a => a.id === parentId) : null;
-    const dbItem = await createAreaDB(nombre.trim().toUpperCase(), Number(nivel), parentId);
+    const jefeObj = jefeId ? usuarios.find(u => u.id === jefeId) : null;
+    const dbItem = await createAreaDB(
+      nombre.trim().toUpperCase(), 
+      Number(nivel), 
+      parentId, 
+      jefeId, 
+      color || 'amber', 
+      icono || 'FolderKanban'
+    );
     const nuevaArea: Area = {
       id: dbItem?.id || `a-${Date.now()}`,
       nombre: nombre.trim().toUpperCase(),
       nivel,
       parent_id: dbItem?.parent_id || parentId || null,
       area_padre_nombre: areaPadre ? areaPadre.nombre : undefined,
+      jefe_id: dbItem?.jefe_id || jefeId || null,
+      jefe_nombre: dbItem?.jefe_nombre || (jefeObj ? jefeObj.nombre_completo : undefined),
+      color: dbItem?.color || color || 'amber',
+      icono: dbItem?.icono || icono || 'FolderKanban',
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setAreas(prev => [...prev, nuevaArea]);
+  };
+
+  const asignarJefeArea = async (areaId: string, jefeId: string | null) => {
+    const jefeObj = jefeId ? usuarios.find(u => u.id === jefeId) : null;
+    setAreas(prev => prev.map(a => a.id === areaId ? {
+      ...a,
+      jefe_id: jefeId,
+      jefe_nombre: jefeObj ? jefeObj.nombre_completo : undefined
+    } : a));
+    await updateAreaJefeDB(areaId, jefeId);
   };
 
   const actualizarIdentidadArea = async (areaId: string, color: string, icono: string) => {
@@ -877,6 +908,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         crearRol,
         crearArea,
         actualizarIdentidadArea,
+        asignarJefeArea,
         eliminarArea,
         adminResetPassword,
         crearFacultad,

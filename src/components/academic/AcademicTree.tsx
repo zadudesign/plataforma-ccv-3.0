@@ -253,9 +253,16 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                           <h4 className="font-extrabold text-charcoal-900 text-sm flex items-center gap-2 truncate">
                             Departamento: {grupo.departamentoNombre}
                           </h4>
-                          <span className="text-[11px] text-charcoal-500">
-                            {grupo.proyectos.length} {grupo.proyectos.length === 1 ? 'Proyecto asignado' : 'Proyectos asignados'}
-                          </span>
+                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                            <span className="text-[11px] text-charcoal-500">
+                              {grupo.proyectos.length} {grupo.proyectos.length === 1 ? 'Proyecto asignado' : 'Proyectos asignados'}
+                            </span>
+                            {grupo.areaObj?.jefe_nombre && (
+                              <span className="text-[10.5px] font-bold text-amber-900 bg-amber-50 px-2 py-0.2 rounded-md border border-amber-200 shadow-2xs flex items-center gap-1">
+                                <User className="w-3 h-3 text-amber-700" /> Jefe: {grupo.areaObj.jefe_nombre}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 

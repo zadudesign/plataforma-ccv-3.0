@@ -6,6 +6,8 @@ export interface Area {
   nivel: NivelArea;
   parent_id?: string | null;
   area_padre_nombre?: string;
+  jefe_id?: string | null;
+  jefe_nombre?: string | null;
   color?: string;
   icono?: string;
   created_at?: string;

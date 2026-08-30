@@ -48,13 +48,38 @@ export async function testSupabaseConnection(): Promise<{ ok: boolean; message: 
 
 export async function fetchAreas(): Promise<Area[]> {
   try {
-    const { data, error } = await supabase.from('areas').select('*').order('nivel', { ascending: false });
-    if (error || !data) return [];
+    const { data, error } = await supabase
+      .from('areas')
+      .select('*, jefe:usuarios!jefe_id(nombre_completo)')
+      .order('nivel', { ascending: false });
+
+    if (error || !data) {
+      // Fallback sin join en caso de que la foreign key aún no esté indexada
+      const { data: rawData, error: rawError } = await supabase
+        .from('areas')
+        .select('*')
+        .order('nivel', { ascending: false });
+
+      if (rawError || !rawData) return [];
+      return rawData.map((item: any) => ({
+        id: item.id,
+        nombre: item.nombre,
+        nivel: item.nivel,
+        parent_id: item.parent_id,
+        jefe_id: item.jefe_id || null,
+        color: item.color || 'amber',
+        icono: item.icono || 'FolderKanban',
+        created_at: item.created_at
+      }));
+    }
+
     return data.map((item: any) => ({
       id: item.id,
       nombre: item.nombre,
       nivel: item.nivel,
       parent_id: item.parent_id,
+      jefe_id: item.jefe_id || null,
+      jefe_nombre: item.jefe?.nombre_completo || undefined,
       color: item.color || 'amber',
       icono: item.icono || 'FolderKanban',
       created_at: item.created_at
@@ -295,22 +320,46 @@ export async function createAreaDB(
   nombre: string, 
   nivel: number, 
   parentId?: string | null,
+  jefeId?: string | null,
   color: string = 'amber',
   icono: string = 'FolderKanban'
 ): Promise<Area | null> {
   try {
     const payload: any = { nombre, nivel, color: color || 'amber', icono: icono || 'FolderKanban' };
     if (parentId && isGuid(parentId)) payload.parent_id = parentId;
-    const { data, error } = await supabase.from('areas').insert(payload).select().single();
-    if (error) {
-      console.error('Supabase Error (createAreaDB):', error);
-      return null;
+    if (jefeId && isGuid(jefeId)) payload.jefe_id = jefeId;
+
+    const { data, error } = await supabase
+      .from('areas')
+      .insert(payload)
+      .select('*, jefe:usuarios!jefe_id(nombre_completo)')
+      .single();
+
+    if (error || !data) {
+      const { data: rawData, error: rawError } = await supabase.from('areas').insert(payload).select().single();
+      if (rawError || !rawData) {
+        console.error('Supabase Error (createAreaDB):', rawError || error);
+        return null;
+      }
+      return {
+        id: rawData.id,
+        nombre: rawData.nombre,
+        nivel: rawData.nivel,
+        parent_id: rawData.parent_id,
+        jefe_id: rawData.jefe_id || null,
+        color: rawData.color || color,
+        icono: rawData.icono || icono,
+        created_at: rawData.created_at
+      };
     }
+
     return {
       id: data.id,
       nombre: data.nombre,
       nivel: data.nivel,
       parent_id: data.parent_id,
+      jefe_id: data.jefe_id || null,
+      jefe_nombre: data.jefe?.nombre_completo || undefined,
       color: data.color || color,
       icono: data.icono || icono,
       created_at: data.created_at
@@ -318,6 +367,25 @@ export async function createAreaDB(
   } catch (err) {
     console.error('Excepción (createAreaDB):', err);
     return null;
+  }
+}
+
+export async function updateAreaJefeDB(
+  areaId: string,
+  jefeId: string | null
+): Promise<boolean> {
+  try {
+    if (!isGuid(areaId)) return true;
+    const payload: any = { jefe_id: jefeId && isGuid(jefeId) ? jefeId : null };
+    const { error } = await supabase.from('areas').update(payload).eq('id', areaId);
+    if (error) {
+      console.error('Error al actualizar jefe de área en Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción al actualizar jefe de área:', err);
+    return false;
   }
 }
 

@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Layers, CheckCircle2, AlertCircle, GitMerge } from 'lucide-react';
-import { Area } from '@/types';
+import { X, Layers, CheckCircle2, AlertCircle, GitMerge, UserCheck } from 'lucide-react';
+import { Area, Usuario } from '@/types';
 
 interface CreateAreaModalProps {
   areas: Area[];
+  usuarios?: Usuario[];
   defaultParentId?: string;
   onClose: () => void;
-  onCrearArea: (nombre: string, nivel: number, parentId?: string | null) => void;
+  onCrearArea: (nombre: string, nivel: number, parentId?: string | null, jefeId?: string | null) => void;
 }
 
 export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
   areas,
+  usuarios = [],
   defaultParentId = '',
   onClose,
   onCrearArea,
@@ -23,9 +25,10 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
       const parentObj = areas.find(a => a.id === defaultParentId);
       if (parentObj) return parentObj.nivel;
     }
-    return 5;
+    return 4; // Por defecto Departamento
   });
   const [parentId, setParentId] = useState<string>(defaultParentId);
+  const [jefeId, setJefeId] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleParentChange = (selectedParentId: string) => {
@@ -49,7 +52,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
       return;
     }
 
-    onCrearArea(nombre, nivel, parentId || null);
+    onCrearArea(nombre, nivel, parentId || null, jefeId || null);
     onClose();
   };
 
@@ -121,6 +124,28 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
           </div>
 
           <div>
+            <label className="block text-xs font-bold text-charcoal-700 mb-1 flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5 text-sage-600" />
+              Jefe de Departamento / Responsable de Área
+            </label>
+            <select
+              value={jefeId}
+              onChange={e => setJefeId(e.target.value)}
+              className="w-full px-4 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+            >
+              <option value="">-- Sin Jefe asignado por ahora --</option>
+              {usuarios.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.nombre_completo} {u.rol_nombre ? `(${u.rol_nombre})` : ''} - {u.email}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-charcoal-400 mt-1">
+              El usuario asignado como Jefe tendrá supervisión y visibilidad sobre los proyectos y tareas adscritos a este departamento.
+            </p>
+          </div>
+
+          <div>
             <label className="block text-xs font-bold text-charcoal-700 mb-1">
               Nivel Jerárquico (Visibilidad RLS) <span className="text-rose-500">*</span>
             </label>
@@ -133,7 +158,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
               className="w-full px-4 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
             />
             <p className="text-[11px] text-charcoal-400 mt-1.5 leading-relaxed">
-              * Nota: Los niveles superiores (ej. Nivel 6 ADMIN, Nivel 5 CMU) supervisan la información de las áreas y subáreas derivadas.
+              * Nota: Nivel 4 = DEPARTAMENTO, Nivel 5 = CMU/PRODUCCIÓN, Nivel 6 = ADMIN.
             </p>
           </div>
 

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.areas (
     nombre TEXT NOT NULL UNIQUE,
     nivel INT NOT NULL CHECK (nivel BETWEEN 1 AND 6),
     parent_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
+    jefe_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL, -- Jefe/Líder asignado del departamento o área
     color TEXT DEFAULT 'amber', -- Color distintivo (amber, purple, blue, emerald, cyan, rose, etc.)
     icono TEXT DEFAULT 'FolderKanban', -- Icono de Lucide React (FolderKanban, Sparkles, Video, Code2, Layers, etc.)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -23,8 +24,10 @@ CREATE TABLE IF NOT EXISTS public.areas (
 
 COMMENT ON COLUMN public.areas.nivel IS 'Jerarquía descendente: 6=ADMIN, 5=CMU, 4=DEPARTAMENTO, 3=FACULTAD, 2=PROGRAMA, 1=CURSO';
 COMMENT ON COLUMN public.areas.parent_id IS 'Área padre para jerarquía de subáreas';
+COMMENT ON COLUMN public.areas.jefe_id IS 'Usuario asignado como Jefe/Líder responsable del Departamento o Área';
 
 CREATE INDEX IF NOT EXISTS idx_areas_parent_id ON public.areas(parent_id);
+CREATE INDEX IF NOT EXISTS idx_areas_jefe_id ON public.areas(jefe_id);
 
 -- Tabla de Roles por Área
 CREATE TABLE IF NOT EXISTS public.roles (
