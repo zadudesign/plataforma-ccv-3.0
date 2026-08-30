@@ -290,13 +290,13 @@ export default function Home() {
   // REGLAS DE SEGURIDAD Y VISIBILIDAD DE TAREAS POR ROL & JERARQUÍA
   // ---------------------------------------------------------------------------
 
-  const rolNombre = usuarioActual.rol_nombre || roles.find(r => r.id === usuarioActual.rol_id)?.nombre || '';
+  const rolNombre = usuarioActual?.rol_nombre || roles.find(r => r.id === usuarioActual?.rol_id)?.nombre || '';
   const isSupervisorGlobal = nivelArea === 6 || rolNombre === 'Administrador';
 
   // Detección de Áreas/Departamentos donde el usuario actual es Jefe asignado
-  const usuarioRolObj = roles.find(r => r.id === usuarioActual.rol_id);
+  const usuarioRolObj = roles.find(r => r.id === usuarioActual?.rol_id);
   const areasDondeEsJefe = areas.filter(a => 
-    a.jefe_id === usuarioActual.id || 
+    (usuarioActual && a.jefe_id === usuarioActual.id) || 
     (rolNombre === 'Jefe' && (a.id === usuarioRolObj?.area_id || a.nombre === usuarioRolObj?.area_nombre))
   );
 
@@ -315,6 +315,11 @@ export default function Home() {
     });
     return ids;
   }, [areasDondeEsJefe, areas]);
+
+  // Si no hay sesión iniciada, mostrar la Landing Institucional CCV con acceso al Login
+  if (!usuarioActual) {
+    return <LandingHome />;
+  }
 
   const esJefeDeArea = areaIdsSupervisadasPorJefe.size > 0;
 

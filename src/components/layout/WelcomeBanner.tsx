@@ -5,7 +5,7 @@ import { Sparkles } from 'lucide-react';
 import { Usuario } from '@/types';
 
 interface WelcomeBannerProps {
-  usuarioActual: Usuario;
+  usuarioActual?: Usuario | null;
 }
 
 export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ usuarioActual }) => {
@@ -18,7 +18,7 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ usuarioActual }) =
           <span>Centro de Educación Virtual CCV 3.0</span>
         </div>
         <h2 className="text-2xl md:text-3xl font-black text-white">
-          ¡Hola, {usuarioActual.nombre_completo}!
+          ¡Hola, {usuarioActual?.nombre_completo || 'Usuario CCV'}!
         </h2>
         <p className="text-xs text-sage-100/80 max-w-2xl leading-relaxed">
           Resumen en tiempo real del desarrollo académico, producción de contenidos virtuales y tareas colaborativas del equipo.

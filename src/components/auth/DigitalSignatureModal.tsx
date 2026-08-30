@@ -166,6 +166,11 @@ export const DigitalSignatureModal: React.FC<DigitalSignatureModalProps> = ({
       finalDataUrl = uploadedFirmaUrl;
     }
 
+    if (!usuarioActual) {
+      setErrorMsg('No hay sesión de usuario activa.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await actualizarUsuario(usuarioActual.id, {
@@ -178,6 +183,8 @@ export const DigitalSignatureModal: React.FC<DigitalSignatureModalProps> = ({
       setIsSaving(false);
     }
   };
+
+  if (!usuarioActual) return null;
 
   return (
     <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
