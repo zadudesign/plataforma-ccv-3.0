@@ -19,6 +19,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 interface TaskDetailModalProps {
   tarea: TareaCCV | null;
@@ -41,13 +42,35 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onAddHours,
   onOpenCursoOProyecto,
 }) => {
+  const { roles, usuarios } = useAuth();
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [horasInput, setHorasInput] = useState<number | string>('1');
   const [notasHoras, setNotasHoras] = useState('');
   const [imputarParaSecundario, setImputarParaSecundario] = useState(false);
   const [mostrarExitoHoras, setMostrarExitoHoras] = useState(false);
 
+  // Helper para resolver el nombre legible del rol o limpiar IDs técnicos
+  const getNombreRol = (rolDestinoOrId?: string, userId?: string) => {
+    if (userId) {
+      const u = usuarios.find(x => x.id === userId);
+      if (u?.rol_nombre) return u.rol_nombre;
+    }
+    if (!rolDestinoOrId) return null;
+    const rFound = roles.find(r => r.id === rolDestinoOrId || r.nombre.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (rFound) return rFound.nombre;
+    const uFound = usuarios.find(u => u.rol_id === rolDestinoOrId || u.rol_nombre?.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (uFound?.rol_nombre) return uFound.rol_nombre;
+    // Si parece un UUID o ID técnico de base de datos, no mostrarlo
+    if (/^[0-9a-fA-F-]{20,}$/.test(rolDestinoOrId) || /^[rua]-[0-9]+$/.test(rolDestinoOrId)) {
+      return null;
+    }
+    return rolDestinoOrId;
+  };
+
   if (!tarea) return null;
+
+  const rolPrincipal = getNombreRol(tarea.rol_destino, tarea.responsable_id);
+  const rolSecundario = getNombreRol(tarea.rol_destino_secundario, tarea.responsable_secundario_id);
 
   const comentariosTarea = comentarios.filter(c => c.tarea_id === tarea.id);
 
@@ -209,7 +232,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     {tarea.responsable_nombre || 'Sin Asignar'}
                   </p>
                   <p className="text-[10px] text-charcoal-500 font-medium">
-                    Principal {tarea.rol_destino ? `• ${tarea.rol_destino}` : ''}
+                    Principal{rolPrincipal ? ` • ${rolPrincipal}` : ''}
                   </p>
                 </div>
               </div>
@@ -227,7 +250,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       {tarea.responsable_secundario_nombre}
                     </p>
                     <p className="text-[10px] text-blue-700 font-medium">
-                      Co-responsable {tarea.rol_destino_secundario ? `• ${tarea.rol_destino_secundario}` : ''}
+                      Co-responsable{rolSecundario ? ` • ${rolSecundario}` : ''}
                     </p>
                   </div>
                 </div>
@@ -243,11 +266,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 {tarea.responsable_secundario_nombre ? (
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-charcoal-600 font-medium">Principal ({tarea.rol_destino || 'General'}):</span>
+                      <span className="text-charcoal-600 font-medium">Principal ({rolPrincipal || 'General'}):</span>
                       <strong className="text-charcoal-900">{tarea.tiempo_invertido || 0} hrs</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-blue-700 font-medium">Co-resp ({tarea.rol_destino_secundario || 'General'}):</span>
+                      <span className="text-blue-700 font-medium">Co-resp ({rolSecundario || 'General'}):</span>
                       <strong className="text-blue-900">{tarea.tiempo_invertido_secundario || 0} hrs</strong>
                     </div>
                     <div className="flex justify-between pt-1 border-t border-stone-100 text-[11px] font-bold text-charcoal-500">

@@ -1211,7 +1211,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                             <div className="flex items-center gap-2">
                               <h4 className="font-extrabold text-charcoal-900 text-xs sm:text-sm">{tarea.titulo}</h4>
                               <span className="bg-sage-100 text-sage-800 text-[10px] font-extrabold px-2 py-0.5 rounded-md border border-sage-200">
-                                {tarea.rol_destino || 'General'}
+                                {getNombreRol(tarea.rol_destino)}
                               </span>
                             </div>
                             <p className="text-[11px] text-charcoal-500">

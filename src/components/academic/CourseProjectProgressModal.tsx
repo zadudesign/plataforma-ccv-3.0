@@ -50,11 +50,28 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onUpdateStatus,
   onAddComentario,
 }) => {
-  const { areas, facultades, programas } = useAuth();
+  const { areas, facultades, programas, roles, usuarios } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
+
+  // Helper para resolver el nombre legible del rol o limpiar IDs técnicos
+  const getNombreRol = (rolDestinoOrId?: string, userId?: string) => {
+    if (userId) {
+      const u = usuarios.find(x => x.id === userId);
+      if (u?.rol_nombre) return u.rol_nombre;
+    }
+    if (!rolDestinoOrId) return null;
+    const rFound = roles.find(r => r.id === rolDestinoOrId || r.nombre.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (rFound) return rFound.nombre;
+    const uFound = usuarios.find(u => u.rol_id === rolDestinoOrId || u.rol_nombre?.toLowerCase() === rolDestinoOrId.toLowerCase());
+    if (uFound?.rol_nombre) return uFound.rol_nombre;
+    if (/^[0-9a-fA-F-]{20,}$/.test(rolDestinoOrId) || /^[rua]-[0-9]+$/.test(rolDestinoOrId)) {
+      return null;
+    }
+    return rolDestinoOrId;
+  };
 
   const esCurso = tipo === 'curso';
   const curso = esCurso ? (entidad as CursoVirtual) : null;
@@ -112,6 +129,9 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
     if (pct >= 25) return '#2563EB'; // Azul
     return '#E11D48'; // Rosa/Rojo
   };
+
+  const rolPrincipalLocal = tareaSeleccionadaLocal ? getNombreRol(tareaSeleccionadaLocal.rol_destino, tareaSeleccionadaLocal.responsable_id) : null;
+  const rolSecundarioLocal = tareaSeleccionadaLocal ? getNombreRol(tareaSeleccionadaLocal.rol_destino_secundario, tareaSeleccionadaLocal.responsable_secundario_id) : null;
 
   const handleVerDetalleTarea = (t: TareaCCV) => {
     setTareaSeleccionadaLocal(t);
@@ -636,7 +656,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                           {tareaSeleccionadaLocal.responsable_nombre || 'Sin Asignar'}
                         </p>
                         <p className="text-[10px] text-charcoal-500">
-                          Principal {tareaSeleccionadaLocal.rol_destino ? `• ${tareaSeleccionadaLocal.rol_destino}` : ''}
+                          Principal{rolPrincipalLocal ? ` • ${rolPrincipalLocal}` : ''}
                         </p>
                       </div>
                     </div>
@@ -653,7 +673,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                             {tareaSeleccionadaLocal.responsable_secundario_nombre}
                           </p>
                           <p className="text-[10px] text-blue-700">
-                            Co-responsable {tareaSeleccionadaLocal.rol_destino_secundario ? `• ${tareaSeleccionadaLocal.rol_destino_secundario}` : ''}
+                            Co-responsable{rolSecundarioLocal ? ` • ${rolSecundarioLocal}` : ''}
                           </p>
                         </div>
                       </div>
