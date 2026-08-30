@@ -600,6 +600,7 @@ export default function Home() {
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onUpdateStatus={handleUpdateStatus}
             onAddComentario={handleAddComment}
+            onAddHours={handleUpdateTaskHours}
           />
         )}
         {/* Digital Signature Modal */}
