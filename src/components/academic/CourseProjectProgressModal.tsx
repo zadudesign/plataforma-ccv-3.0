@@ -27,6 +27,7 @@ import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario 
 import { useAuth } from '@/context/AuthContext';
 import { getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
+import { calcularProgresoTareas, PESOS_ESTADO_TAREA } from '@/lib/progressUtils';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -77,10 +78,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
   const totalTareas = tareasEntidad.length;
   const completadas = tareasEntidad.filter(t => t.estado === 'Completada').length;
-  const enProceso = tareasEntidad.filter(t => t.estado === 'En Proceso' || t.estado === 'En Revisión').length;
+  const enRevision = tareasEntidad.filter(t => t.estado === 'En Revisión').length;
+  const enProceso = tareasEntidad.filter(t => t.estado === 'En Proceso').length;
   const pendientes = tareasEntidad.filter(t => t.estado === 'Pendiente').length;
 
-  const porcentaje = totalTareas > 0 ? Math.round((completadas / totalTareas) * 100) : 0;
+  const porcentaje = calcularProgresoTareas(tareasEntidad);
 
   const horasInvertidas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
 
@@ -370,7 +372,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                         </div>
                         <span className="text-2xl font-black text-emerald-900 mt-2">{completadas}</span>
-                        <span className="text-[10px] text-emerald-700 font-medium">100% Finalizadas</span>
+                        <span className="text-[10px] text-emerald-700 font-medium">100% Finalizadas (+25%)</span>
                       </div>
 
                       <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 shadow-xs flex flex-col justify-between">
@@ -378,8 +380,8 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                           <span className="text-[11px] font-bold uppercase tracking-wider">En Proceso / Revisión</span>
                           <Clock className="w-4 h-4 text-amber-600" />
                         </div>
-                        <span className="text-2xl font-black text-amber-900 mt-2">{enProceso}</span>
-                        <span className="text-[10px] text-amber-700 font-medium">En desarrollo activo</span>
+                        <span className="text-2xl font-black text-amber-900 mt-2">{enProceso + enRevision}</span>
+                        <span className="text-[10px] text-amber-700 font-medium">{enProceso} en proceso / {enRevision} en revisión</span>
                       </div>
 
                       <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200/80 shadow-xs flex flex-col justify-between">
@@ -394,6 +396,39 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                       </div>
                     </>
                   )}
+                </div>
+              </div>
+
+              {/* Banner Ponderación Oficial de Avance por Tareas (10%, 40%, 25%, 25%) */}
+              <div className="p-4 rounded-2xl bg-cream-50/90 border border-stone-200 shadow-2xs space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-bold text-charcoal-800">
+                  <span className="flex items-center gap-1.5 text-sage-800">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Ponderación de Avance por Estado de Tarea (Modelo Oficial CCV)
+                  </span>
+                  <span className="text-[11px] text-charcoal-500 font-medium">Total: 100%</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                    <p className="text-[10px] font-extrabold text-rose-700 uppercase">1. Pendiente</p>
+                    <p className="text-sm font-black text-rose-900 mt-0.5">10%</p>
+                    <p className="text-[10px] font-medium text-rose-600 mt-0.5">{pendientes} {pendientes === 1 ? 'tarea' : 'tareas'}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200">
+                    <p className="text-[10px] font-extrabold text-blue-700 uppercase">2. En Proceso</p>
+                    <p className="text-sm font-black text-blue-900 mt-0.5">+40% (50%)</p>
+                    <p className="text-[10px] font-medium text-blue-600 mt-0.5">{enProceso} {enProceso === 1 ? 'tarea' : 'tareas'}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
+                    <p className="text-[10px] font-extrabold text-amber-700 uppercase">3. En Revisión</p>
+                    <p className="text-sm font-black text-amber-900 mt-0.5">+25% (75%)</p>
+                    <p className="text-[10px] font-medium text-amber-600 mt-0.5">{enRevision} {enRevision === 1 ? 'tarea' : 'tareas'}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
+                    <p className="text-[10px] font-extrabold text-emerald-700 uppercase">4. Completada</p>
+                    <p className="text-sm font-black text-emerald-900 mt-0.5">+25% (100%)</p>
+                    <p className="text-[10px] font-medium text-emerald-600 mt-0.5">{completadas} {completadas === 1 ? 'tarea' : 'tareas'}</p>
+                  </div>
                 </div>
               </div>
 

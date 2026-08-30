@@ -23,6 +23,13 @@ import {
   Shield
 } from 'lucide-react';
 import { TareaCCV, Usuario, CursoVirtual, ProyectoEspecial, Programa, TareaComentario, EstadoTarea } from '@/types';
+import { 
+  calcularProgresoGlobalCursos, 
+  calcularProgresoGlobalProyectos,
+  calcularProgresoCurso,
+  calcularProgresoProyecto,
+  PESOS_ESTADO_TAREA
+} from '@/lib/progressUtils';
 
 const SEGMENT_COLORS = [
   '#DC2626', // Red (0-11%)
@@ -126,36 +133,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const numDocentes = usuarios.filter(u => u.rol_nombre === 'Docente').length;
   const numParesEvaluadores = usuarios.filter(u => u.rol_nombre === 'Par Evaluador').length;
 
-  // 2. CÁLCULO DE PROGRESO GLOBAL DE CURSOS
-  const cursosDesglose = {
-    diseno: cursos.filter(c => c.estado === 'En Diseño').length,
-    produccion: cursos.filter(c => c.estado === 'En Producción').length,
-    revision: cursos.filter(c => c.estado === 'En Revisión').length,
-    aprobado: cursos.filter(c => c.estado === 'Aprobado CCV').length,
-    publicado: cursos.filter(c => c.estado === 'Publicado LMS').length,
+  // 2. CÁLCULO DE PROGRESO GLOBAL DE CURSOS Y TAREAS ASIGNADAS
+  const tareasCursos = tareas.filter(t => t.curso_id);
+  const tareasCursosDesglose = {
+    pendientes: tareasCursos.filter(t => t.estado === 'Pendiente').length,
+    enProceso: tareasCursos.filter(t => t.estado === 'En Proceso').length,
+    enRevision: tareasCursos.filter(t => t.estado === 'En Revisión').length,
+    completadas: tareasCursos.filter(t => t.estado === 'Completada').length,
   };
-  const totalPonderadoCursos = 
-    cursosDesglose.diseno * 15 +
-    cursosDesglose.produccion * 45 +
-    cursosDesglose.revision * 75 +
-    (cursosDesglose.aprobado + cursosDesglose.publicado) * 100;
-  const progresoCursosPorcentaje = numCursos > 0 
-    ? Math.round(totalPonderadoCursos / numCursos) 
-    : 0;
+  const progresoCursosPorcentaje = calcularProgresoGlobalCursos(cursos, tareas);
 
-  // 3. CÁLCULO DE PROGRESO GLOBAL DE PROYECTOS
-  const proyectosDesglose = {
-    planificacion: proyectos.filter(p => p.estado === 'Planificación').length,
-    proceso: proyectos.filter(p => p.estado === 'En Proceso').length,
-    completado: proyectos.filter(p => p.estado === 'Completado').length,
+  // 3. CÁLCULO DE PROGRESO GLOBAL DE PROYECTOS Y TAREAS ASIGNADAS
+  const tareasProyectos = tareas.filter(t => t.proyecto_id);
+  const tareasProyectosDesglose = {
+    pendientes: tareasProyectos.filter(t => t.estado === 'Pendiente').length,
+    enProceso: tareasProyectos.filter(t => t.estado === 'En Proceso').length,
+    enRevision: tareasProyectos.filter(t => t.estado === 'En Revisión').length,
+    completadas: tareasProyectos.filter(t => t.estado === 'Completada').length,
   };
-  const totalPonderadoProyectos = 
-    proyectosDesglose.planificacion * 20 +
-    proyectosDesglose.proceso * 60 +
-    proyectosDesglose.completado * 100;
-  const progresoProyectosPorcentaje = numProyectos > 0
-    ? Math.round(totalPonderadoProyectos / numProyectos)
-    : 0;
+  const progresoProyectosPorcentaje = calcularProgresoGlobalProyectos(proyectos, tareas);
 
   // 4. ACTIVIDAD RECIENTE (Excluyendo tareas completadas)
   const tareasActivas = tareas.filter(t => t.estado !== 'Completada');
@@ -260,7 +256,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </div>
               <div>
                 <h4 className="text-base font-extrabold text-charcoal-900">Progreso Global de Cursos</h4>
-                <p className="text-xs text-charcoal-500">Estado promedio de desarrollo pedagógico y LMS</p>
+                <p className="text-xs text-charcoal-500">Calculado según el avance y estado de las tareas</p>
               </div>
             </div>
             <span className="text-xs font-extrabold text-sage-800 bg-sage-100 px-3 py-1 rounded-full border border-sage-200">
@@ -273,23 +269,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <SemicircleProgressGauge porcentaje={progresoCursosPorcentaje} color="#22C55E" />
           </div>
 
-          {/* Desglose de estados en Cursos */}
+          {/* Desglose de estados de Tareas en Cursos (4 Fases: 10%, 40%, 25%, 25%) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-cream-200/60 text-center">
-            <div className="p-2 bg-cream-50/70 rounded-xl border border-cream-200/40">
-              <p className="text-[10px] font-extrabold text-charcoal-500 uppercase">En Diseño</p>
-              <p className="text-sm font-black text-amber-700">{cursosDesglose.diseno}</p>
+            <div className="p-2 bg-rose-50/70 rounded-xl border border-rose-200/40">
+              <p className="text-[10px] font-extrabold text-rose-700 uppercase">Pendientes (10%)</p>
+              <p className="text-sm font-black text-rose-800">{tareasCursosDesglose.pendientes}</p>
             </div>
-            <div className="p-2 bg-cream-50/70 rounded-xl border border-cream-200/40">
-              <p className="text-[10px] font-extrabold text-charcoal-500 uppercase">Producción</p>
-              <p className="text-sm font-black text-blue-700">{cursosDesglose.produccion}</p>
+            <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-200/40">
+              <p className="text-[10px] font-extrabold text-blue-700 uppercase">En Proceso (+40%)</p>
+              <p className="text-sm font-black text-blue-800">{tareasCursosDesglose.enProceso}</p>
             </div>
-            <div className="p-2 bg-cream-50/70 rounded-xl border border-cream-200/40">
-              <p className="text-[10px] font-extrabold text-charcoal-500 uppercase">En Revisión</p>
-              <p className="text-sm font-black text-purple-700">{cursosDesglose.revision}</p>
+            <div className="p-2 bg-amber-50/70 rounded-xl border border-amber-200/40">
+              <p className="text-[10px] font-extrabold text-amber-700 uppercase">En Revisión (+25%)</p>
+              <p className="text-sm font-black text-amber-800">{tareasCursosDesglose.enRevision}</p>
             </div>
-            <div className="p-2 bg-cream-50/70 rounded-xl border border-cream-200/40">
-              <p className="text-[10px] font-extrabold text-charcoal-500 uppercase">Publicados</p>
-              <p className="text-sm font-black text-sage-700">{cursosDesglose.publicado + cursosDesglose.aprobado}</p>
+            <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-200/40">
+              <p className="text-[10px] font-extrabold text-emerald-700 uppercase">Completadas (+25%)</p>
+              <p className="text-sm font-black text-emerald-800">{tareasCursosDesglose.completadas}</p>
             </div>
           </div>
         </div>
@@ -303,7 +299,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               </div>
               <div>
                 <h4 className="text-base font-extrabold text-charcoal-900">Progreso Global de Proyectos</h4>
-                <p className="text-xs text-charcoal-500">Cumplimiento de proyectos CCV</p>
+                <p className="text-xs text-charcoal-500">Calculado según el avance y estado de las tareas</p>
               </div>
             </div>
             <span className="text-xs font-extrabold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
@@ -316,19 +312,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <SemicircleProgressGauge porcentaje={progresoProyectosPorcentaje} color="#22C55E" />
           </div>
 
-          {/* Desglose de estados en Proyectos */}
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-cream-200/60 text-center">
-            <div className="p-2 bg-cream-50/70 rounded-xl border border-cream-200/40">
-              <p className="text-[10px] font-extrabold text-charcoal-500 uppercase">Planificación</p>
-              <p className="text-sm font-black text-amber-700">{proyectosDesglose.planificacion}</p>
+          {/* Desglose de estados de Tareas en Proyectos (4 Fases: 10%, 40%, 25%, 25%) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-cream-200/60 text-center">
+            <div className="p-2 bg-rose-50/70 rounded-xl border border-rose-200/40">
+              <p className="text-[10px] font-extrabold text-rose-700 uppercase">Pendientes (10%)</p>
+              <p className="text-sm font-black text-rose-800">{tareasProyectosDesglose.pendientes}</p>
             </div>
-            <div className="p-2 bg-cream-50/70 rounded-xl border border-cream-200/40">
-              <p className="text-[10px] font-extrabold text-charcoal-500 uppercase">En Proceso</p>
-              <p className="text-sm font-black text-blue-700">{proyectosDesglose.proceso}</p>
+            <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-200/40">
+              <p className="text-[10px] font-extrabold text-blue-700 uppercase">En Proceso (+40%)</p>
+              <p className="text-sm font-black text-blue-800">{tareasProyectosDesglose.enProceso}</p>
             </div>
-            <div className="p-2 bg-cream-50/70 rounded-xl border border-cream-200/40">
-              <p className="text-[10px] font-extrabold text-charcoal-500 uppercase">Completados</p>
-              <p className="text-sm font-black text-sage-700">{proyectosDesglose.completado}</p>
+            <div className="p-2 bg-amber-50/70 rounded-xl border border-amber-200/40">
+              <p className="text-[10px] font-extrabold text-amber-700 uppercase">En Revisión (+25%)</p>
+              <p className="text-sm font-black text-amber-800">{tareasProyectosDesglose.enRevision}</p>
+            </div>
+            <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-200/40">
+              <p className="text-[10px] font-extrabold text-emerald-700 uppercase">Completadas (+25%)</p>
+              <p className="text-sm font-black text-emerald-800">{tareasProyectosDesglose.completadas}</p>
             </div>
           </div>
         </div>

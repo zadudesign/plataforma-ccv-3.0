@@ -24,6 +24,7 @@ import { getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
 import { FacultyIdentityModal } from '@/components/academic/FacultyIdentityModal';
 import { useAuth } from '@/context/AuthContext';
+import { calcularProgresoCurso, calcularProgresoProyecto } from '@/lib/progressUtils';
 
 interface AcademicTreeProps {
   facultades: Facultad[];
@@ -302,7 +303,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                           {grupo.proyectos.map((proy) => {
                             const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
                             const completadasProy = tareasProy.filter(t => t.estado === 'Completada').length;
-                            const pctProy = tareasProy.length > 0 ? Math.round((completadasProy / tareasProy.length) * 100) : 0;
+                            const pctProy = calcularProgresoProyecto(proy, tareas);
                             
                             // Cálculos Financieros y de Tiempo para el Proyecto
                             const horasInvertidasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
@@ -526,7 +527,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                 cursosProg.map((curso) => {
                                   const tareasCurso = tareas.filter(t => t.curso_id === curso.id);
                                   const completadasCurso = tareasCurso.filter(t => t.estado === 'Completada').length;
-                                  const pctCurso = tareasCurso.length > 0 ? Math.round((completadasCurso / tareasCurso.length) * 100) : 0;
+                                  const pctCurso = calcularProgresoCurso(curso, tareas);
 
                                   return (
                                     <div
