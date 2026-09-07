@@ -10,14 +10,15 @@ import {
   FileSignature, 
   Clock, 
   Layers, 
-  CheckCircle2 
+  FilePlus 
 } from 'lucide-react';
 
 interface HomeHeroProps {
   onOpenLogin: () => void;
+  onOpenTaskRequest?: () => void;
 }
 
-export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin }) => {
+export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin, onOpenTaskRequest }) => {
   return (
     <section className="relative overflow-hidden pt-8 pb-16 md:pt-16 md:pb-24">
       {/* Background aesthetic decorative gradients */}
@@ -47,18 +48,31 @@ export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin }) => {
           </p>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <button
               onClick={onOpenLogin}
+              id="btn-hero-acceder"
               className="w-full sm:w-auto px-8 py-4 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-extrabold text-sm shadow-md hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group scale-100 hover:scale-105 active:scale-95"
             >
               <LogIn className="w-4 h-4 text-accent-400 group-hover:translate-x-0.5 transition-transform" />
               <span>Acceder al Sistema</span>
               <ArrowRight className="w-4 h-4 text-white/80 group-hover:translate-x-1 transition-transform" />
             </button>
+
+            {onOpenTaskRequest && (
+              <button
+                onClick={onOpenTaskRequest}
+                id="btn-hero-solicitar"
+                className="w-full sm:w-auto px-7 py-4 rounded-full bg-accent-50 hover:bg-accent-100/90 text-accent-700 font-extrabold text-sm border border-accent-300 shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 scale-100 hover:scale-105 active:scale-95"
+              >
+                <FilePlus className="w-4 h-4 text-accent-600" />
+                <span>Solicitar Tarea CCV</span>
+              </button>
+            )}
+
             <a
               href="#modulos"
-              className="w-full sm:w-auto px-7 py-4 rounded-full bg-white hover:bg-cream-50 text-charcoal-800 font-bold text-sm border border-stone-300/80 shadow-xs hover:shadow transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-4 rounded-full bg-white hover:bg-cream-50 text-charcoal-800 font-bold text-sm border border-stone-300/80 shadow-xs hover:shadow transition-all flex items-center justify-center gap-2"
             >
               <span>Conocer Módulos</span>
               <Layers className="w-4 h-4 text-charcoal-500" />

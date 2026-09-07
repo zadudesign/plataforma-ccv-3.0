@@ -159,4 +159,30 @@ export interface RegistroHoras {
   created_at?: string;
 }
 
+export type EstadoSolicitudTarea = 'Pendiente' | 'Aprobada' | 'Rechazada' | 'En Evaluación';
+export type PrioridadSolicitud = 'Baja' | 'Normal' | 'Alta' | 'Urgente';
+
+export interface SolicitudTareaCCV {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  tipo_origen: 'Facultad' | 'Departamento/Área';
+  origen_id?: string | null;
+  origen_nombre: string;
+  fecha_estimada_entrega: string; // YYYY-MM-DD
+  hora_estimada?: string | null; // HH:mm
+  solicitante_nombre: string;
+  solicitante_contacto: string; // Teléfono / WhatsApp
+  enlace_recurso?: string | null;
+  prioridad: PrioridadSolicitud;
+  estado: EstadoSolicitudTarea;
+  motivo_rechazo?: string | null;
+  tarea_creada_id?: string | null;
+  revisado_por?: string | null;
+  revisado_por_nombre?: string | null;
+  fecha_revision?: string | null;
+  created_at?: string;
+}
+
 export type VistaNavegacion = 'dashboard' | 'calendar' | 'kanban' | 'productivity' | 'academic' | 'admin';
+

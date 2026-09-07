@@ -32,7 +32,8 @@ import {
   ArrowDown,
   FolderKanban,
   Tag,
-  ChevronRight
+  ChevronRight,
+  Inbox
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -43,6 +44,7 @@ import { CreateEntityModal, TipoEntidad } from './CreateEntityModal';
 import { CreateRoleModal } from './CreateRoleModal';
 import { CreateAreaModal } from './CreateAreaModal';
 import { ConfirmDeleteAreaModal } from './ConfirmDeleteAreaModal';
+import { SolicitudesInboxTab } from './SolicitudesInboxTab';
 
 interface AreaHierarchyNodeProps {
   area: Area;
@@ -433,10 +435,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     asignarLiderProyecto,
     asignarCoLiderProyecto,
     tarifasProyecto,
-    actualizarTarifaProyecto
+    actualizarTarifaProyecto,
+    solicitudesTareas
   } = useAuth();
 
-  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas'>('usuarios');
+  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes'>('usuarios');
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroArea, setFiltroArea] = useState<string>('todos');
@@ -651,6 +654,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }`}
           >
             Tarifas por Categoría
+          </button>
+          <button
+            onClick={() => setPestana('solicitudes')}
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-1.5 ${
+              pestana === 'solicitudes' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
+            }`}
+          >
+            <Inbox className="w-3.5 h-3.5 text-accent-400" />
+            <span>Bandeja de Solicitudes</span>
+            {solicitudesTareas.filter(s => s.estado === 'Pendiente').length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black animate-pulse">
+                {solicitudesTareas.filter(s => s.estado === 'Pendiente').length}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -1881,6 +1898,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Solicitudes Tab */}
+      {pestana === 'solicitudes' && (
+        <SolicitudesInboxTab
+          solicitudes={solicitudesTareas}
+          usuarios={usuarios}
+          cursos={cursos}
+          proyectos={proyectos}
+          areas={areas}
+        />
       )}
 
       {/* Modals */}

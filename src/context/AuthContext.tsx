@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto } from '@/types';
+import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto, SolicitudTareaCCV, EstadoSolicitudTarea, TareaCCV } from '@/types';
 import { 
   INITIAL_PERMISOS, 
   ROLES_PERMISOS_MAP,
@@ -41,7 +41,11 @@ import {
   createRoleDB,
   fetchRolesPermisosMapDB,
   updateRolPermisosDB,
-  fetchPermisosDefDB
+  fetchPermisosDefDB,
+  fetchSolicitudesTareasDB,
+  crearSolicitudTareaDB,
+  actualizarEstadoSolicitudDB,
+  convertirSolicitudEnTareaDB
 } from '@/lib/supabaseService';
 
 interface AuthContextType {
@@ -112,6 +116,14 @@ interface AuthContextType {
   asignarEvaluadorCurso: (cursoId: string, evaluadorId: string) => void;
   asignarLiderProyecto: (proyectoId: string, liderId: string) => void;
   asignarCoLiderProyecto: (proyectoId: string, liderSecundarioId: string) => void;
+
+  // Solicitudes de Tareas Externas / Públicas
+  solicitudesTareas: SolicitudTareaCCV[];
+  solicitudesLoading: boolean;
+  cargarSolicitudesTareas: () => Promise<void>;
+  enviarSolicitudTarea: (solicitud: Omit<SolicitudTareaCCV, 'id' | 'created_at'>) => Promise<{ success: boolean; data?: SolicitudTareaCCV; error?: string }>;
+  actualizarEstadoSolicitud: (id: string, estado: EstadoSolicitudTarea, motivoRechazo?: string) => Promise<boolean>;
+  aprobarYConvertirSolicitud: (solicitudId: string, tareaData: Omit<TareaCCV, 'id'>) => Promise<{ success: boolean; data?: TareaCCV; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,6 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [proyectos, setProyectos] = useState<ProyectoEspecial[]>([]);
   const [tarifasProyecto, setTarifasProyecto] = useState<ConfiguracionTarifa[]>(INITIAL_TARIFAS_PROYECTO);
   
+  // Solicitudes de Tareas Públicas (Bandeja Admin)
+  const [solicitudesTareas, setSolicitudesTareas] = useState<SolicitudTareaCCV[]>([]);
+  const [solicitudesLoading, setSolicitudesLoading] = useState(false);
+
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
   const [usuarioReal, setUsuarioReal] = useState<Usuario | null>(null);
@@ -162,7 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Cargar datos iniciales desde Supabase o Fallback
   useEffect(() => {
     const loadInitialData = async () => {
-      const [dbAreas, dbRoles, dbUsuarios, dbFacultades, dbProgramas, dbCursos, dbProyectos, dbPermisosMap, dbPermisosDef] = await Promise.all([
+      const [dbAreas, dbRoles, dbUsuarios, dbFacultades, dbProgramas, dbCursos, dbProyectos, dbPermisosMap, dbPermisosDef, dbSolicitudes] = await Promise.all([
         fetchAreas(),
         fetchRoles(),
         fetchUsuarios(),
@@ -171,7 +187,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchCursos(),
         fetchProyectos(),
         fetchRolesPermisosMapDB(),
-        fetchPermisosDefDB()
+        fetchPermisosDefDB(),
+        fetchSolicitudesTareasDB()
       ]);
 
       if (dbAreas.length > 0) setAreas(dbAreas);
@@ -181,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (dbProgramas.length > 0) setProgramas(dbProgramas);
       if (dbCursos.length > 0) setCursos(dbCursos);
       if (dbProyectos.length > 0) setProyectos(dbProyectos);
+      if (dbSolicitudes && dbSolicitudes.length > 0) setSolicitudesTareas(dbSolicitudes);
       if (Object.keys(dbPermisosMap).length > 0) {
         setRolesPermisosMap(prev => ({ ...prev, ...dbPermisosMap }));
       }
@@ -873,6 +891,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTarifasProyecto(prev => prev.map(t => t.categoria === categoria ? { ...t, tarifa_hora: nuevaTarifa } : t));
   };
 
+  // --- MÉTODOS DE SOLICITUDES DE TAREAS EXTERNAS / PÚBLICAS ---
+  const cargarSolicitudesTareas = async () => {
+    setSolicitudesLoading(true);
+    try {
+      const data = await fetchSolicitudesTareasDB();
+      setSolicitudesTareas(data);
+    } catch (err) {
+      console.error('Error cargando solicitudes:', err);
+    } finally {
+      setSolicitudesLoading(false);
+    }
+  };
+
+  const enviarSolicitudTarea = async (
+    solicitud: Omit<SolicitudTareaCCV, 'id' | 'created_at'>
+  ): Promise<{ success: boolean; data?: SolicitudTareaCCV; error?: string }> => {
+    const res = await crearSolicitudTareaDB(solicitud);
+    if (res.success && res.data) {
+      setSolicitudesTareas(prev => [res.data!, ...prev]);
+    }
+    return res;
+  };
+
+  const actualizarEstadoSolicitud = async (
+    id: string,
+    estado: EstadoSolicitudTarea,
+    motivoRechazo?: string
+  ): Promise<boolean> => {
+    const revisorId = usuarioActual?.id;
+    const ok = await actualizarEstadoSolicitudDB(id, estado, motivoRechazo, revisorId);
+    if (ok) {
+      setSolicitudesTareas(prev => prev.map(s => s.id === id ? {
+        ...s,
+        estado,
+        motivo_rechazo: motivoRechazo || s.motivo_rechazo,
+        revisado_por: revisorId || s.revisado_por,
+        revisado_por_nombre: usuarioActual?.nombre_completo || s.revisado_por_nombre,
+        fecha_revision: new Date().toISOString()
+      } : s));
+    }
+    return ok;
+  };
+
+  const aprobarYConvertirSolicitud = async (
+    solicitudId: string,
+    tareaData: Omit<TareaCCV, 'id'>
+  ): Promise<{ success: boolean; data?: TareaCCV; error?: string }> => {
+    const revisorId = usuarioActual?.id;
+    const res = await convertirSolicitudEnTareaDB(solicitudId, tareaData, revisorId);
+    if (res.success && res.data) {
+      setSolicitudesTareas(prev => prev.map(s => s.id === solicitudId ? {
+        ...s,
+        estado: 'Aprobada',
+        tarea_creada_id: res.data!.id,
+        revisado_por: revisorId || s.revisado_por,
+        revisado_por_nombre: usuarioActual?.nombre_completo || s.revisado_por_nombre,
+        fecha_revision: new Date().toISOString()
+      } : s));
+    }
+    return res;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -892,6 +972,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cursos,
         proyectos,
         tarifasProyecto,
+        solicitudesTareas,
+        solicitudesLoading,
+        cargarSolicitudesTareas,
+        enviarSolicitudTarea,
+        actualizarEstadoSolicitud,
+        aprobarYConvertirSolicitud,
         hasPermission,
         canAccessLevel,
         isAdmin,

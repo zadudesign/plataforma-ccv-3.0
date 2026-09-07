@@ -5,9 +5,10 @@ import { ShieldCheck, Mail, Globe, MapPin, Heart } from 'lucide-react';
 
 interface HomeFooterProps {
   onOpenLogin: () => void;
+  onOpenTaskRequest?: () => void;
 }
 
-export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
+export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin, onOpenTaskRequest }) => {
   return (
     <footer className="bg-charcoal-900 text-white pt-14 pb-8 border-t border-charcoal-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,13 +32,21 @@ export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
             <p className="text-xs text-charcoal-400 font-medium max-w-sm leading-relaxed">
               Ecosistema integral para la estructuración curricular, desarrollo instruccional, producción multimedia y auditoría de calidad de cursos virtuales.
             </p>
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2.5 pt-2">
               <button
                 onClick={onOpenLogin}
                 className="px-4 py-2 rounded-full bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-colors shadow-sm"
               >
                 Acceso a Colaboradores
               </button>
+              {onOpenTaskRequest && (
+                <button
+                  onClick={onOpenTaskRequest}
+                  className="px-4 py-2 rounded-full bg-accent-500/20 hover:bg-accent-500/30 text-accent-300 border border-accent-400/40 text-xs font-bold transition-colors shadow-sm"
+                >
+                  Solicitud de Tarea
+                </button>
+              )}
             </div>
           </div>
 

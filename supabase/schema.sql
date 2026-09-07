@@ -470,3 +470,49 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- ----------------------------------------------------------------------------
+-- 8. FASE 8: SOLICITUDES EXTERNAS / PÚBLICAS DE TAREAS CCV
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.solicitudes_tareas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    titulo TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    tipo_origen TEXT NOT NULL CHECK (tipo_origen IN ('Facultad', 'Departamento/Área')),
+    origen_id UUID,
+    origen_nombre TEXT NOT NULL,
+    fecha_estimada_entrega DATE NOT NULL,
+    hora_estimada TIME,
+    solicitante_nombre TEXT NOT NULL,
+    solicitante_contacto TEXT NOT NULL,
+    enlace_recurso TEXT,
+    prioridad TEXT NOT NULL DEFAULT 'Normal' CHECK (prioridad IN ('Baja', 'Normal', 'Alta', 'Urgente')),
+    estado TEXT NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Aprobada', 'Rechazada', 'En Evaluación')),
+    motivo_rechazo TEXT,
+    tarea_creada_id UUID REFERENCES public.tareas(id) ON DELETE SET NULL,
+    revisado_por UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    fecha_revision TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON public.solicitudes_tareas(estado);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_created_at ON public.solicitudes_tareas(created_at DESC);
+
+ALTER TABLE public.solicitudes_tareas ENABLE ROW LEVEL SECURITY;
+
+-- Política de Inserción Pública (Para envío desde el Home sin login)
+DROP POLICY IF EXISTS "Permitir inserción pública de solicitudes" ON public.solicitudes_tareas;
+CREATE POLICY "Permitir inserción pública de solicitudes" 
+ON public.solicitudes_tareas 
+FOR INSERT 
+WITH CHECK (true);
+
+-- Política de Gestión solo para Administrador
+DROP POLICY IF EXISTS "Permitir gestión de solicitudes solo a Admin" ON public.solicitudes_tareas;
+CREATE POLICY "Permitir gestión de solicitudes solo a Admin" 
+ON public.solicitudes_tareas 
+FOR ALL 
+USING (public.es_admin(auth.uid()))
+WITH CHECK (public.es_admin(auth.uid()));
+
+
