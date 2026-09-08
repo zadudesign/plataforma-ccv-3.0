@@ -9,15 +9,18 @@ import {
   Calendar, 
   Clock, 
   User, 
-  Phone, 
   Link2, 
   FileText, 
   AlertCircle, 
   CheckCircle2, 
-  ArrowRight
+  ArrowRight,
+  Shield,
+  Layers,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { PrioridadSolicitud } from '@/types';
+import { INITIAL_USUARIOS } from '@/lib/mockData';
 
 interface TaskRequestModalProps {
   isOpen: boolean;
@@ -25,18 +28,17 @@ interface TaskRequestModalProps {
 }
 
 export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onClose }) => {
-  const { facultades, areas, enviarSolicitudTarea } = useAuth();
+  const { usuarios, roles, areas, facultades, usuarioActual, enviarSolicitudTarea } = useAuth();
+
+  // Lista de usuarios registrados (con fallback robusto)
+  const listaUsuarios = usuarios && usuarios.length > 0 ? usuarios : INITIAL_USUARIOS;
 
   // Estados del Formulario
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [tipoOrigen, setTipoOrigen] = useState<'Facultad' | 'Departamento/Área'>('Facultad');
-  const [origenId, setOrigenId] = useState('');
-  const [origenNombre, setOrigenNombre] = useState('');
   const [fechaEstimada, setFechaEstimada] = useState('');
   const [horaEstimada, setHoraEstimada] = useState('');
-  const [solicitanteNombre, setSolicitanteNombre] = useState('');
-  const [solicitanteContacto, setSolicitanteContacto] = useState('');
   const [enlaceRecurso, setEnlaceRecurso] = useState('');
   const [prioridad, setPrioridad] = useState<PrioridadSolicitud>('Normal');
 
@@ -47,6 +49,34 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
 
   // Fecha mínima: Hoy
   const hoyStr = new Date().toISOString().split('T')[0];
+
+  // Usuario seleccionado actual
+  const selectedUser = listaUsuarios.find(u => u.id === selectedUserId) || (listaUsuarios.length > 0 ? listaUsuarios[0] : null);
+
+  // Resolver Rol y Área / Jerarquía del usuario seleccionado
+  const selectedRol = roles.find(r => r.id === selectedUser?.rol_id);
+  const selectedRolNombre = selectedUser?.rol_nombre || selectedRol?.nombre || 'Docente / Usuario';
+
+  const selectedArea = areas.find(a => 
+    a.nombre.toLowerCase() === (selectedUser?.area_nombre || '').toLowerCase() || 
+    (selectedRol?.area_id && a.id === selectedRol.area_id)
+  );
+  const selectedAreaNombre = selectedArea?.nombre || selectedUser?.area_nombre || 'Centro de Educación Virtual';
+  
+  // Jerarquía descriptiva
+  const getNivelJerarquia = () => {
+    if (!selectedArea) return 'Área Institucional';
+    switch (selectedArea.nivel) {
+      case 6: return 'Nivel 6 • Dirección / Admin';
+      case 5: return 'Nivel 5 • Unidad CCV';
+      case 4: return 'Nivel 4 • Departamento';
+      case 3: return 'Nivel 3 • Facultad';
+      case 2: return 'Nivel 2 • Programa';
+      case 1: return 'Nivel 1 • Curso';
+      default: return `Nivel ${selectedArea.nivel} • Institucional`;
+    }
+  };
+  const selectedJerarquiaTexto = getNivelJerarquia();
 
   // Cerrar con Escape
   useEffect(() => {
@@ -59,18 +89,14 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Si no hay origen seleccionado al abrir, preseleccionar el primero disponible
+  // Al abrir el modal, preseleccionar usuario y fecha estimada por defecto
   useEffect(() => {
     if (isOpen) {
-      if (!origenNombre) {
-        if (facultades.length > 0) {
-          setTipoOrigen('Facultad');
-          setOrigenId(facultades[0].id);
-          setOrigenNombre(facultades[0].nombre);
-        } else if (areas.length > 0) {
-          setTipoOrigen('Departamento/Área');
-          setOrigenId(areas[0].id);
-          setOrigenNombre(areas[0].nombre);
+      if (!selectedUserId) {
+        if (usuarioActual?.id) {
+          setSelectedUserId(usuarioActual.id);
+        } else if (listaUsuarios.length > 0) {
+          setSelectedUserId(listaUsuarios[0].id);
         }
       }
       if (!fechaEstimada) {
@@ -80,30 +106,21 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
         setFechaEstimada(defaultDate.toISOString().split('T')[0]);
       }
     }
-  }, [isOpen, facultades, areas, origenNombre, fechaEstimada]);
+  }, [isOpen, usuarioActual, listaUsuarios, selectedUserId, fechaEstimada]);
 
   if (!isOpen) return null;
-
-  const handleSelectOrigen = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    if (!val) return;
-
-    const [tipo, id, nombre] = val.split('|');
-    setTipoOrigen(tipo as 'Facultad' | 'Departamento/Área');
-    setOrigenId(id || '');
-    setOrigenNombre(nombre || '');
-  };
 
   const resetForm = () => {
     setTitulo('');
     setDescripcion('');
     setHoraEstimada('');
-    setSolicitanteNombre('');
-    setSolicitanteContacto('');
     setEnlaceRecurso('');
     setPrioridad('Normal');
     setErrorMsg(null);
     setRadicadoExitoso(null);
+    if (listaUsuarios.length > 0) {
+      setSelectedUserId(usuarioActual?.id || listaUsuarios[0].id);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,16 +128,8 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
     setErrorMsg(null);
 
     // Validaciones
-    if (!solicitanteNombre.trim()) {
-      setErrorMsg('Por favor ingresa tu nombre completo como solicitante.');
-      return;
-    }
-    if (!solicitanteContacto.trim()) {
-      setErrorMsg('Por favor ingresa un número de contacto (Teléfono/WhatsApp).');
-      return;
-    }
-    if (!origenNombre) {
-      setErrorMsg('Por favor selecciona la Facultad o Departamento solicitante.');
+    if (!selectedUser) {
+      setErrorMsg('Por favor selecciona un usuario registrado en la plataforma.');
       return;
     }
     if (!titulo.trim()) {
@@ -139,16 +148,19 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
     setLoading(true);
 
     try {
+      const tipoOrigen: 'Facultad' | 'Departamento/Área' = selectedArea?.nivel === 3 ? 'Facultad' : 'Departamento/Área';
+      const origenId = selectedArea?.id || null;
+
       const payload = {
         titulo: titulo.trim(),
         descripcion: descripcion.trim(),
         tipo_origen: tipoOrigen,
-        origen_id: origenId || null,
-        origen_nombre: origenNombre,
+        origen_id: origenId,
+        origen_nombre: selectedAreaNombre,
         fecha_estimada_entrega: fechaEstimada,
         hora_estimada: horaEstimada.trim() || null,
-        solicitante_nombre: solicitanteNombre.trim(),
-        solicitante_contacto: solicitanteContacto.trim(),
+        solicitante_nombre: selectedUser.nombre_completo.trim(),
+        solicitante_contacto: selectedUser.telefono || selectedUser.email || 'Plataforma CCV',
         enlace_recurso: enlaceRecurso.trim() || null,
         prioridad,
         estado: 'Pendiente' as const
@@ -238,24 +250,28 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
               </div>
 
               {/* Tarjeta con detalles del radicado */}
-              <div className="p-4 bg-cream-50/80 rounded-2xl border border-stone-200 text-left max-w-md mx-auto space-y-2 text-xs">
+              <div className="p-4 bg-cream-50/80 rounded-2xl border border-stone-200 text-left max-w-md mx-auto space-y-2.5 text-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-stone-200/80">
                   <span className="font-bold text-charcoal-500">Número de Radicado:</span>
-                  <span className="font-mono font-black text-primary-700 bg-primary-50 px-2 py-0.5 rounded-lg border border-primary-200">
+                  <span className="font-mono font-black text-primary-700 bg-primary-50 px-2.5 py-0.5 rounded-lg border border-primary-200">
                     {radicadoExitoso}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-charcoal-500">Solicitante:</span>
-                  <span className="font-bold text-charcoal-800">{solicitanteNombre}</span>
+                  <span className="font-bold text-charcoal-800">{selectedUser?.nombre_completo}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-charcoal-500">Contacto:</span>
-                  <span className="font-bold text-charcoal-800">{solicitanteContacto}</span>
+                  <span className="font-bold text-charcoal-500">Rol Asignado:</span>
+                  <span className="font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200">
+                    {selectedRolNombre}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-charcoal-500">Área / Facultad:</span>
-                  <span className="font-bold text-charcoal-800">{origenNombre}</span>
+                  <span className="font-bold text-charcoal-500">Área / Jerarquía:</span>
+                  <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    {selectedAreaNombre} ({selectedJerarquiaTexto})
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-charcoal-500">Entrega Estimada:</span>
@@ -301,94 +317,92 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
               <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-2xl flex items-center gap-2.5 text-xs text-amber-900">
                 <Sparkles className="w-4 h-4 text-accent-600 shrink-0" />
                 <span>
-                  No requieres iniciar sesión. Los Administradores del CCV evaluarán tu requerimiento y te contactarán si se requieren especificaciones adicionales.
+                  Selecciona tu usuario registrado en la plataforma. Los administradores del CCV evaluarán tu requerimiento institucional.
                 </span>
               </div>
 
-              {/* SECCIÓN 1: DATOS DEL SOLICITANTE */}
+              {/* SECCIÓN 1: DATOS DEL SOLICITANTE (SELECTOR ÚNICO DE USUARIOS REGISTRADOS) */}
               <div className="p-4 bg-stone-50/70 rounded-2xl border border-stone-200/80 space-y-3">
-                <h4 className="text-xs font-extrabold text-charcoal-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-primary-600" />
-                  1. Datos del Solicitante
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Nombre completo */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-charcoal-700 mb-1">
-                      Nombre Completo <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-charcoal-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="text"
-                        required
-                        value={solicitanteNombre}
-                        onChange={(e) => setSolicitanteNombre(e.target.value)}
-                        placeholder="Ej. Dra. María Gómez"
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-semibold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Número de contacto */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-charcoal-700 mb-1">
-                      Número de Contacto (Tel / WhatsApp) <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-charcoal-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="tel"
-                        required
-                        value={solicitanteContacto}
-                        onChange={(e) => setSolicitanteContacto(e.target.value)}
-                        placeholder="Ej. +57 300 123 4567 o Ext. 402"
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-semibold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs"
-                      />
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-extrabold text-charcoal-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-primary-600" />
+                    1. Datos del Solicitante
+                  </h4>
+                  <span className="text-[10px] font-semibold text-charcoal-500">
+                    Usuarios de la Plataforma
+                  </span>
                 </div>
 
-                {/* Área / Facultad solicitante (Desplegable agrupado) */}
+                {/* Desplegable de Usuarios Inscritos */}
                 <div>
                   <label className="block text-[11px] font-bold text-charcoal-700 mb-1">
-                    Área o Facultad Solicitante <span className="text-rose-500">*</span>
+                    Usuario Solicitante Registrado <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <Building2 className="w-4 h-4 text-charcoal-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <UserCheck className="w-4 h-4 text-primary-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <select
                       required
-                      value={`${tipoOrigen}|${origenId}|${origenNombre}`}
-                      onChange={handleSelectOrigen}
-                      className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs"
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className="w-full pl-9 pr-8 py-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs transition-all cursor-pointer"
                     >
-                      <option value="" disabled>-- Selecciona la dependencia o facultad --</option>
-                      
-                      {/* Grupo de Facultades */}
-                      {facultades.length > 0 && (
-                        <optgroup label="🏢 FACULTADES">
-                          {facultades.map(f => (
-                            <option key={`fac-${f.id}`} value={`Facultad|${f.id}|${f.nombre}`}>
-                              {f.nombre}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-
-                      {/* Grupo de Departamentos y Áreas */}
-                      {areas.length > 0 && (
-                        <optgroup label="📂 DEPARTAMENTOS Y ÁREAS INSTITUCIONALES">
-                          {areas.map(a => (
-                            <option key={`area-${a.id}`} value={`Departamento/Área|${a.id}|${a.nombre}`}>
-                              {a.nombre} (Nivel {a.nivel})
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
+                      <option value="" disabled>-- Selecciona un usuario registrado --</option>
+                      {listaUsuarios.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre_completo} ({u.rol_nombre || 'Usuario'} • {u.area_nombre || 'CCV'})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
+
+                {/* Tarjeta Visual Dinámica: Rol Asignado + Área / Jerarquía */}
+                {selectedUser && (
+                  <div className="p-3.5 bg-gradient-to-br from-primary-50/70 via-white to-amber-50/50 rounded-xl border border-primary-100/90 shadow-2xs animate-in fade-in duration-200 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Avatar / Iniciales e Identificación */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary-700 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm border border-primary-600 overflow-hidden">
+                          {selectedUser.avatar_url ? (
+                            <img 
+                              src={selectedUser.avatar_url} 
+                              alt={selectedUser.nombre_completo} 
+                              className="w-full h-full object-cover" 
+                            />
+                          ) : (
+                            selectedUser.nombre_completo.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-charcoal-900 leading-tight">
+                            {selectedUser.nombre_completo}
+                          </div>
+                          <div className="text-[11px] text-charcoal-500 font-medium">
+                            {selectedUser.email}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Badges de Rol y Área / Jerarquía */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Rol Asignado */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-100/90 border border-primary-200 text-primary-900 text-[11px] font-extrabold shadow-2xs">
+                          <Shield className="w-3.5 h-3.5 text-primary-700 shrink-0" />
+                          <span>Rol: {selectedRolNombre}</span>
+                        </div>
+
+                        {/* Área / Jerarquía */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100/80 border border-amber-200 text-amber-900 text-[11px] font-extrabold shadow-2xs">
+                          <Building2 className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                          <span>Área: {selectedAreaNombre}</span>
+                          <span className="text-[10px] text-amber-800/80 font-bold">
+                            ({selectedJerarquiaTexto})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* SECCIÓN 2: DETALLES DEL REQUERIMIENTO */}
@@ -524,14 +538,14 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
                   type="button"
                   disabled={loading}
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-stone-200 text-charcoal-700 font-bold text-xs hover:bg-stone-100 transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-stone-200 text-charcoal-700 font-bold text-xs hover:bg-stone-100 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -555,3 +569,4 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
     </div>
   );
 };
+
