@@ -47,7 +47,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center mb-3">
-            <img src="/logo.svg" alt="Plataforma CCV 3.0" className="h-14 w-auto object-contain drop-shadow-sm" />
+            <img src="/logo.svg" alt="Plataforma CCV 3.0" className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm" />
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
             Sistema de Gestión de Cursos Virtuales & Control RBAC

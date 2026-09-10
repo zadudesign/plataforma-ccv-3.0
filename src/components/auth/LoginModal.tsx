@@ -84,7 +84,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
             <img 
               src="/logo.svg" 
               alt="Plataforma CCV 3.0" 
-              className="h-14 w-auto object-contain drop-shadow-sm" 
+              className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm" 
             />
           </div>
           <div className="flex items-center justify-center gap-1.5 mb-1">

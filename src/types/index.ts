@@ -171,8 +171,11 @@ export interface SolicitudTareaCCV {
   origen_nombre: string;
   fecha_estimada_entrega: string; // YYYY-MM-DD
   hora_estimada?: string | null; // HH:mm
+  solicitante_id?: string | null;
   solicitante_nombre: string;
-  solicitante_contacto: string; // Teléfono / WhatsApp
+  solicitante_email?: string | null;
+  solicitante_rol?: string | null;
+  solicitante_contacto: string; // Teléfono / WhatsApp / Correo
   enlace_recurso?: string | null;
   prioridad: PrioridadSolicitud;
   estado: EstadoSolicitudTarea;

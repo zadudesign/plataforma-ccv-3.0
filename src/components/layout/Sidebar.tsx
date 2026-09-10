@@ -41,10 +41,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
       <div className="flex flex-col items-center space-y-2">
         <button 
           onClick={() => setVistaActual('dashboard')}
-          className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center p-2 text-sky-600 hover:bg-sky-50 transition-all shadow-2xs border border-slate-200/80 hover:scale-105 active:scale-95"
+          className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center p-2 text-sky-600 hover:bg-sky-50 transition-all shadow-2xs border border-slate-200/80 hover:scale-105 active:scale-95"
           title="Plataforma CCV 3.0"
         >
-          <img src="/isotipo.svg" alt="CCV" className="w-7 h-7 object-contain drop-shadow-2xs" />
+          <img src="/isotipo.svg" alt="CCV" className="w-9 h-9 object-contain drop-shadow-xs" />
         </button>
       </div>
 

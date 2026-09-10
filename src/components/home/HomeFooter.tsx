@@ -19,7 +19,7 @@ export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
               <img 
                 src="/logo-white.svg" 
                 alt="Plataforma CCV 3.0" 
-                className="h-11 w-auto object-contain drop-shadow-sm" 
+                className="h-14 sm:h-16 w-auto object-contain drop-shadow-sm" 
               />
             </div>
             <p className="text-xs text-slate-400 font-medium max-w-sm leading-relaxed">

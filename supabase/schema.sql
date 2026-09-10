@@ -483,7 +483,10 @@ CREATE TABLE IF NOT EXISTS public.solicitudes_tareas (
     origen_nombre TEXT NOT NULL,
     fecha_estimada_entrega DATE NOT NULL,
     hora_estimada TIME,
+    solicitante_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     solicitante_nombre TEXT NOT NULL,
+    solicitante_email TEXT,
+    solicitante_rol TEXT,
     solicitante_contacto TEXT NOT NULL,
     enlace_recurso TEXT,
     prioridad TEXT NOT NULL DEFAULT 'Normal' CHECK (prioridad IN ('Baja', 'Normal', 'Alta', 'Urgente')),
@@ -496,18 +499,29 @@ CREATE TABLE IF NOT EXISTS public.solicitudes_tareas (
 );
 
 CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON public.solicitudes_tareas(estado);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_solicitante ON public.solicitudes_tareas(solicitante_id);
 CREATE INDEX IF NOT EXISTS idx_solicitudes_created_at ON public.solicitudes_tareas(created_at DESC);
 
 ALTER TABLE public.solicitudes_tareas ENABLE ROW LEVEL SECURITY;
 
--- Política de Inserción Pública (Para envío desde el Home sin login)
-DROP POLICY IF EXISTS "Permitir inserción pública de solicitudes" ON public.solicitudes_tareas;
-CREATE POLICY "Permitir inserción pública de solicitudes" 
+-- Política de Inserción: Permitir a cualquier usuario autenticado o anónimo registrar requerimientos
+DROP POLICY IF EXISTS "Permitir inserción de solicitudes" ON public.solicitudes_tareas;
+CREATE POLICY "Permitir inserción de solicitudes" 
 ON public.solicitudes_tareas 
 FOR INSERT 
 WITH CHECK (true);
 
--- Política de Gestión solo para Administrador
+-- Política de Lectura: Administradores pueden ver todas, los solicitantes pueden ver las suyas
+DROP POLICY IF EXISTS "Permitir lectura de solicitudes a Admin o solicitante" ON public.solicitudes_tareas;
+CREATE POLICY "Permitir lectura de solicitudes a Admin o solicitante"
+ON public.solicitudes_tareas
+FOR SELECT
+USING (
+    public.es_admin(auth.uid()) OR 
+    solicitante_id = auth.uid()
+);
+
+-- Política de Gestión solo para Administrador (Actualización y Eliminación)
 DROP POLICY IF EXISTS "Permitir gestión de solicitudes solo a Admin" ON public.solicitudes_tareas;
 CREATE POLICY "Permitir gestión de solicitudes solo a Admin" 
 ON public.solicitudes_tareas 

@@ -27,7 +27,7 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
           <img 
             src="/logo.svg" 
             alt="Plataforma CCV" 
-            className="h-10 sm:h-11 w-auto object-contain cursor-pointer hover:opacity-90 transition-opacity" 
+            className="h-12 sm:h-14 w-auto object-contain cursor-pointer hover:opacity-90 transition-opacity" 
           />
           <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-extrabold text-[10px] border border-sky-200 shadow-2xs">
             v3.0
