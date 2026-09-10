@@ -44,34 +44,34 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       titulo: 'Pendientes', 
       colorHeader: 'bg-rose-100 text-rose-900 border border-rose-300', 
       borderTop: 'border-t-4 border-rose-600',
-      cardBg: 'bg-rose-50/60',
+      cardBg: 'bg-rose-50/40',
       cardBorder: 'border-rose-200 hover:border-rose-400 shadow-2xs',
       badgeBg: 'bg-rose-600 text-white'
     },
     { 
       estado: 'En Proceso', 
       titulo: 'En Proceso', 
-      colorHeader: 'bg-blue-100 text-blue-900 border border-blue-300', 
-      borderTop: 'border-t-4 border-blue-600',
-      cardBg: 'bg-blue-50/60',
-      cardBorder: 'border-blue-200 hover:border-blue-400 shadow-2xs',
-      badgeBg: 'bg-blue-600 text-white'
+      colorHeader: 'bg-sky-100 text-sky-900 border border-sky-300', 
+      borderTop: 'border-t-4 border-sky-600',
+      cardBg: 'bg-sky-50/40',
+      cardBorder: 'border-sky-200 hover:border-sky-400 shadow-2xs',
+      badgeBg: 'bg-sky-600 text-white'
     },
     { 
       estado: 'En Revisión', 
-      titulo: 'En Revisión', 
+      titulo: 'En Revisión (Veeduría)', 
       colorHeader: 'bg-amber-100 text-amber-900 border border-amber-300', 
       borderTop: 'border-t-4 border-amber-500',
-      cardBg: 'bg-amber-50/60',
+      cardBg: 'bg-amber-50/40',
       cardBorder: 'border-amber-200 hover:border-amber-400 shadow-2xs',
-      badgeBg: 'bg-amber-600 text-white'
+      badgeBg: 'bg-amber-500 text-white'
     },
     { 
       estado: 'Completada', 
       titulo: 'Completadas', 
       colorHeader: 'bg-emerald-100 text-emerald-900 border border-emerald-300', 
       borderTop: 'border-t-4 border-emerald-600',
-      cardBg: 'bg-emerald-50/60',
+      cardBg: 'bg-emerald-50/40',
       cardBorder: 'border-emerald-200 hover:border-emerald-400 shadow-2xs',
       badgeBg: 'bg-emerald-600 text-white'
     },

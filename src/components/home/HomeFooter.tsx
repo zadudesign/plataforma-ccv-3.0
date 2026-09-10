@@ -9,32 +9,32 @@ interface HomeFooterProps {
 
 export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
   return (
-    <footer className="bg-charcoal-900 text-white pt-14 pb-8 border-t border-charcoal-800">
+    <footer className="bg-slate-950 text-white pt-14 pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-charcoal-800">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
           
           {/* Brand Col */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-primary-700 text-white flex items-center justify-center border border-primary-600">
-                <ShieldCheck className="w-6 h-6 text-accent-400" />
+              <div className="w-10 h-10 rounded-2xl bg-slate-800 text-white flex items-center justify-center border border-slate-700 shadow-sm">
+                <ShieldCheck className="w-6 h-6 text-sky-400" />
               </div>
               <div>
                 <span className="font-black text-lg text-white tracking-tight">
                   Plataforma CCV 3.0
                 </span>
-                <p className="text-[11px] text-charcoal-400 font-medium">
+                <p className="text-[11px] text-slate-400 font-medium">
                   Centro de Educación Virtual
                 </p>
               </div>
             </div>
-            <p className="text-xs text-charcoal-400 font-medium max-w-sm leading-relaxed">
+            <p className="text-xs text-slate-400 font-medium max-w-sm leading-relaxed">
               Ecosistema integral para la estructuración curricular, desarrollo instruccional, producción multimedia y auditoría de calidad de cursos virtuales.
             </p>
             <div className="flex flex-wrap items-center gap-2.5 pt-2">
               <button
                 onClick={onOpenLogin}
-                className="px-4 py-2 rounded-full bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-colors shadow-sm"
+                className="px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors shadow-2xs border border-slate-700"
               >
                 Acceso a Colaboradores
               </button>

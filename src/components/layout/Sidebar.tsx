@@ -41,11 +41,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
       <div className="flex flex-col items-center space-y-2">
         <button 
           onClick={() => setVistaActual('dashboard')}
-          className="w-12 h-12 rounded-full bg-sage-50 flex items-center justify-center text-sage-600 hover:bg-sage-100 transition-colors shadow-sm"
+          className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-600 hover:bg-sky-100 transition-colors shadow-2xs"
           title="Plataforma CCV 3.0"
         >
           <div className="relative flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-sage-600 animate-pulse" />
+            <Sparkles className="w-6 h-6 text-sky-600 animate-pulse" />
           </div>
         </button>
       </div>
@@ -61,13 +61,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
               title={item.label}
               className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
                 isActive
-                  ? 'bg-charcoal-900 text-white shadow-md scale-105'
-                  : 'text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-100'
+                  ? 'bg-slate-800 text-white shadow-md scale-105'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               {item.icon}
               {isActive && (
-                <span className="absolute -right-1 w-1.5 h-1.5 rounded-full bg-sage-500" />
+                <span className="absolute -right-1 w-1.5 h-1.5 rounded-full bg-sky-500" />
               )}
             </button>
           );
@@ -79,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
         {isRealAdmin() && (
           <button 
             onClick={() => setIsDevSimulatorOpen(true)}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-coral-600 bg-coral-50 hover:bg-coral-100 transition-colors shadow-xs"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors shadow-2xs"
             title="Simulador de Roles (Solo Administrador)"
           >
             <Sparkles className="w-5 h-5" />
@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
 
         <button 
           onClick={logout}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-charcoal-500 hover:text-coral-600 hover:bg-coral-50 transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           title="Cerrar Sesión"
         >
           <LogOut className="w-5 h-5" />
@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
           <img
             src={usuarioActual?.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
             alt={usuarioActual?.nombre_completo || 'Usuario'}
-            className="w-10 h-10 rounded-full object-cover border-2 border-sage-500 shadow-sm"
+            className="w-10 h-10 rounded-full object-cover border-2 border-sky-500 shadow-sm"
           />
         </div>
       </div>

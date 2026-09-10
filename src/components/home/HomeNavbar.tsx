@@ -24,47 +24,47 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
         
         {/* Left: Brand / Logo */}
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-700 via-primary-600 to-charcoal-900 text-white flex items-center justify-center shadow-md border border-primary-500/30">
-            <ShieldCheck className="w-6 h-6 text-accent-500" />
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-white flex items-center justify-center shadow-md border border-slate-700/50">
+            <ShieldCheck className="w-6 h-6 text-sky-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-black text-lg text-charcoal-900 tracking-tight">
+              <span className="font-black text-lg text-slate-900 tracking-tight">
                 Plataforma CCV
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-accent-50 text-accent-600 font-extrabold text-[10px] border border-accent-200">
+              <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-extrabold text-[10px] border border-sky-200">
                 v3.0
               </span>
             </div>
-            <p className="text-[11px] text-charcoal-500 font-medium hidden sm:block">
+            <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
               Centro de Educación Virtual
             </p>
           </div>
         </div>
 
         {/* Center: Navigation links (Desktop) */}
-        <nav className="hidden md:flex items-center gap-1 bg-cream-50/80 px-3 py-1.5 rounded-full border border-stone-200/60 shadow-2xs">
+        <nav className="hidden md:flex items-center gap-1 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200 shadow-2xs">
           <button
             onClick={() => scrollToSection('modulos')}
-            className="px-3.5 py-1.5 text-xs font-bold text-charcoal-700 hover:text-primary-700 rounded-full hover:bg-white transition-all"
+            className="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-sky-600 rounded-full hover:bg-white transition-all"
           >
             Módulos
           </button>
           <button
             onClick={() => scrollToSection('flujo')}
-            className="px-3.5 py-1.5 text-xs font-bold text-charcoal-700 hover:text-primary-700 rounded-full hover:bg-white transition-all"
+            className="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-sky-600 rounded-full hover:bg-white transition-all"
           >
             Flujo Operativo
           </button>
           <button
             onClick={() => scrollToSection('productividad')}
-            className="px-3.5 py-1.5 text-xs font-bold text-charcoal-700 hover:text-primary-700 rounded-full hover:bg-white transition-all"
+            className="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-sky-600 rounded-full hover:bg-white transition-all"
           >
             Productividad & Tarifas
           </button>
           <button
             onClick={() => scrollToSection('seguridad')}
-            className="px-3.5 py-1.5 text-xs font-bold text-charcoal-700 hover:text-primary-700 rounded-full hover:bg-white transition-all"
+            className="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-sky-600 rounded-full hover:bg-white transition-all"
           >
             Seguridad RBAC
           </button>
@@ -75,16 +75,16 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
           <button
             onClick={onOpenLogin}
             id="btn-home-acceder"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
           >
-            <LogIn className="w-4 h-4 text-accent-400" />
+            <LogIn className="w-4 h-4 text-sky-400" />
             <span>Acceder</span>
           </button>
 
           {/* Mobile menu toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl text-charcoal-600 hover:bg-cream-100 transition-colors"
+            className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
             title="Menú"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

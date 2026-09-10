@@ -175,70 +175,70 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {/* Card 1: Programas */}
-          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-sage-600">
+          {/* Card 1: Programas (Primary: slate-800) */}
+          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-slate-800">
             <div className="flex flex-col gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-sage-50 flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-sage-600" />
+              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                <GraduationCap className="w-4 h-4 text-slate-800" />
               </div>
-              <span className="text-sm font-black text-charcoal-800 truncate">Programas</span>
+              <span className="text-sm font-black text-slate-800 truncate">Programas</span>
             </div>
-            <h4 className="text-3xl font-black text-charcoal-900 leading-none">{numProgramas}</h4>
+            <h4 className="text-3xl font-black text-slate-900 leading-none">{numProgramas}</h4>
           </div>
 
-          {/* Card 2: Cursos */}
-          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-emerald-600">
+          {/* Card 2: Cursos (Secondary: sky-600) */}
+          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-sky-600">
             <div className="flex flex-col gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-emerald-600" />
+              <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-sky-600" />
               </div>
-              <span className="text-sm font-black text-charcoal-800 truncate">Cursos</span>
+              <span className="text-sm font-black text-slate-800 truncate">Cursos</span>
             </div>
-            <h4 className="text-3xl font-black text-charcoal-900 leading-none">{numCursos}</h4>
+            <h4 className="text-3xl font-black text-slate-900 leading-none">{numCursos}</h4>
           </div>
 
-          {/* Card 3: Proyectos */}
+          {/* Card 3: Proyectos (Highlight: amber-500) */}
           <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-amber-500">
             <div className="flex flex-col gap-2 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
                 <FolderKanban className="w-4 h-4 text-amber-600" />
               </div>
-              <span className="text-sm font-black text-charcoal-800 truncate">Proyectos</span>
+              <span className="text-sm font-black text-slate-800 truncate">Proyectos</span>
             </div>
-            <h4 className="text-3xl font-black text-charcoal-900 leading-none">{numProyectos}</h4>
+            <h4 className="text-3xl font-black text-slate-900 leading-none">{numProyectos}</h4>
           </div>
 
-          {/* Card 4: Tareas */}
-          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-blue-600">
+          {/* Card 4: Tareas (Secondary: sky-500) */}
+          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-sky-500">
             <div className="flex flex-col gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                <CheckSquare className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center">
+                <CheckSquare className="w-4 h-4 text-sky-600" />
               </div>
-              <span className="text-sm font-black text-charcoal-800 truncate">Tareas</span>
+              <span className="text-sm font-black text-slate-800 truncate">Tareas</span>
             </div>
-            <h4 className="text-3xl font-black text-charcoal-900 leading-none">{numTareas}</h4>
+            <h4 className="text-3xl font-black text-slate-900 leading-none">{numTareas}</h4>
           </div>
 
-          {/* Card 5: Docentes */}
-          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-purple-600">
+          {/* Card 5: Docentes / Multimedia (Highlight: violet-500) */}
+          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-violet-500">
             <div className="flex flex-col gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Users className="w-4 h-4 text-purple-600" />
+              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+                <Users className="w-4 h-4 text-violet-600" />
               </div>
-              <span className="text-sm font-black text-charcoal-800 truncate">Docentes</span>
+              <span className="text-sm font-black text-slate-800 truncate">Docentes</span>
             </div>
-            <h4 className="text-3xl font-black text-charcoal-900 leading-none">{numDocentes}</h4>
+            <h4 className="text-3xl font-black text-slate-900 leading-none">{numDocentes}</h4>
           </div>
 
-          {/* Card 6: Pares Evaluadores */}
-          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-rose-500">
+          {/* Card 6: Pares Evaluadores (Emerald) */}
+          <div className="ccv-card p-4 flex items-center justify-between hover:shadow-md transition-all hover:-translate-y-0.5 border-l-4 border-l-emerald-600">
             <div className="flex flex-col gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
-                <UserCheck className="w-4 h-4 text-rose-600" />
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <UserCheck className="w-4 h-4 text-emerald-600" />
               </div>
-              <span className="text-sm font-black text-charcoal-800 truncate">Evaluadores</span>
+              <span className="text-sm font-black text-slate-800 truncate">Evaluadores</span>
             </div>
-            <h4 className="text-3xl font-black text-charcoal-900 leading-none">{numParesEvaluadores}</h4>
+            <h4 className="text-3xl font-black text-slate-900 leading-none">{numParesEvaluadores}</h4>
           </div>
         </div>
       </div>

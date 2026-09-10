@@ -36,9 +36,9 @@ export const Header: React.FC<HeaderProps> = ({
           placeholder="Buscar tarea, curso o profesor..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          className="w-full py-2.5 pl-5 pr-14 bg-white rounded-full text-sm border border-stone-200 focus:outline-none focus:ring-2 focus:ring-sage-500 shadow-sm text-charcoal-900 placeholder-charcoal-400"
+          className="w-full py-2.5 pl-5 pr-14 bg-white rounded-full text-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-xs text-slate-900 placeholder-slate-400"
         />
-        <button className="absolute right-1.5 top-1 w-8 h-8 rounded-full bg-charcoal-900 text-white flex items-center justify-center hover:bg-sage-600 transition-colors shadow">
+        <button className="absolute right-1.5 top-1 w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-900 transition-colors shadow-xs">
           <Search className="w-4 h-4" />
         </button>
       </div>
@@ -49,22 +49,22 @@ export const Header: React.FC<HeaderProps> = ({
         {isRealAdmin() && (
           <button
             onClick={() => setIsDevSimulatorOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-800 text-xs font-bold border border-sage-200 transition-colors shadow-xs"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-800 text-xs font-bold border border-slate-200 transition-colors shadow-2xs"
             title="Haz clic para simular otro rol de usuario"
           >
-            <Shield className="w-3.5 h-3.5 text-sage-600" />
+            <Shield className="w-3.5 h-3.5 text-slate-600" />
             <span>Simulador: {usuarioActual.rol_nombre || 'Docente'} (Nivel {nivelArea})</span>
             <Sparkles className="w-3 h-3 text-amber-500 ml-0.5" />
           </button>
         )}
 
-        {/* Digital Signature Badge Button */}
+        {/* Digital Signature Badge Button (Highlight: Control de Veeduría / Tiempos) */}
         {onOpenSignatureModal && (
           <button
             onClick={onOpenSignatureModal}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition-all shadow-xs ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition-all shadow-2xs ${
               usuarioActual.firma_digital
-                ? 'bg-white hover:bg-sage-50 text-sage-800 border-stone-200 hover:border-sage-300'
+                ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200 hover:border-slate-300'
                 : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-sm animate-pulse'
             }`}
             title={usuarioActual.firma_digital ? "Firma Digital Registrada. Haz clic para actualizar." : "Firma Digital Pendiente. Haz clic para registrar."}
@@ -76,32 +76,32 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Notification Bell */}
         <button 
-          className="relative w-10 h-10 rounded-full bg-white border border-stone-200 flex items-center justify-center text-charcoal-800 hover:bg-cream-100 transition-colors shadow-sm"
+          className="relative w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-800 hover:bg-slate-100 transition-colors shadow-2xs"
           title="Notificaciones"
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-coral-500 ring-2 ring-white" />
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />
         </button>
 
-        {/* Solicitar Tarea Action Button (Visible para usuarios autenticados) */}
+        {/* Solicitar Tarea Action Button (Secondary: bg-sky-50 text-sky-600) */}
         {onOpenTaskRequest && (
           <button
             onClick={onOpenTaskRequest}
             id="btn-header-solicitar-tarea"
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-accent-50 hover:bg-accent-100 text-accent-700 text-xs font-extrabold border border-accent-300 shadow-2xs hover:shadow transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-extrabold border border-sky-200 shadow-2xs hover:shadow transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
             title="Solicitar nueva tarea o requerimiento al CCV"
           >
-            <FilePlus className="w-4 h-4 text-accent-600" />
+            <FilePlus className="w-4 h-4 text-sky-600" />
             <span>Solicitar Tarea</span>
           </button>
         )}
 
-        {/* Create Task Action Button */}
+        {/* Create Task Action Button (Primary: bg-slate-800 text-white) */}
         <button
           onClick={onOpenCreateTask}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
+          <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
           <span>Nueva Tarea</span>
         </button>
       </div>

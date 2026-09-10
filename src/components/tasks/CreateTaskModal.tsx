@@ -121,11 +121,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               onClick={() => setTipoTarea('Curso Virtual')}
               className={`p-3 rounded-2xl border flex items-center gap-2 font-bold transition-all ${
                 tipoTarea === 'Curso Virtual'
-                  ? 'bg-sage-600 text-white border-sage-600 shadow-sm'
-                  : 'bg-cream-50 text-charcoal-700 border-stone-200 hover:bg-cream-100'
+                  ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <BookOpen className="w-4 h-4" /> Tarea de Curso Virtual
+              <BookOpen className="w-4 h-4 text-sky-400" /> Tarea de Curso Virtual
             </button>
 
             <button
@@ -133,36 +133,36 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               onClick={() => setTipoTarea('Proyecto')}
               className={`p-3 rounded-2xl border flex items-center gap-2 font-bold transition-all ${
                 tipoTarea === 'Proyecto'
-                  ? 'bg-sage-600 text-white border-sage-600 shadow-sm'
-                  : 'bg-cream-50 text-charcoal-700 border-stone-200 hover:bg-cream-100'
+                  ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <FolderKanban className="w-4 h-4" /> Tarea de Proyecto Especial
+              <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto Especial
             </button>
           </div>
 
           {/* Título */}
           <div>
-            <label className="block font-bold text-charcoal-800 mb-1">Título del Entregable *</label>
+            <label className="block font-bold text-slate-800 mb-1">Título del Entregable *</label>
             <input
               type="text"
               required
               placeholder="Ej. Diseño Instruccional del Módulo 1..."
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 font-semibold text-xs"
+              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 font-semibold text-xs"
             />
           </div>
 
           {/* Descripción */}
           <div>
-            <label className="block font-bold text-charcoal-800 mb-1">Descripción / Instrucciones Didácticas</label>
+            <label className="block font-bold text-slate-800 mb-1">Descripción / Instrucciones Didácticas</label>
             <textarea
               rows={2}
               placeholder="Detalles sobre los requerimientos, guías o especificaciones pedagógicas..."
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs"
+              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs"
             />
           </div>
 
@@ -297,32 +297,32 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Fecha y Hora de Vencimiento */}
+          {/* Fecha y Hora de Vencimiento (Highlight: amber-500 Control de tiempos) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-charcoal-800 mb-1 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-sage-600" />
+              <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-amber-500" />
                 <span>Fecha Vencimiento *</span>
               </label>
               <input
                 type="date"
                 value={fechaVencimiento}
                 onChange={(e) => setFechaVencimiento(e.target.value)}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-semibold"
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-semibold"
                 required
               />
             </div>
 
             <div>
-              <label className="block font-bold text-charcoal-800 mb-1 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-sage-600" />
+              <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
                 <span>Hora de Vencimiento *</span>
               </label>
               <input
                 type="time"
                 value={horaVencimiento}
                 onChange={(e) => setHoraVencimiento(e.target.value)}
-                className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold"
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-bold"
                 required
               />
             </div>
@@ -330,21 +330,21 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {/* Calculated Cost Card for Projects */}
           {tipoTarea === 'Proyecto' && (
-            <div className="p-4 bg-sage-50/70 rounded-2xl border border-sage-200/80 flex items-center justify-between">
+            <div className="p-4 bg-sky-50/70 rounded-2xl border border-sky-200/80 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-sage-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <div>
-                  <h5 className="font-extrabold text-charcoal-900 text-xs">Tarifa de Proyecto ({categoriaProyecto})</h5>
-                  <p className="text-[11px] text-charcoal-600">
-                    Tarifa Oficial: <span className="font-bold text-sage-800">${tarifaHoraActual.toLocaleString('es-CO')} COP / 1 hr</span>
+                  <h5 className="font-extrabold text-slate-900 text-xs">Tarifa de Proyecto ({categoriaProyecto})</h5>
+                  <p className="text-[11px] text-slate-600">
+                    Tarifa Oficial: <span className="font-bold text-sky-800">${tarifaHoraActual.toLocaleString('es-CO')} COP / 1 hr</span>
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] font-bold text-charcoal-500 block uppercase">Tarifa por Hora</span>
-                <span className="text-base font-black text-sage-700">${tarifaHoraActual.toLocaleString('es-CO')} COP/h</span>
+                <span className="text-[10px] font-bold text-slate-500 block uppercase">Tarifa por Hora</span>
+                <span className="text-base font-black text-sky-700">${tarifaHoraActual.toLocaleString('es-CO')} COP/h</span>
               </div>
             </div>
           )}
@@ -354,13 +354,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-full bg-cream-100 text-charcoal-700 font-bold hover:bg-cream-200"
+              className="px-5 py-2.5 rounded-full bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-full bg-sage-600 text-white font-bold hover:bg-sage-700 shadow-md"
+              className="px-6 py-2.5 rounded-full bg-slate-800 text-white font-bold hover:bg-slate-900 shadow-md transition-all scale-100 hover:scale-105 active:scale-95"
             >
               Crear Tarea CCV
             </button>
