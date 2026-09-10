@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   setBusqueda,
   onOpenSignatureModal,
 }) => {
-  const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin } = useAuth();
+  const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin, isAdmin } = useAuth();
   const usuarioActual = propsUsuario || contextUsuario;
 
   if (!usuarioActual) return null;
@@ -83,27 +83,28 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />
         </button>
 
-        {/* Solicitar Tarea Action Button (Secondary: bg-sky-50 text-sky-600) */}
-        {onOpenTaskRequest && (
+        {/* Action Button: Nueva Tarea (Exclusivo Admin) vs Solicitar Tarea (Otros Usuarios con el mismo estilo) */}
+        {isAdmin() ? (
+          <button
+            onClick={onOpenCreateTask}
+            id="btn-header-nueva-tarea"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
+            title="Crear nueva tarea en la plataforma CCV"
+          >
+            <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
+            <span>Nueva Tarea</span>
+          </button>
+        ) : onOpenTaskRequest ? (
           <button
             onClick={onOpenTaskRequest}
             id="btn-header-solicitar-tarea"
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-extrabold border border-sky-200 shadow-2xs hover:shadow transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
             title="Solicitar nueva tarea o requerimiento al CCV"
           >
-            <FilePlus className="w-4 h-4 text-sky-600" />
+            <FilePlus className="w-4 h-4 stroke-[2.5] text-sky-400" />
             <span>Solicitar Tarea</span>
           </button>
-        )}
-
-        {/* Create Task Action Button (Primary: bg-slate-800 text-white) */}
-        <button
-          onClick={onOpenCreateTask}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
-        >
-          <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
-          <span>Nueva Tarea</span>
-        </button>
+        ) : null}
       </div>
     </header>
   );

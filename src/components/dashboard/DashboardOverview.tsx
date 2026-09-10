@@ -20,9 +20,11 @@ import {
   Layers,
   AlertCircle,
   Search,
-  Shield
+  Shield,
+  FilePlus
 } from 'lucide-react';
 import { TareaCCV, Usuario, CursoVirtual, ProyectoEspecial, Programa, TareaComentario, EstadoTarea } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import { 
   calcularProgresoGlobalCursos, 
   calcularProgresoGlobalProyectos,
@@ -110,6 +112,7 @@ interface DashboardOverviewProps {
   proyectos: ProyectoEspecial[];
   onSelectTask: (tarea: TareaCCV) => void;
   onOpenCreateTask: () => void;
+  onOpenTaskRequest?: () => void;
   onOpenProgreso?: (entidad: CursoVirtual | ProyectoEspecial, tipo: 'curso' | 'proyecto') => void;
 }
 
@@ -123,8 +126,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   proyectos,
   onSelectTask,
   onOpenCreateTask,
+  onOpenTaskRequest,
   onOpenProgreso,
 }) => {
+  const { isAdmin } = useAuth();
   // 1. MÉTRICAS INSTITUCIONALES GENERALES
   const numProgramas = programas.length;
   const numCursos = cursos.length;
@@ -423,14 +428,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </div>
           </div>
 
-          <div className="pt-4 mt-2 border-t border-cream-200/60 text-right">
-            <button 
-              onClick={onOpenCreateTask}
-              className="inline-flex items-center gap-1 text-xs font-extrabold text-sage-700 hover:text-sage-800 transition-colors"
-            >
-              <span>+ Agregar nueva tarea</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+          <div className="pt-4 mt-2 border-t border-slate-200/80 text-right">
+            {isAdmin() ? (
+              <button 
+                onClick={onOpenCreateTask}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-sky-600 transition-colors"
+              >
+                <span>+ Crear nueva tarea</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : onOpenTaskRequest ? (
+              <button 
+                onClick={onOpenTaskRequest}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-sky-600 transition-colors"
+              >
+                <FilePlus className="w-3.5 h-3.5 text-sky-600" />
+                <span>+ Solicitar tarea al CCV</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : null}
           </div>
         </div>
 

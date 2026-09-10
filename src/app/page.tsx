@@ -481,6 +481,7 @@ export default function Home() {
             proyectos={proyectosVisiblesPorRol}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+            onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
             onOpenProgreso={(entidad, tipo) => setEntidadProgresoSeleccionada({ entidad, tipo })}
           />
         )}
