@@ -75,19 +75,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onGoToLog
   const rolSeleccionadoObj = roles.find(r => r.id === rolId);
 
   return (
-    <div className="min-h-screen bg-cream-100 flex items-center justify-center p-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans relative overflow-hidden">
       {/* Elementos decorativos de fondo */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-sage-200/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-coral-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-slate-200/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-sky-100/50 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-lg bg-white rounded-3xl border border-stone-200/80 shadow-2xl p-8 z-10 relative animate-fadeIn">
+      <div className="w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl p-8 z-10 relative animate-fadeIn">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-charcoal-900 text-cream-100 shadow-md mb-3">
-            <ShieldCheck className="w-8 h-8 text-sage-400" />
+          <div className="inline-flex items-center justify-center mb-3">
+            <img src="/logo.svg" alt="Plataforma CCV 3.0" className="h-14 w-auto object-contain drop-shadow-sm" />
           </div>
-          <h1 className="text-2xl font-black text-charcoal-900 tracking-tight">Registro de Usuario</h1>
-          <p className="text-xs text-charcoal-500 font-medium mt-1">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Registro de Usuario</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">
             Crea tu cuenta institucional en Plataforma CCV 3.0
           </p>
         </div>

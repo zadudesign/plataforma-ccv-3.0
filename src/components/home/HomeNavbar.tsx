@@ -23,23 +23,15 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Left: Brand / Logo */}
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-white flex items-center justify-center shadow-md border border-slate-700/50">
-            <ShieldCheck className="w-6 h-6 text-sky-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-lg text-slate-900 tracking-tight">
-                Plataforma CCV
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-extrabold text-[10px] border border-sky-200">
-                v3.0
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
-              Centro de Educación Virtual
-            </p>
-          </div>
+        <div className="flex items-center gap-3">
+          <img 
+            src="/logo.svg" 
+            alt="Plataforma CCV" 
+            className="h-10 sm:h-11 w-auto object-contain cursor-pointer hover:opacity-90 transition-opacity" 
+          />
+          <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-extrabold text-[10px] border border-sky-200 shadow-2xs">
+            v3.0
+          </span>
         </div>
 
         {/* Center: Navigation links (Desktop) */}

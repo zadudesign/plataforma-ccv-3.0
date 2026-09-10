@@ -16,17 +16,11 @@ export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
           {/* Brand Col */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-slate-800 text-white flex items-center justify-center border border-slate-700 shadow-sm">
-                <ShieldCheck className="w-6 h-6 text-sky-400" />
-              </div>
-              <div>
-                <span className="font-black text-lg text-white tracking-tight">
-                  Plataforma CCV 3.0
-                </span>
-                <p className="text-[11px] text-slate-400 font-medium">
-                  Centro de Educación Virtual
-                </p>
-              </div>
+              <img 
+                src="/logo-white.svg" 
+                alt="Plataforma CCV 3.0" 
+                className="h-11 w-auto object-contain drop-shadow-sm" 
+              />
             </div>
             <p className="text-xs text-slate-400 font-medium max-w-sm leading-relaxed">
               Ecosistema integral para la estructuración curricular, desarrollo instruccional, producción multimedia y auditoría de calidad de cursos virtuales.

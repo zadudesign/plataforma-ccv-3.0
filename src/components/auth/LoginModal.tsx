@@ -80,17 +80,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
         {/* Header */}
         <div className="text-center mb-6 relative">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 text-white shadow-md mb-3 border border-slate-700/50">
-            <ShieldCheck className="w-8 h-8 text-sky-400" />
+          <div className="inline-flex items-center justify-center mb-3">
+            <img 
+              src="/logo.svg" 
+              alt="Plataforma CCV 3.0" 
+              className="h-14 w-auto object-contain drop-shadow-sm" 
+            />
           </div>
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[10px] font-extrabold uppercase tracking-wider border border-slate-200">
               Acceso Institucional
             </span>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            Plataforma CCV 3.0
-          </h2>
           <p className="text-xs text-slate-500 font-medium mt-1">
             Centro de Educación Virtual • Control RBAC
           </p>

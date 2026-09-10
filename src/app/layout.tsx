@@ -5,6 +5,11 @@ import { AppProviders } from '@/components/providers/AppProviders';
 export const metadata: Metadata = {
   title: 'Plataforma CCV 3.0 — Ecosistema de Cursos Virtuales y Educación Continua',
   description: 'Sistema integral full-stack para la gestión, control, producción y supervisión de cursos virtuales y diseño instruccional del Centro de Educación Virtual.',
+  icons: {
+    icon: '/isotipo.svg',
+    shortcut: '/isotipo.svg',
+    apple: '/isotipo.svg',
+  },
 };
 
 export default function RootLayout({
@@ -14,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="bg-slate-300 text-charcoal-900 min-h-screen antialiased">
+      <body className="bg-slate-50 text-slate-900 min-h-screen antialiased">
         <AppProviders>
           {children}
         </AppProviders>
