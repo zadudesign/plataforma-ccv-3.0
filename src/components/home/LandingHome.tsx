@@ -6,18 +6,15 @@ import { HomeHero } from './HomeHero';
 import { HomeFeatures } from './HomeFeatures';
 import { HomeFooter } from './HomeFooter';
 import { LoginModal } from '@/components/auth/LoginModal';
-import { TaskRequestModal } from './TaskRequestModal';
 
 export const LandingHome: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isTaskRequestModalOpen, setIsTaskRequestModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-slatebg flex flex-col font-sans selection:bg-primary-600 selection:text-white">
-      {/* Top Navigation Bar with the 'Acceder' and 'Solicitar Tarea' Buttons */}
+      {/* Top Navigation Bar with the 'Acceder' Button */}
       <HomeNavbar 
         onOpenLogin={() => setIsLoginModalOpen(true)} 
-        onOpenTaskRequest={() => setIsTaskRequestModalOpen(true)}
       />
 
       {/* Main Home Content */}
@@ -25,7 +22,6 @@ export const LandingHome: React.FC = () => {
         {/* Hero Section */}
         <HomeHero 
           onOpenLogin={() => setIsLoginModalOpen(true)} 
-          onOpenTaskRequest={() => setIsTaskRequestModalOpen(true)}
         />
 
         {/* Core Features & Modules */}
@@ -35,7 +31,6 @@ export const LandingHome: React.FC = () => {
       {/* Institutional Footer */}
       <HomeFooter 
         onOpenLogin={() => setIsLoginModalOpen(true)} 
-        onOpenTaskRequest={() => setIsTaskRequestModalOpen(true)}
       />
 
       {/* Auth Login Modal */}
@@ -43,13 +38,8 @@ export const LandingHome: React.FC = () => {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
       />
-
-      {/* Task Request Modal (Public) */}
-      <TaskRequestModal
-        isOpen={isTaskRequestModalOpen}
-        onClose={() => setIsTaskRequestModalOpen(false)}
-      />
     </div>
   );
 };
+
 

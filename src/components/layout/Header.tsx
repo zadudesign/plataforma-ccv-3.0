@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Search, Bell, Plus, Shield, Sparkles, FileSignature } from 'lucide-react';
+import { Search, Bell, Plus, Shield, Sparkles, FileSignature, FilePlus } from 'lucide-react';
 import { Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
 interface HeaderProps {
   usuarioActual?: Usuario;
   onOpenCreateTask: () => void;
+  onOpenTaskRequest?: () => void;
   busqueda: string;
   setBusqueda: (val: string) => void;
   onOpenSignatureModal?: () => void;
@@ -16,6 +17,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   usuarioActual: propsUsuario,
   onOpenCreateTask,
+  onOpenTaskRequest,
   busqueda,
   setBusqueda,
   onOpenSignatureModal,
@@ -80,6 +82,19 @@ export const Header: React.FC<HeaderProps> = ({
           <Bell className="w-4 h-4" />
           <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-coral-500 ring-2 ring-white" />
         </button>
+
+        {/* Solicitar Tarea Action Button (Visible para usuarios autenticados) */}
+        {onOpenTaskRequest && (
+          <button
+            onClick={onOpenTaskRequest}
+            id="btn-header-solicitar-tarea"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-accent-50 hover:bg-accent-100 text-accent-700 text-xs font-extrabold border border-accent-300 shadow-2xs hover:shadow transition-all duration-200 scale-100 hover:scale-105 active:scale-95"
+            title="Solicitar nueva tarea o requerimiento al CCV"
+          >
+            <FilePlus className="w-4 h-4 text-accent-600" />
+            <span>Solicitar Tarea</span>
+          </button>
+        )}
 
         {/* Create Task Action Button */}
         <button

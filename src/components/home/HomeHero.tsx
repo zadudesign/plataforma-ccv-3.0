@@ -9,16 +9,14 @@ import {
   BookOpen, 
   FileSignature, 
   Clock, 
-  Layers, 
-  FilePlus 
+  Layers 
 } from 'lucide-react';
 
 interface HomeHeroProps {
   onOpenLogin: () => void;
-  onOpenTaskRequest?: () => void;
 }
 
-export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin, onOpenTaskRequest }) => {
+export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin }) => {
   return (
     <section className="relative overflow-hidden pt-8 pb-16 md:pt-16 md:pb-24">
       {/* Background aesthetic decorative gradients */}
@@ -58,17 +56,6 @@ export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin, onOpenTaskReque
               <span>Acceder al Sistema</span>
               <ArrowRight className="w-4 h-4 text-white/80 group-hover:translate-x-1 transition-transform" />
             </button>
-
-            {onOpenTaskRequest && (
-              <button
-                onClick={onOpenTaskRequest}
-                id="btn-hero-solicitar"
-                className="w-full sm:w-auto px-7 py-4 rounded-full bg-accent-50 hover:bg-accent-100/90 text-accent-700 font-extrabold text-sm border border-accent-300 shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 scale-100 hover:scale-105 active:scale-95"
-              >
-                <FilePlus className="w-4 h-4 text-accent-600" />
-                <span>Solicitar Tarea CCV</span>
-              </button>
-            )}
 
             <a
               href="#modulos"

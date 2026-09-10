@@ -11,6 +11,7 @@ import { CalendarView } from '@/components/calendar/CalendarView';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { TaskDetailModal } from '@/components/tasks/TaskDetailModal';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
+import { TaskRequestModal } from '@/components/home/TaskRequestModal';
 import { LandingHome } from '@/components/home/LandingHome';
 import { DevRoleSimulatorModal } from '@/components/auth/DevRoleSimulatorModal';
 import { DigitalSignatureModal } from '@/components/auth/DigitalSignatureModal';
@@ -57,6 +58,7 @@ export default function Home() {
   // Modal states
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isTaskRequestOpen, setIsTaskRequestOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
 
@@ -461,6 +463,7 @@ export default function Home() {
         <Header
           usuarioActual={usuarioActual}
           onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+          onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
           busqueda={busqueda}
           setBusqueda={setBusqueda}
           onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
@@ -581,6 +584,14 @@ export default function Home() {
             usuarios={usuarios}
             onClose={() => setIsCreateTaskOpen(false)}
             onCreateTask={handleCreateTask}
+          />
+        )}
+
+        {/* Task Request Modal (CCV) */}
+        {isTaskRequestOpen && (
+          <TaskRequestModal
+            isOpen={isTaskRequestOpen}
+            onClose={() => setIsTaskRequestOpen(false)}
           />
         )}
 

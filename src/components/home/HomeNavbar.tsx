@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldCheck, LogIn, Menu, X, Layers, Kanban, Clock, Shield, FilePlus } from 'lucide-react';
+import { ShieldCheck, LogIn, Menu, X, Layers, Kanban, Clock, Shield } from 'lucide-react';
 
 interface HomeNavbarProps {
   onOpenLogin: () => void;
-  onOpenTaskRequest?: () => void;
 }
 
-export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin, onOpenTaskRequest }) => {
+export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const scrollToSection = (id: string) => {
@@ -71,19 +70,8 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin, onOpenTaskR
           </button>
         </nav>
 
-        {/* Right: Actions (Solicitar Tarea + Acceder) */}
+        {/* Right: Actions (Acceder) */}
         <div className="flex items-center gap-2.5">
-          {onOpenTaskRequest && (
-            <button
-              onClick={onOpenTaskRequest}
-              id="btn-home-solicitar-nav"
-              className="hidden sm:flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-accent-50 hover:bg-accent-100/80 text-accent-700 text-xs font-extrabold border border-accent-300 shadow-2xs hover:shadow transition-all duration-200"
-            >
-              <FilePlus className="w-4 h-4 text-accent-600" />
-              <span>Solicitar Tarea</span>
-            </button>
-          )}
-
           <button
             onClick={onOpenLogin}
             id="btn-home-acceder"
@@ -107,17 +95,6 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin, onOpenTaskR
       {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-stone-200 px-4 pt-2 pb-4 space-y-2 animate-fadeIn shadow-lg">
-          {onOpenTaskRequest && (
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenTaskRequest();
-              }}
-              className="w-full text-left px-4 py-2.5 text-xs font-extrabold text-accent-700 bg-accent-50 rounded-xl flex items-center gap-2 border border-accent-200"
-            >
-              <FilePlus className="w-4 h-4 text-accent-600" /> Solicitar Tarea CCV
-            </button>
-          )}
           <button
             onClick={() => scrollToSection('modulos')}
             className="w-full text-left px-4 py-2 text-xs font-bold text-charcoal-700 hover:bg-cream-50 rounded-xl flex items-center gap-2"
