@@ -24,16 +24,25 @@ export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
           
           {/* Brand & Slogan Column */}
           <div className="md:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-white shadow-sm">
-                <span className="font-black text-xl text-sky-400">P</span>
+            <div className="flex items-center gap-3.5">
+              {/* Isotipo CCV */}
+              <div className="w-11 h-11 rounded-2xl bg-slate-800 border border-slate-700 p-2 flex items-center justify-center shadow-sm">
+                <img 
+                  src="/isotipo.svg" 
+                  alt="Isotipo Plataforma CCV" 
+                  className="w-full h-full object-contain" 
+                />
               </div>
-              <div>
-                <span className="text-2xl font-black tracking-tight text-white">
-                  Prisma<span className="text-sky-400">Lab</span>
-                </span>
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 font-extrabold text-[10px] border border-sky-800">
-                  v3.0 Enterprise
+
+              {/* Logo Blanco CCV */}
+              <div className="flex items-center gap-2.5">
+                <img 
+                  src="/logo-white.svg" 
+                  alt="Logo Plataforma CCV" 
+                  className="h-9 sm:h-10 w-auto object-contain drop-shadow-sm" 
+                />
+                <span className="px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 font-extrabold text-[10px] border border-sky-800">
+                  PrismaLab v3.0
                 </span>
               </div>
             </div>

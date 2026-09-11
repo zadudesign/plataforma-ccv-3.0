@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LogIn, Menu, X, Sparkles, Activity, Layers, BookmarkCheck, ArrowRight } from 'lucide-react';
+import { LogIn, Menu, X, Sparkles, Activity, Layers, BookmarkCheck } from 'lucide-react';
 
 interface HomeNavbarProps {
   onOpenLogin: () => void;
@@ -20,30 +20,44 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all shadow-2xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[84px] sm:min-h-[92px] py-2 flex items-center justify-between">
         
-        {/* Left: Brand / Logotipo PrismaLab */}
+        {/* Left: Brand / Isotipo + Logotipo Oficial de la Plataforma CCV & PrismaLab */}
         <div 
           onClick={() => scrollToSection('inicio')} 
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex items-center gap-3.5 cursor-pointer group select-none"
         >
-          {/* Logo icon representation / SVG */}
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform duration-200">
-            <span className="font-black text-xl tracking-tighter text-sky-400">P</span>
+          {/* Isotipo oficial CCV */}
+          <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-white border border-slate-200/90 p-2 flex items-center justify-center shadow-2xs group-hover:scale-105 group-hover:border-sky-300 transition-all duration-200">
+            <img 
+              src="/isotipo.svg" 
+              alt="Isotipo Plataforma CCV" 
+              className="w-full h-full object-contain drop-shadow-xs" 
+            />
           </div>
           
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                Prisma<span className="text-sky-600">Lab</span>
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-extrabold text-[10px] border border-sky-200 tracking-wider">
-                v3.0
+          {/* Logotipo institucional CCV */}
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo.svg" 
+              alt="Logo Plataforma CCV" 
+              className="h-10 sm:h-12 w-auto object-contain drop-shadow-2xs group-hover:opacity-95 transition-opacity" 
+            />
+
+            {/* Separador y Badge PrismaLab v3.0 */}
+            <div className="hidden sm:flex flex-col border-l border-slate-200 pl-3 py-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-black tracking-tight text-slate-900 leading-none">
+                  Prisma<span className="text-sky-600">Lab</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-700 font-extrabold text-[9px] border border-sky-200 tracking-wider">
+                  v3.0
+                </span>
+              </div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                Centro de Educación Virtual
               </span>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest -mt-1 hidden sm:block">
-              Ecosistema CCV
-            </span>
           </div>
         </div>
 
@@ -101,12 +115,12 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
 
       {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-5 space-y-2 animate-fadeIn shadow-lg">
+        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-5 space-y-2 animate-fadeIn shadow-lg">
           <button
             onClick={() => scrollToSection('inicio')}
             className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2.5"
           >
-            <Sparkles className="w-4 h-4 text-sky-600" /> Inicio
+            <Sparkles className="w-4 h-4 text-sky-600" /> Inicio & Quiénes Somos
           </button>
           <button
             onClick={() => scrollToSection('estadisticas')}
