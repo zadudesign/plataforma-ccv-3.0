@@ -4,21 +4,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   GraduationCap, 
   BookOpen, 
-  Layers, 
-  CheckCircle2, 
+  FolderKanban, 
+  CheckSquare, 
   Users, 
   UserCheck, 
   TrendingUp, 
   Activity 
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { fetchTareasDB } from '@/lib/supabaseService';
+import { INITIAL_TAREAS } from '@/lib/mockData';
 
-interface StatItem {
+interface StatConfig {
   id: string;
   label: string;
   sublabel: string;
   value: number;
-  suffix: string;
-  formattedDisplay: (val: number) => string;
   icon: React.ReactNode;
   iconBg: string;
   iconColor: string;
@@ -26,91 +27,109 @@ interface StatItem {
   borderColor: string;
 }
 
-const STATS_DATA: StatItem[] = [
-  {
-    id: 'programas',
-    label: 'Programas Académicos',
-    sublabel: 'Pregrado y Posgrado vinculados',
-    value: 24,
-    suffix: '+',
-    formattedDisplay: (v) => `${v}+`,
-    icon: <GraduationCap className="w-6 h-6" />,
-    iconBg: 'bg-sky-50',
-    iconColor: 'text-sky-600',
-    badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
-    borderColor: 'hover:border-sky-300'
-  },
-  {
-    id: 'cursos',
-    label: 'Cursos Virtuales',
-    sublabel: 'Aulas estructuradas y activas',
-    value: 180,
-    suffix: '+',
-    formattedDisplay: (v) => `${v}+`,
-    icon: <BookOpen className="w-6 h-6" />,
-    iconBg: 'bg-indigo-50',
-    iconColor: 'text-indigo-600',
-    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    borderColor: 'hover:border-indigo-300'
-  },
-  {
-    id: 'proyectos',
-    label: 'Proyectos Especiales',
-    sublabel: 'Producción audiovisual e I+D',
-    value: 45,
-    suffix: '+',
-    formattedDisplay: (v) => `${v}+`,
-    icon: <Layers className="w-6 h-6" />,
-    iconBg: 'bg-violet-50',
-    iconColor: 'text-violet-600',
-    badgeColor: 'bg-violet-50 text-violet-700 border-violet-200',
-    borderColor: 'hover:border-violet-300'
-  },
-  {
-    id: 'tareas',
-    label: 'Tareas Monitoreadas',
-    sublabel: 'Entregables con trazabilidad total',
-    value: 1250,
-    suffix: '+',
-    formattedDisplay: (v) => `${v.toLocaleString('es-CO')}+`,
-    icon: <CheckCircle2 className="w-6 h-6" />,
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
-    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    borderColor: 'hover:border-emerald-300'
-  },
-  {
-    id: 'docentes',
-    label: 'Docentes Activos',
-    sublabel: 'Autores y creadores de contenido',
-    value: 95,
-    suffix: '+',
-    formattedDisplay: (v) => `${v}+`,
-    icon: <Users className="w-6 h-6" />,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
-    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-    borderColor: 'hover:border-amber-300'
-  },
-  {
-    id: 'evaluadores',
-    label: 'Pares Evaluadores',
-    sublabel: 'Veeduría de calidad metodológica',
-    value: 18,
-    suffix: '+',
-    formattedDisplay: (v) => `${v}+`,
-    icon: <UserCheck className="w-6 h-6" />,
-    iconBg: 'bg-cyan-50',
-    iconColor: 'text-cyan-600',
-    badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-    borderColor: 'hover:border-cyan-300'
-  },
-];
-
 export const HomeStats: React.FC = () => {
+  const { programas, cursos, proyectos, usuarios } = useAuth();
+  const [tareasCount, setTareasCount] = useState<number>(INITIAL_TAREAS.length);
   const [hasAnimated, setHasAnimated] = useState(false);
-  const [counts, setCounts] = useState<number[]>(STATS_DATA.map(() => 0));
   const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Cargar el conteo real de tareas desde la base de datos Supabase
+  useEffect(() => {
+    let isMounted = true;
+    const loadTareas = async () => {
+      try {
+        const dbTareas = await fetchTareasDB();
+        if (isMounted && dbTareas && dbTareas.length > 0) {
+          setTareasCount(dbTareas.length);
+        }
+      } catch (err) {
+        console.warn('Error al cargar tareas para estadísticas de Home:', err);
+      }
+    };
+    loadTareas();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Métricas idénticas al DashboardOverview
+  const numProgramas = programas.length;
+  const numCursos = cursos.length;
+  const numProyectos = proyectos.length;
+  const numTareas = tareasCount;
+  const numDocentes = usuarios.filter(u => u.rol_nombre === 'Docente').length;
+  const numParesEvaluadores = usuarios.filter(u => u.rol_nombre === 'Par Evaluador').length;
+
+  const statsList: StatConfig[] = [
+    {
+      id: 'programas',
+      label: 'Programas Académicos',
+      sublabel: 'Pregrado y Posgrado vinculados',
+      value: numProgramas,
+      icon: <GraduationCap className="w-6 h-6" />,
+      iconBg: 'bg-slate-100',
+      iconColor: 'text-slate-800',
+      badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
+      borderColor: 'hover:border-slate-400'
+    },
+    {
+      id: 'cursos',
+      label: 'Cursos Virtuales',
+      sublabel: 'Aulas estructuradas y activas',
+      value: numCursos,
+      icon: <BookOpen className="w-6 h-6" />,
+      iconBg: 'bg-sky-50',
+      iconColor: 'text-sky-600',
+      badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+      borderColor: 'hover:border-sky-300'
+    },
+    {
+      id: 'proyectos',
+      label: 'Proyectos Especiales',
+      sublabel: 'Producción audiovisual e I+D',
+      value: numProyectos,
+      icon: <FolderKanban className="w-6 h-6" />,
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      borderColor: 'hover:border-amber-300'
+    },
+    {
+      id: 'tareas',
+      label: 'Tareas Monitoreadas',
+      sublabel: 'Entregables con trazabilidad total',
+      value: numTareas,
+      icon: <CheckSquare className="w-6 h-6" />,
+      iconBg: 'bg-sky-50',
+      iconColor: 'text-sky-600',
+      badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+      borderColor: 'hover:border-sky-300'
+    },
+    {
+      id: 'docentes',
+      label: 'Docentes Activos',
+      sublabel: 'Autores y creadores de contenido',
+      value: numDocentes,
+      icon: <Users className="w-6 h-6" />,
+      iconBg: 'bg-violet-50',
+      iconColor: 'text-violet-600',
+      badgeColor: 'bg-violet-50 text-violet-700 border-violet-200',
+      borderColor: 'hover:border-violet-300'
+    },
+    {
+      id: 'evaluadores',
+      label: 'Pares Evaluadores',
+      sublabel: 'Veeduría de calidad metodológica',
+      value: numParesEvaluadores,
+      icon: <UserCheck className="w-6 h-6" />,
+      iconBg: 'bg-emerald-50',
+      iconColor: 'text-emerald-600',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      borderColor: 'hover:border-emerald-300'
+    },
+  ];
+
+  const [counts, setCounts] = useState<number[]>(statsList.map(() => 0));
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -120,7 +139,7 @@ export const HomeStats: React.FC = () => {
           setHasAnimated(true);
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.15 }
     );
 
     if (sectionRef.current) {
@@ -135,32 +154,33 @@ export const HomeStats: React.FC = () => {
   useEffect(() => {
     if (!hasAnimated) return;
 
-    const duration = 1800; // 1.8 seconds animation
+    const targetValues = statsList.map((item) => item.value);
+    const duration = 1200; // 1.2 segundos de animación fluida
     const frameRate = 1000 / 60;
-    const totalFrames = Math.round(duration / frameRate);
+    const totalFrames = Math.max(Math.round(duration / frameRate), 1);
     let frame = 0;
 
     const timer = setInterval(() => {
       frame++;
       const progress = frame / totalFrames;
-      // Smooth ease-out cubic curve
+      // Curva cúbica suave ease-out
       const easeOut = 1 - Math.pow(1 - progress, 3);
 
       setCounts(
-        STATS_DATA.map((item) => {
-          const currentVal = Math.round(easeOut * item.value);
-          return currentVal > item.value ? item.value : currentVal;
+        targetValues.map((target) => {
+          const currentVal = Math.round(easeOut * target);
+          return currentVal > target ? target : currentVal;
         })
       );
 
       if (frame >= totalFrames) {
         clearInterval(timer);
-        setCounts(STATS_DATA.map((item) => item.value));
+        setCounts(targetValues);
       }
     }, frameRate);
 
     return () => clearInterval(timer);
-  }, [hasAnimated]);
+  }, [hasAnimated, numProgramas, numCursos, numProyectos, numTareas, numDocentes, numParesEvaluadores]);
 
   return (
     <section 
@@ -190,15 +210,15 @@ export const HomeStats: React.FC = () => {
             Estadísticas en Tiempo Real
           </h2>
           <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
-            Métricas consolidadas de proyectos, cursos y talento que operan activamente dentro del ecosistema institucional de PrismaLab.
+            Métricas institucionales consolidadas y sincronizadas en tiempo real con el panel general del Centro de Educación Virtual (CCV).
           </p>
         </div>
 
         {/* 6-Card Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {STATS_DATA.map((item, index) => {
-            const currentCount = counts[index] || 0;
-            const displayValue = item.formattedDisplay(currentCount);
+          {statsList.map((item, index) => {
+            const currentCount = hasAnimated ? (counts[index] ?? item.value) : 0;
+            const displayValue = currentCount.toLocaleString('es-CO');
 
             return (
               <div
@@ -239,9 +259,9 @@ export const HomeStats: React.FC = () => {
                 {/* Bottom subtle progress line */}
                 <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
                   <span className="flex items-center gap-1 text-slate-500">
-                    <TrendingUp className="w-3.5 h-3.5 text-sky-500" /> Veeduría Continua
+                    <TrendingUp className="w-3.5 h-3.5 text-sky-500" /> Sincronización DB
                   </span>
-                  <span className="font-semibold text-slate-600">Sincronizado</span>
+                  <span className="font-semibold text-slate-600">CCV 3.0</span>
                 </div>
               </div>
             );
@@ -252,3 +272,4 @@ export const HomeStats: React.FC = () => {
     </section>
   );
 };
+
