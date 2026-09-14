@@ -86,6 +86,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               <label className="text-xs font-bold text-charcoal-700 uppercase tracking-wider">
                 Contraseña
               </label>
+              {/* Enlace de recuperación de contraseña oculto temporalmente
               <button
                 type="button"
                 onClick={() => setIsForgotPasswordOpen(true)}
@@ -93,6 +94,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               >
                 ¿Olvidaste tu contraseña?
               </button>
+              */}
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-3.5" />
