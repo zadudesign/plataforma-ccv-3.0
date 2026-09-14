@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { HomeNavbar } from './HomeNavbar';
 import { HomeHero } from './HomeHero';
 import { HomeStats } from './HomeStats';
+import { HomePrismaLab } from './HomePrismaLab';
 import { HomeAreas } from './HomeAreas';
 import { HomePillars } from './HomePillars';
 import { HomeFooter } from './HomeFooter';
@@ -21,7 +22,7 @@ export const LandingHome: React.FC = () => {
 
       {/* Contenido Principal Modular */}
       <main className="flex-1">
-        {/* SECCIÓN 1: Hero Section & Quiénes Somos (PRISMA & LAB) */}
+        {/* SECCIÓN 1: Hero Section */}
         <HomeHero 
           onOpenLogin={() => setIsLoginModalOpen(true)} 
         />
@@ -29,10 +30,13 @@ export const LandingHome: React.FC = () => {
         {/* SECCIÓN 2: Estadísticas en Tiempo Real (Contadores Animados) */}
         <HomeStats />
 
-        {/* SECCIÓN 3: Equipo de Trabajo (Nuestras 5 Áreas Operativas) */}
+        {/* SECCIÓN 3: Conceptualización PRISMA & LAB */}
+        <HomePrismaLab />
+
+        {/* SECCIÓN 4: Equipo de Trabajo (Nuestras 5 Áreas Operativas) */}
         <HomeAreas />
 
-        {/* SECCIÓN 4: Los Cuatro Pilares de PrismaLab */}
+        {/* SECCIÓN 5: Los Cuatro Pilares de PrismaLab */}
         <HomePillars 
           onOpenLogin={() => setIsLoginModalOpen(true)} 
         />
