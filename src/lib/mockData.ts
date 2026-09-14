@@ -141,7 +141,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 304 222 3344',
     activo: true,
-    ultima_conexion: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(), // Hace 4 días
+    ultima_conexion: new Date(Date.now() - 20 * 24 * 3600 * 1000).toISOString(), // Hace 20 días (Crítico: Rojo)
   },
   {
     id: 'u-docente',
@@ -165,7 +165,7 @@ export const INITIAL_USUARIOS: Usuario[] = [
     avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
     telefono: '+57 306 888 9900',
     activo: true,
-    ultima_conexion: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), // Hace 1 semana
+    ultima_conexion: new Date(Date.now() - 11 * 24 * 3600 * 1000).toISOString(), // Hace 11 días (Advertencia: Naranja)
   }
 ];
 

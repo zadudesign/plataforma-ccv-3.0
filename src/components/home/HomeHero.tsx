@@ -1,27 +1,15 @@
 'use client';
 
 import React from 'react';
-import { 
-  Sparkles, 
-  LogIn, 
-  ArrowRight, 
-  ChevronDown 
-} from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface HomeHeroProps {
-  onOpenLogin: () => void;
+  onOpenLogin?: () => void;
 }
 
-export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin }) => {
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
+export const HomeHero: React.FC<HomeHeroProps> = () => {
   return (
-    <section id="inicio" className="relative overflow-hidden pt-12 pb-14 md:pt-20 md:pb-20 scroll-mt-28">
+    <section id="inicio" className="relative overflow-hidden pt-12 pb-10 md:pt-20 md:pb-16 scroll-mt-28">
       {/* Background ambient decorative glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-sky-100/60 via-slate-200/40 to-violet-100/40 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-10 right-10 w-96 h-96 bg-sky-100/50 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -52,31 +40,11 @@ export const HomeHero: React.FC<HomeHeroProps> = ({ onOpenLogin }) => {
           <p className="text-base sm:text-lg text-slate-600 font-medium max-w-3xl mx-auto leading-relaxed">
             El centro de mando digital que estructura la producción multimedia y académica. PrismaLab sincroniza equipos, automatiza el seguimiento de plazos y ofrece visibilidad total en cada entrega institucional.
           </p>
-
-          {/* Action CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <button
-              onClick={onOpenLogin}
-              id="btn-hero-ingresar"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group scale-100 hover:scale-102 active:scale-98"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Ingresar a la Plataforma</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            <button
-              onClick={() => scrollToSection('estadisticas')}
-              className="w-full sm:w-auto px-7 py-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-300/80 shadow-2xs hover:shadow transition-all flex items-center justify-center gap-2"
-            >
-              <span>Ver Estadísticas en Vivo</span>
-              <ChevronDown className="w-4 h-4 text-slate-500" />
-            </button>
-          </div>
         </div>
 
       </div>
     </section>
   );
 };
+
 

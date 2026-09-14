@@ -291,6 +291,8 @@ interface InfoConexion {
   fechaCompleta?: string;
   esReciente: boolean;
   badgeClass: string;
+  dotClass: string;
+  cellClass?: string;
 }
 
 const formatUltimaConexion = (timestamp?: string): InfoConexion => {
@@ -299,7 +301,9 @@ const formatUltimaConexion = (timestamp?: string): InfoConexion => {
       texto: 'Sin registro',
       subtexto: 'Nunca ha ingresado',
       esReciente: false,
-      badgeClass: 'text-stone-400 bg-stone-50 border-stone-200'
+      badgeClass: 'text-stone-500 bg-stone-100 border-stone-200',
+      dotClass: 'bg-stone-300',
+      cellClass: ''
     };
   }
 
@@ -308,7 +312,9 @@ const formatUltimaConexion = (timestamp?: string): InfoConexion => {
     return {
       texto: 'Fecha no válida',
       esReciente: false,
-      badgeClass: 'text-stone-400 bg-stone-50 border-stone-200'
+      badgeClass: 'text-stone-400 bg-stone-50 border-stone-200',
+      dotClass: 'bg-stone-300',
+      cellClass: ''
     };
   }
 
@@ -333,7 +339,9 @@ const formatUltimaConexion = (timestamp?: string): InfoConexion => {
       subtexto: 'Ahora mismo',
       fechaCompleta,
       esReciente: true,
-      badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-300 font-extrabold'
+      badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-300 font-extrabold',
+      dotClass: 'bg-emerald-500',
+      cellClass: ''
     };
   } else if (diffMin < 60) {
     return {
@@ -341,7 +349,9 @@ const formatUltimaConexion = (timestamp?: string): InfoConexion => {
       subtexto: horaStr,
       fechaCompleta,
       esReciente: true,
-      badgeClass: 'text-emerald-700 bg-emerald-50/90 border-emerald-200 font-bold'
+      badgeClass: 'text-emerald-700 bg-emerald-50/90 border-emerald-200 font-bold',
+      dotClass: 'bg-emerald-500',
+      cellClass: ''
     };
   } else if (diffHours < 24 && date.getDate() === now.getDate()) {
     return {
@@ -349,7 +359,9 @@ const formatUltimaConexion = (timestamp?: string): InfoConexion => {
       subtexto: `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`,
       fechaCompleta,
       esReciente: diffHours < 3,
-      badgeClass: diffHours < 3 ? 'text-sage-800 bg-sage-50 border-sage-200 font-bold' : 'text-charcoal-700 bg-cream-50 border-stone-200'
+      badgeClass: diffHours < 3 ? 'text-sage-800 bg-sage-50 border-sage-200 font-bold' : 'text-charcoal-700 bg-cream-50 border-stone-200',
+      dotClass: diffHours < 3 ? 'bg-sage-600' : 'bg-stone-400',
+      cellClass: ''
     };
   } else if (diffDays === 1 || (diffHours < 48 && date.getDate() === now.getDate() - 1)) {
     return {
@@ -357,24 +369,43 @@ const formatUltimaConexion = (timestamp?: string): InfoConexion => {
       subtexto: '1 día atrás',
       fechaCompleta,
       esReciente: false,
-      badgeClass: 'text-charcoal-700 bg-stone-100/80 border-stone-200'
+      badgeClass: 'text-charcoal-700 bg-stone-100/80 border-stone-200',
+      dotClass: 'bg-stone-400',
+      cellClass: ''
     };
-  } else if (diffDays < 7) {
+  } else if (diffDays <= 8) {
     return {
       texto: `Hace ${diffDays} días`,
       subtexto: horaStr,
       fechaCompleta,
       esReciente: false,
-      badgeClass: 'text-charcoal-600 bg-stone-50 border-stone-200'
+      badgeClass: 'text-charcoal-600 bg-stone-50 border-stone-200',
+      dotClass: 'bg-stone-400',
+      cellClass: ''
     };
-  } else {
+  } else if (diffDays <= 15) {
+    // Más de 8 días sin conexión -> Sombrear de naranja / ámbar
     const fechaCorta = date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
     return {
-      texto: `${fechaCorta}, ${horaStr}`,
-      subtexto: `Hace ${diffDays} días`,
+      texto: `${fechaCorta} (${diffDays}d)`,
+      subtexto: `Inactivo: hace ${diffDays} días`,
       fechaCompleta,
       esReciente: false,
-      badgeClass: 'text-stone-500 bg-stone-50 border-stone-200'
+      badgeClass: 'text-amber-900 bg-amber-100 border-amber-300 font-extrabold shadow-2xs',
+      dotClass: 'bg-amber-500',
+      cellClass: 'bg-amber-50/40'
+    };
+  } else {
+    // Más de 15 días sin conexión -> Sombrear de rojo
+    const fechaCorta = date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    return {
+      texto: `${fechaCorta} (+${diffDays}d)`,
+      subtexto: `Crítico: ${diffDays} días sin conexión`,
+      fechaCompleta,
+      esReciente: false,
+      badgeClass: 'text-rose-800 bg-rose-100 border-rose-300 font-black shadow-2xs',
+      dotClass: 'bg-rose-500',
+      cellClass: 'bg-rose-50/50'
     };
   }
 };
@@ -1030,8 +1061,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             {usr.area_nombre || 'CURSO'}
                           </span>
                         </td>
-                        {/* Nueva Columna: Última Conexión */}
-                        <td className="py-3 px-4">
+                        {/* Columna: Última Conexión con Sombrado por Inactividad (>8d naranja, >15d rojo) */}
+                        <td className={`py-3 px-4 transition-colors ${infoConexion.cellClass || ''}`}>
                           <div 
                             className="flex items-center gap-2"
                             title={infoConexion.fechaCompleta ? `Último ingreso: ${infoConexion.fechaCompleta}` : undefined}
@@ -1040,7 +1071,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               {infoConexion.esReciente && (
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               )}
-                              <span className={`relative inline-flex rounded-full h-2 w-2 ${infoConexion.esReciente ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
+                              <span className={`relative inline-flex rounded-full h-2 w-2 ${infoConexion.dotClass}`}></span>
                             </span>
                             <div className="flex flex-col">
                               <span className={`text-[11px] px-2 py-0.5 rounded-md border w-fit font-bold ${infoConexion.badgeClass}`}>
