@@ -8,6 +8,7 @@ import {
   Filter, 
   Plus, 
   User, 
+  Users,
   CheckCircle2, 
   BarChart3, 
   Search,
@@ -25,6 +26,7 @@ import {
 import { TareaCCV, Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { LogHoursModal } from './LogHoursModal';
+import { CmuWorkloadTab } from './CmuWorkloadTab';
 
 interface ProductivityDashboardProps {
   tareas: TareaCCV[];
@@ -41,7 +43,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   onUpdateTaskHours,
   onSelectTask,
 }) => {
-  const { roles } = useAuth();
+  const { roles, isAdmin, isRealAdmin } = useAuth();
 
   // Helper para resolver el nombre legible del rol a partir de su ID o nombre directo
   const getNombreRol = (rolDestinoOrId?: string): string => {
@@ -56,8 +58,8 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     return rolDestinoOrId;
   };
 
-  // Pestaña Activa: 'horas' (Panel de Esfuerzo) vs 'entregas' (Dumbbell Plot Control de Entregas)
-  const [pestanaActiva, setPestanaActiva] = useState<'horas' | 'entregas'>('horas');
+  // Pestaña Activa: 'horas' (Panel de Esfuerzo) vs 'entregas' (Dumbbell Plot) vs 'capacidad' (Carga CMU)
+  const [pestanaActiva, setPestanaActiva] = useState<'horas' | 'entregas' | 'capacidad'>('horas');
 
   // Filtros Generales
   const [filtroRol, setFiltroRol] = useState<string>('todos');
@@ -555,6 +557,16 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
           >
             <Target className="w-4 h-4 text-sky-400" />
             Control de Entregas (Dumbbell)
+          </button>
+
+          <button
+            onClick={() => setPestanaActiva('capacidad')}
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 ${
+              pestanaActiva === 'capacidad' ? 'bg-slate-800 text-white shadow' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Users className="w-4 h-4 text-emerald-400" />
+            Carga y Capacidad CMU
           </button>
         </div>
       </div>
@@ -1338,6 +1350,19 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* PESTAÑA 3: CARGA SEMANAL Y CAPACIDAD DE ROLES DEL CMU                  */}
+      {/* ===================================================================== */}
+      {pestanaActiva === 'capacidad' && (
+        <CmuWorkloadTab
+          tareas={tareas}
+          usuarios={usuarios}
+          usuarioActual={usuarioActual}
+          isAdmin={Boolean(isAdmin || isRealAdmin)}
+          onSelectTask={onSelectTask}
+        />
       )}
 
       {/* Modal para añadir horas a tarea */}

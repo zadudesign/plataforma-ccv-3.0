@@ -14,7 +14,8 @@ import {
   EstadoTarea,
   TipoTarea,
   SolicitudTareaCCV,
-  EstadoSolicitudTarea
+  EstadoSolicitudTarea,
+  CmuCapacidadRol
 } from '@/types';
 
 
@@ -1529,4 +1530,91 @@ export async function convertirSolicitudEnTareaDB(
     return { success: false, error: err?.message || 'Error al aprobar solicitud' };
   }
 }
+
+// ----------------------------------------------------------------------------
+// 10. CAPACIDAD SEMANAL DE ROLES DEL CMU (ADMIN WORKLOAD LIMITS)
+// ----------------------------------------------------------------------------
+
+export const DEFAULT_CMU_CAPACIDAD: CmuCapacidadRol[] = [
+  { rol_nombre: 'Diseño', horas_semanales_maximas: 40 },
+  { rol_nombre: 'Soporte', horas_semanales_maximas: 40 },
+  { rol_nombre: 'Producción', horas_semanales_maximas: 40 },
+  { rol_nombre: 'Multimedia', horas_semanales_maximas: 40 },
+];
+
+export async function fetchCmuCapacidadRolesDB(): Promise<CmuCapacidadRol[]> {
+  try {
+    const { data, error } = await supabase
+      .from('cmu_capacidad_roles')
+      .select('*')
+      .order('rol_nombre', { ascending: true });
+
+    if (error) {
+      // Si la tabla aún no ha sido creada en Supabase (código 42P01 / PGRST204)
+      console.warn('Tabla cmu_capacidad_roles no detectada aún en Supabase, utilizando valores base:', error.message);
+      return DEFAULT_CMU_CAPACIDAD;
+    }
+
+    if (!data || data.length === 0) {
+      return DEFAULT_CMU_CAPACIDAD;
+    }
+
+    // Asegurar que los 4 roles existan en el resultado
+    const mapa = new Map<string, CmuCapacidadRol>();
+    DEFAULT_CMU_CAPACIDAD.forEach(def => mapa.set(def.rol_nombre.toLowerCase(), { ...def }));
+    
+    data.forEach((row: any) => {
+      mapa.set(row.rol_nombre.toLowerCase(), {
+        id: row.id,
+        rol_nombre: row.rol_nombre,
+        horas_semanales_maximas: Number(row.horas_semanales_maximas) || 40,
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      });
+    });
+
+    return Array.from(mapa.values());
+  } catch (err) {
+    console.error('Excepción en fetchCmuCapacidadRolesDB:', err);
+    return DEFAULT_CMU_CAPACIDAD;
+  }
+}
+
+export async function updateCmuCapacidadRolDB(
+  rolNombre: string,
+  horasMaximas: number
+): Promise<{ success: boolean; data?: CmuCapacidadRol; error?: string }> {
+  try {
+    const payload = {
+      rol_nombre: rolNombre,
+      horas_semanales_maximas: Number(horasMaximas),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('cmu_capacidad_roles')
+      .upsert(payload, { onConflict: 'rol_nombre' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error al actualizar capacidad de rol en Supabase:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: data?.id,
+        rol_nombre: data?.rol_nombre || rolNombre,
+        horas_semanales_maximas: Number(data?.horas_semanales_maximas || horasMaximas),
+        updated_at: data?.updated_at
+      }
+    };
+  } catch (err: any) {
+    console.error('Excepción en updateCmuCapacidadRolDB:', err);
+    return { success: false, error: err?.message || 'Error de conexión' };
+  }
+}
+
 

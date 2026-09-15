@@ -33,6 +33,7 @@ export interface Usuario {
   email: string;
   rol_id: string;
   rol_nombre?: string;
+  area_id?: string;
   area_nombre?: string;
   firma_digital?: string; // SVG / Base64 string
   avatar_url?: string;
@@ -190,3 +191,12 @@ export interface SolicitudTareaCCV {
 
 export type VistaNavegacion = 'dashboard' | 'calendar' | 'kanban' | 'productivity' | 'academic' | 'admin';
 
+export type RolCmuNombre = 'Diseño' | 'Soporte' | 'Producción' | 'Multimedia';
+
+export interface CmuCapacidadRol {
+  id?: string;
+  rol_nombre: RolCmuNombre | string;
+  horas_semanales_maximas: number;
+  created_at?: string;
+  updated_at?: string;
+}
