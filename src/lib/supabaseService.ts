@@ -869,6 +869,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
         hora_vencimiento: t.hora_vencimiento || '18:00',
         fecha_completada: t.fecha_completada,
+        tiempo_estimado: Number(t.tiempo_estimado || 0),
         tiempo_invertido: Number(t.tiempo_invertido || 0),
         tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? Number(t.tiempo_invertido_secundario) : undefined,
         tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
@@ -901,6 +902,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
       hora_vencimiento: t.hora_vencimiento || '18:00',
       fecha_completada: t.fecha_completada,
+      tiempo_estimado: Number(t.tiempo_estimado || 0),
       tiempo_invertido: Number(t.tiempo_invertido || 0),
       tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? Number(t.tiempo_invertido_secundario) : undefined,
       tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
@@ -1042,6 +1044,7 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       fecha_vencimiento: tarea.fecha_vencimiento || new Date().toISOString().split('T')[0],
       hora_vencimiento: tarea.hora_vencimiento || '18:00',
       fecha_completada: tarea.fecha_completada || null,
+      tiempo_estimado: Number(tarea.tiempo_estimado) || 0,
       tiempo_invertido: Number(tarea.tiempo_invertido) || 0,
       tiempo_invertido_secundario: tarea.tiempo_invertido_secundario !== undefined && tarea.tiempo_invertido_secundario !== null ? Number(tarea.tiempo_invertido_secundario) : null,
       tarifa_hora: tarea.tarifa_hora !== undefined && tarea.tarifa_hora !== null ? Number(tarea.tarifa_hora) : null,
@@ -1077,6 +1080,7 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
         if (res.error.message.includes('categoria_proyecto')) delete currentPayload.categoria_proyecto;
         if (res.error.message.includes('tarifa_hora')) delete currentPayload.tarifa_hora;
         if (res.error.message.includes('tarifa_tarea')) delete currentPayload.tarifa_tarea;
+        if (res.error.message.includes('tiempo_estimado')) delete currentPayload.tiempo_estimado;
         if (res.error.message.includes('tiempo_invertido_secundario')) delete currentPayload.tiempo_invertido_secundario;
         if (res.error.message.includes('tiempo_invertido')) delete currentPayload.tiempo_invertido;
         if (res.error.message.includes('hora_vencimiento')) delete currentPayload.hora_vencimiento;
@@ -1158,6 +1162,7 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     if (datos.estado !== undefined) payload.estado = datos.estado;
     if (datos.fecha_vencimiento !== undefined) payload.fecha_vencimiento = datos.fecha_vencimiento;
     if (datos.hora_vencimiento !== undefined) payload.hora_vencimiento = datos.hora_vencimiento;
+    if (datos.tiempo_estimado !== undefined) payload.tiempo_estimado = Number(datos.tiempo_estimado);
     if (datos.tiempo_invertido !== undefined) payload.tiempo_invertido = Number(datos.tiempo_invertido);
     if (datos.tiempo_invertido_secundario !== undefined) payload.tiempo_invertido_secundario = Number(datos.tiempo_invertido_secundario);
     if (datos.tarifa_hora !== undefined) payload.tarifa_hora = datos.tarifa_hora;
@@ -1171,6 +1176,7 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     if (error && error.code === 'PGRST204') {
       if (error.message.includes('responsable_secundario_id')) delete payload.responsable_secundario_id;
       if (error.message.includes('rol_destino_secundario')) delete payload.rol_destino_secundario;
+      if (error.message.includes('tiempo_estimado')) delete payload.tiempo_estimado;
       if (error.message.includes('tiempo_invertido_secundario')) delete payload.tiempo_invertido_secundario;
       if (error.message.includes('hora_vencimiento')) delete payload.hora_vencimiento;
       const res = await supabase.from('tareas').update(payload).eq('id', id);

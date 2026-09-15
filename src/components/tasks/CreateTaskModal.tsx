@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Plus, Calendar, DollarSign, Clock, Layers, BookOpen, FolderKanban, Link as LinkIcon, ExternalLink, Users, User, UserCheck } from 'lucide-react';
+import { X, Plus, Calendar, DollarSign, Clock, Timer, Layers, BookOpen, FolderKanban, Link as LinkIcon, ExternalLink, Users, User, UserCheck } from 'lucide-react';
 import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -32,6 +32,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || '');
   const [responsableId, setResponsableId] = useState(usuarios[0]?.id || '');
   const [responsableSecundarioId, setResponsableSecundarioId] = useState('');
+  const [tiempoEstimado, setTiempoEstimado] = useState<number | string>('');
   const [fechaVencimiento, setFechaVencimiento] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
@@ -83,6 +84,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       estado: 'Pendiente',
       fecha_vencimiento: fechaVencimiento,
       hora_vencimiento: horaVencimiento || '18:00',
+      tiempo_estimado: tiempoEstimado !== '' ? Number(tiempoEstimado) : 0,
       tiempo_invertido: 0,
       tiempo_invertido_secundario: responsableSecundarioId ? 0 : undefined,
       tarifa_hora: tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined,
@@ -297,8 +299,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Fecha y Hora de Vencimiento (Highlight: amber-500 Control de tiempos) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Planificación Temporal y Tiempos */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
@@ -308,7 +310,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 type="date"
                 value={fechaVencimiento}
                 onChange={(e) => setFechaVencimiento(e.target.value)}
-                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-semibold"
+                className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-semibold"
                 required
               />
             </div>
@@ -316,14 +318,30 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <div>
               <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span>Hora de Vencimiento *</span>
+                <span>Hora Vencimiento *</span>
               </label>
               <input
                 type="time"
                 value={horaVencimiento}
                 onChange={(e) => setHoraVencimiento(e.target.value)}
-                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-bold"
+                className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-bold"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <Timer className="w-3.5 h-3.5 text-sage-600" />
+                <span>Tiempo Estimado (Horas)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.25"
+                placeholder="Ej. 4.5"
+                value={tiempoEstimado}
+                onChange={(e) => setTiempoEstimado(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-semibold placeholder:text-slate-400"
               />
             </div>
           </div>

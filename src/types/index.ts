@@ -127,6 +127,7 @@ export interface TareaCCV {
   fecha_vencimiento: string;
   hora_vencimiento?: string; // Formato HH:mm (ej. "18:00")
   fecha_completada?: string;
+  tiempo_estimado?: number; // en horas (estimación de duración)
   tiempo_invertido: number; // en horas (responsable principal)
   tiempo_invertido_secundario?: number; // en horas (co-responsable)
   tarifa_hora?: number; // valor por hora asignado

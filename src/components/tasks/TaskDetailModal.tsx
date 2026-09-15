@@ -123,6 +123,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-stone-100 text-charcoal-800 border border-stone-200 flex items-center gap-1 font-mono">
                 📅 {tarea.fecha_vencimiento} • ⏰ {tarea.hora_vencimiento || '18:00'}
               </span>
+              {tarea.tiempo_estimado !== undefined && Number(tarea.tiempo_estimado) > 0 && (
+                <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-1 font-mono">
+                  ⏱️ Est: {tarea.tiempo_estimado} hrs
+                </span>
+              )}
             </div>
             <h3 className="text-xl font-extrabold text-charcoal-900">{tarea.titulo}</h3>
             <div className="text-xs text-charcoal-600 mt-1 flex items-center gap-2 flex-wrap">
