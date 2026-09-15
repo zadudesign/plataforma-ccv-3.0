@@ -23,7 +23,12 @@ import {
   TrendingUp,
   X,
   Save,
-  Info
+  Info,
+  GraduationCap,
+  Building2,
+  BarChart2,
+  Filter,
+  CheckCircle
 } from 'lucide-react';
 import { TareaCCV, Usuario, CmuCapacidadRol, RolCmuNombre } from '@/types';
 import { 
@@ -31,6 +36,15 @@ import {
   updateCmuCapacidadRolDB, 
   DEFAULT_CMU_CAPACIDAD 
 } from '@/lib/supabaseService';
+import { useAuth } from '@/context/AuthContext';
+import { 
+  resolverRemisionTarea, 
+  agruparTareasPorRemision, 
+  RemisionContext, 
+  InfoRemision 
+} from '@/lib/remisionUtils';
+import { CmuRemisionBadge } from './CmuRemisionBadge';
+import { CmuFacultyDepartmentBreakdown } from './CmuFacultyDepartmentBreakdown';
 
 interface CmuWorkloadTabProps {
   tareas: TareaCCV[];
@@ -73,16 +87,33 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
   isAdmin,
   onSelectTask,
 }) => {
+  // Entidades institucionales desde el contexto de autenticación
+  const { facultades, programas, cursos, proyectos, areas, solicitudesTareas } = useAuth();
+
+  const remisionCtx: RemisionContext = useMemo(() => ({
+    facultades,
+    programas,
+    cursos,
+    proyectos,
+    areas,
+    solicitudesTareas,
+  }), [facultades, programas, cursos, proyectos, areas, solicitudesTareas]);
+
   // 1. Estado de la fecha de referencia para la semana (por defecto hoy)
   const [fechaReferencia, setFechaReferencia] = useState<Date>(() => new Date());
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [miembroExpandidoId, setMiembroExpandidoId] = useState<string | null>(null);
 
-  // 2. Estado de capacidades de los 4 roles
+  // 2. Filtros y Organización de Remisiones (Facultad / Departamento)
+  const [filtroAmbito, setFiltroAmbito] = useState<'semana' | 'realizadas' | 'todas'>('semana');
+  const [entidadSeleccionada, setEntidadSeleccionada] = useState<string | null>(null);
+  const [mostrarPanelDistribucion, setMostrarPanelDistribucion] = useState<boolean>(true);
+
+  // 3. Estado de capacidades de los 4 roles
   const [capacidades, setCapacidades] = useState<CmuCapacidadRol[]>(DEFAULT_CMU_CAPACIDAD);
   const [cargandoCapacidades, setCargandoCapacidades] = useState<boolean>(true);
 
-  // 3. Modal de configuración para Administrador
+  // 4. Modal de configuración para Administrador
   const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
   const [formCapacidades, setFormCapacidades] = useState<Record<string, number>>({
     'Diseño': 40,
@@ -144,7 +175,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
     return cap ? cap.horas_semanales_maximas : 40;
   };
 
-  // 4. Filtrar los colaboradores que pertenecen al CMU con los 4 roles oficiales
+  // 5. Filtrar los colaboradores que pertenecen al CMU con los 4 roles oficiales
   const miembrosCMU = useMemo(() => {
     return usuarios.filter(u => {
       const areaMatch = u.area_nombre?.toUpperCase().includes('CMU') || u.area_id === 'a-5' || u.area_id === 'a-5-1' || u.area_id === 'a-5-2' || u.area_id === 'a-5-3';
@@ -156,15 +187,36 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
     });
   }, [usuarios]);
 
-  // 5. Filtrar las tareas que vencen en la semana seleccionada
-  const tareasDeLaSemana = useMemo(() => {
+  // 6. Filtrar las tareas según el ámbito seleccionado (Semana actual vs Realizadas/Completadas vs Todas)
+  const tareasDelAmbito = useMemo(() => {
+    if (filtroAmbito === 'realizadas') {
+      return tareas.filter(t => t.estado === 'Completada');
+    }
+    if (filtroAmbito === 'todas') {
+      return tareas;
+    }
+    // Por defecto: 'semana'
     return tareas.filter(t => {
       if (!t.fecha_vencimiento) return false;
       return t.fecha_vencimiento >= rangoSemana.lunesStr && t.fecha_vencimiento <= rangoSemana.domingoStr;
     });
-  }, [tareas, rangoSemana]);
+  }, [tareas, filtroAmbito, rangoSemana]);
 
-  // 6. Computar la carga de trabajo semanal por cada colaborador del CMU
+  // Tareas asignadas a colaboradores del CMU dentro del ámbito
+  const tareasCMUAmbito = useMemo(() => {
+    const idsCMU = new Set(miembrosCMU.map(m => m.id));
+    return tareasDelAmbito.filter(t => 
+      (t.responsable_id && idsCMU.has(t.responsable_id)) ||
+      (t.responsable_secundario_id && idsCMU.has(t.responsable_secundario_id))
+    );
+  }, [tareasDelAmbito, miembrosCMU]);
+
+  // 7. Métricas de Facultades y Departamentos remitentes agregadas
+  const metricasEntidades = useMemo(() => {
+    return agruparTareasPorRemision(tareasCMUAmbito, remisionCtx);
+  }, [tareasCMUAmbito, remisionCtx]);
+
+  // 8. Computar la carga de trabajo por cada colaborador del CMU y las entidades que atiende
   const dataMiembros = useMemo(() => {
     return miembrosCMU.map(m => {
       // Normalizar el rol del miembro dentro de los 4 roles CMU
@@ -175,12 +227,35 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
       else if (rolUpper.includes('PRODUCCI')) rolNormalizado = 'Producción';
       else if (rolUpper.includes('DISEÑO') || rolUpper.includes('DISENO')) rolNormalizado = 'Diseño';
 
-      // Tareas asignadas al miembro esta semana (como Principal o como Secundario)
-      const tareasAsignadas = tareasDeLaSemana.filter(t => {
+      // Tareas asignadas al miembro en el ámbito
+      const tareasAsignadas = tareasDelAmbito.filter(t => {
         const esPrincipal = t.responsable_id === m.id;
         const esSecundario = t.responsable_secundario_id === m.id;
         return esPrincipal || esSecundario;
       });
+
+      // Calcular entidades atendidas por este colaborador
+      const conteoEntidades = new Map<string, { remision: InfoRemision; horas: number; total: number }>();
+      tareasAsignadas.forEach(t => {
+        const rem = resolverRemisionTarea(t, remisionCtx);
+        const hrs = Number(t.tiempo_estimado || 0);
+        if (!conteoEntidades.has(rem.nombre)) {
+          conteoEntidades.set(rem.nombre, { remision: rem, horas: 0, total: 0 });
+        }
+        const val = conteoEntidades.get(rem.nombre)!;
+        val.horas += hrs;
+        val.total += 1;
+      });
+
+      const entidadesAtendidas = Array.from(conteoEntidades.values()).sort((a, b) => b.horas - a.horas);
+
+      // Tareas filtradas si hay una entidad seleccionada
+      const tareasFiltradas = entidadSeleccionada
+        ? tareasAsignadas.filter(t => {
+            const rem = resolverRemisionTarea(t, remisionCtx);
+            return rem.nombre.toLowerCase() === entidadSeleccionada.toLowerCase();
+          })
+        : tareasAsignadas;
 
       // Regla Requerimiento: "Cuando una tarea tiene Responsable Principal y Segundo Responsable 
       // ambos asumen el 100% de las horas ya que ambos van a invertir ese tiempo en cumplir la tarea."
@@ -211,6 +286,9 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
         usuario: m,
         rolNormalizado,
         tareas: tareasAsignadas,
+        tareasFiltradas,
+        entidadesAtendidas,
+        tieneTareasEnEntidad: entidadSeleccionada ? tareasFiltradas.length > 0 : true,
         horasEstimadasTotal,
         horasInvertidasTotal,
         horasLimite,
@@ -218,20 +296,26 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
         estadoSaturacion,
       };
     });
-  }, [miembrosCMU, tareasDeLaSemana, capacidades]);
+  }, [miembrosCMU, tareasDelAmbito, capacidades, remisionCtx, entidadSeleccionada]);
 
-  // Filtrar miembros según el filtro de rol seleccionado
+  // Filtrar miembros según el filtro de rol y la entidad seleccionada
   const miembrosFiltrados = useMemo(() => {
-    if (filtroRol === 'todos') return dataMiembros;
-    return dataMiembros.filter(d => d.rolNormalizado === filtroRol);
-  }, [dataMiembros, filtroRol]);
+    let list = dataMiembros;
+    if (filtroRol !== 'todos') {
+      list = list.filter(d => d.rolNormalizado === filtroRol);
+    }
+    if (entidadSeleccionada) {
+      list = list.filter(d => d.tieneTareasEnEntidad);
+    }
+    return list;
+  }, [dataMiembros, filtroRol, entidadSeleccionada]);
 
-  // KPIs Generales del CMU en la semana
+  // KPIs Generales del CMU en el ámbito seleccionado
   const kpis = useMemo(() => {
     const totalCapacidadHoras = dataMiembros.reduce((acc, m) => acc + m.horasLimite, 0);
     const totalHorasEstimadas = dataMiembros.reduce((acc, m) => acc + m.horasEstimadasTotal, 0);
     const totalHorasInvertidas = dataMiembros.reduce((acc, m) => acc + m.horasInvertidasTotal, 0);
-    const totalTareasSemana = tareasDeLaSemana.length;
+    const totalTareasAmbito = tareasCMUAmbito.length;
     const miembrosSobrecargados = dataMiembros.filter(m => m.estadoSaturacion === 'sobrecarga').length;
     const porcentajeGlobal = totalCapacidadHoras > 0 ? Math.round((totalHorasEstimadas / totalCapacidadHoras) * 100) : 0;
 
@@ -239,11 +323,11 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
       totalCapacidadHoras,
       totalHorasEstimadas,
       totalHorasInvertidas,
-      totalTareasSemana,
+      totalTareasAmbito,
       miembrosSobrecargados,
       porcentajeGlobal,
     };
-  }, [dataMiembros, tareasDeLaSemana]);
+  }, [dataMiembros, tareasCMUAmbito]);
 
   // Guardar configuración de límites (Solo Admin)
   const handleGuardarConfig = async (e: React.FormEvent) => {
@@ -269,53 +353,112 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
     }, 1500);
   };
 
+  const textoAmbito = filtroAmbito === 'semana' 
+    ? `Semana: ${rangoSemana.label}` 
+    : filtroAmbito === 'realizadas' 
+    ? 'Tareas Realizadas (Completadas)' 
+    : 'Todas las Tareas';
+
   return (
     <div className="space-y-6 animate-fadeIn font-sans">
-      {/* Barra Superior de Control de Semanas y Acción de Administrador */}
+      {/* Barra Superior de Control de Semanas, Ámbito y Filtros */}
       <div className="ccv-card p-5 bg-white border border-stone-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        {/* Selector Temporal de Semana */}
+        
+        {/* Selector de Ámbito Temporal y Rango */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5 p-1 bg-stone-100 rounded-xl border border-stone-200">
+          {/* Conmutador de Ámbito: Semana vs Realizadas vs Todas */}
+          <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl text-xs font-bold">
             <button
-              onClick={handleSemanaAnterior}
-              className="p-1.5 rounded-lg text-charcoal-600 hover:bg-white hover:text-charcoal-900 transition-all"
-              title="Semana anterior"
+              type="button"
+              onClick={() => setFiltroAmbito('semana')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                filtroAmbito === 'semana' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Semana Actual</span>
             </button>
             <button
-              onClick={handleSemanaActual}
-              className="px-3 py-1 rounded-lg text-xs font-black text-slate-800 hover:bg-white transition-all"
+              type="button"
+              onClick={() => setFiltroAmbito('realizadas')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                filtroAmbito === 'realizadas' ? 'bg-emerald-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              Hoy
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span>Tareas Realizadas</span>
             </button>
             <button
-              onClick={handleSemanaSiguiente}
-              className="p-1.5 rounded-lg text-charcoal-600 hover:bg-white hover:text-charcoal-900 transition-all"
-              title="Semana siguiente"
+              type="button"
+              onClick={() => setFiltroAmbito('todas')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                filtroAmbito === 'todas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <ChevronRight className="w-4 h-4" />
+              Todas
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-sage-100 text-sage-800 flex items-center justify-center">
-              <Calendar className="w-4 h-4" />
+          {/* Selector Temporal de Semana (Solo activo si el ámbito es 'semana') */}
+          {filtroAmbito === 'semana' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl border border-stone-200">
+                <button
+                  onClick={handleSemanaAnterior}
+                  className="p-1.5 rounded-lg text-charcoal-600 hover:bg-white hover:text-charcoal-900 transition-all cursor-pointer"
+                  title="Semana anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleSemanaActual}
+                  className="px-3 py-1 rounded-lg text-xs font-black text-slate-800 hover:bg-white transition-all cursor-pointer"
+                >
+                  Hoy
+                </button>
+                <button
+                  onClick={handleSemanaSiguiente}
+                  className="p-1.5 rounded-lg text-charcoal-600 hover:bg-white hover:text-charcoal-900 transition-all cursor-pointer"
+                  title="Semana siguiente"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-sage-100 text-sage-800 flex items-center justify-center">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-charcoal-500 block">
+                    Semana ({rangoSemana.lunesStr} al {rangoSemana.domingoStr})
+                  </span>
+                  <span className="text-xs sm:text-sm font-black text-charcoal-900">
+                    {rangoSemana.label}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] uppercase tracking-wider font-extrabold text-charcoal-500 block">
-                Semana de Trabajo ({rangoSemana.lunesStr} al {rangoSemana.domingoStr})
-              </span>
-              <span className="text-sm font-black text-charcoal-900">
-                {rangoSemana.label}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Acciones: Filtro de Rol y Botón Admin */}
+        {/* Acciones: Filtro de Rol, Toggle Panel y Botón Admin */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Filtro rápido por rol */}
+          {/* Botón para Mostrar/Ocultar Panel de Remisión a Facultades/Departamentos */}
+          <button
+            type="button"
+            onClick={() => setMostrarPanelDistribucion(!mostrarPanelDistribucion)}
+            className={`px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border transition-all cursor-pointer ${
+              mostrarPanelDistribucion 
+                ? 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100' 
+                : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+            }`}
+          >
+            <BarChart2 className="w-4 h-4 text-amber-600" />
+            <span>{mostrarPanelDistribucion ? 'Ocultar Facultades/Departamentos' : 'Ver Facultades/Departamentos'}</span>
+          </button>
+
+          {/* Filtro rápido por rol CMU */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs font-bold">
             <button
               onClick={() => setFiltroRol('todos')}
@@ -351,6 +494,16 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
         </div>
       </div>
 
+      {/* PANEL EJECUTIVO DE DEMANDA POR FACULTAD Y DEPARTAMENTO REMITENTE */}
+      {mostrarPanelDistribucion && (
+        <CmuFacultyDepartmentBreakdown
+          metricasEntidades={metricasEntidades}
+          entidadSeleccionada={entidadSeleccionada}
+          onSelectEntidad={setEntidadSeleccionada}
+          ambitoTexto={textoAmbito}
+        />
+      )}
+
       {/* Tarjetas KPI de Resumen Global de Capacidad */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Capacidad Total Instalada */}
@@ -379,7 +532,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
               <span className="text-xs font-extrabold text-charcoal-500">hrs estimadas</span>
             </div>
             <p className="text-[10px] text-charcoal-500 mt-0.5">
-              {kpis.totalTareasSemana} tareas con vencimiento esta semana
+              {kpis.totalTareasAmbito} tareas en {filtroAmbito === 'realizadas' ? 'histórico' : 'este periodo'}
             </p>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center">
@@ -444,21 +597,43 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
 
       {/* Grid Principal de Colaboradores del CMU */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-extrabold text-charcoal-900 flex items-center gap-2">
-            <Users className="w-5 h-5 text-sage-600" />
-            <span>Capacidad y Asignación por Colaborador del CMU</span>
-          </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-lg font-extrabold text-charcoal-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-sage-600" />
+              <span>Capacidad y Asignación por Colaborador del CMU</span>
+            </h3>
+            {entidadSeleccionada && (
+              <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                Filtrado por: {entidadSeleccionada}
+              </span>
+            )}
+          </div>
           <span className="text-xs text-charcoal-500 font-medium">
             Horas estimadas al 100% para cada rol asignado
           </span>
         </div>
 
         {miembrosFiltrados.length === 0 ? (
-          <div className="ccv-card p-12 bg-white text-center border border-stone-200">
-            <Users className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-            <h4 className="text-base font-extrabold text-charcoal-800">No se encontraron miembros para el rol seleccionado</h4>
-            <p className="text-xs text-charcoal-500 mt-1">Asegúrate de que los usuarios tengan asignado el rol correspondiente en el área CMU.</p>
+          <div className="ccv-card p-12 bg-white text-center border border-stone-200 space-y-3">
+            <Users className="w-12 h-12 text-stone-300 mx-auto" />
+            <h4 className="text-base font-extrabold text-charcoal-800">
+              No se encontraron colaboradores para los criterios seleccionados
+            </h4>
+            <p className="text-xs text-charcoal-500 max-w-md mx-auto">
+              {entidadSeleccionada 
+                ? `Ningún colaborador de este rol tiene tareas asignadas o realizadas para "${entidadSeleccionada}".`
+                : 'Asegúrate de que los usuarios tengan asignado el rol correspondiente en el área CMU.'}
+            </p>
+            {entidadSeleccionada && (
+              <button
+                type="button"
+                onClick={() => setEntidadSeleccionada(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition-colors"
+              >
+                Quitar filtro de entidad
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
@@ -479,14 +654,14 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
                 >
                   {/* Tarjeta Resumen */}
                   <div className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                    {/* Identificación del Miembro */}
-                    <div className="flex items-center gap-3.5 min-w-[260px]">
+                    {/* Identificación del Miembro y Entidades que atiende */}
+                    <div className="flex items-start gap-3.5 min-w-[280px]">
                       <img
                         src={item.usuario.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
                         alt={item.usuario.nombre_completo}
-                        className="w-12 h-12 rounded-2xl object-cover border border-stone-200 shadow-2xs shrink-0"
+                        className="w-12 h-12 rounded-2xl object-cover border border-stone-200 shadow-2xs shrink-0 mt-0.5"
                       />
-                      <div>
+                      <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-extrabold text-charcoal-900 text-sm">
                             {item.usuario.nombre_completo}
@@ -495,9 +670,34 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
                             {item.rolNormalizado}
                           </span>
                         </div>
-                        <p className="text-xs text-charcoal-500 mt-0.5">
+                        <p className="text-xs text-charcoal-500">
                           {item.usuario.email}
                         </p>
+
+                        {/* Chips de Facultades y Departamentos atendidos por este colaborador */}
+                        {item.entidadesAtendidas.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                            <span className="text-[9px] uppercase font-bold text-charcoal-500 tracking-wider">
+                              Remitido a:
+                            </span>
+                            {item.entidadesAtendidas.slice(0, 2).map(ent => (
+                              <CmuRemisionBadge
+                                key={ent.remision.nombre}
+                                remision={ent.remision}
+                                size="xs"
+                                onClick={() => setEntidadSeleccionada(entidadSeleccionada === ent.remision.nombre ? null : ent.remision.nombre)}
+                              />
+                            ))}
+                            {item.entidadesAtendidas.length > 2 && (
+                              <span 
+                                className="text-[10px] text-charcoal-500 font-bold cursor-pointer hover:text-slate-900"
+                                onClick={() => setMiembroExpandidoId(esExpandido ? null : item.usuario.id)}
+                              >
+                                +{item.entidadesAtendidas.length - 2} más
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -527,7 +727,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
 
                       <div className="flex items-center justify-between text-[10px] text-charcoal-500 font-medium mt-1">
                         <span>Horas reales invertidas: <strong className="text-charcoal-800">{item.horasInvertidasTotal}h</strong></span>
-                        <span>{item.tareas.length} tarea(s) esta semana</span>
+                        <span>{item.tareas.length} tarea(s) en este ámbito</span>
                       </div>
                     </div>
 
@@ -541,7 +741,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
                             : 'bg-stone-50 text-charcoal-700 border-stone-200 hover:bg-stone-100'
                         }`}
                       >
-                        <span>{esExpandido ? 'Ocultar Tareas' : `Ver Tareas (${item.tareas.length})`}</span>
+                        <span>{esExpandido ? 'Ocultar Tareas' : `Ver Tareas (${item.tareasFiltradas.length})`}</span>
                         {esExpandido ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
@@ -550,30 +750,38 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
                   {/* Acordeón de Tareas Asignadas */}
                   {esExpandido && (
                     <div className="border-t border-stone-100 bg-stone-50/60 p-5 animate-fadeIn">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                         <h5 className="text-xs font-extrabold text-charcoal-900 flex items-center gap-2">
                           <Layers className="w-4 h-4 text-sage-600" />
-                          <span>Entregables que componen la carga semanal ({item.tareas.length}):</span>
+                          <span>
+                            Entregables {entidadSeleccionada ? `filtrados por ${entidadSeleccionada}` : 'asignados'} ({item.tareasFiltradas.length}):
+                          </span>
                         </h5>
                         <span className="text-[11px] text-charcoal-500">
-                          Vencen entre {rangoSemana.lunesStr} y {rangoSemana.domingoStr}
+                          {filtroAmbito === 'semana' 
+                            ? `Vencen entre ${rangoSemana.lunesStr} y ${rangoSemana.domingoStr}`
+                            : filtroAmbito === 'realizadas'
+                            ? 'Tareas con estado Completada'
+                            : 'Listado completo de tareas'}
                         </span>
                       </div>
 
-                      {item.tareas.length === 0 ? (
+                      {item.tareasFiltradas.length === 0 ? (
                         <div className="p-4 bg-white rounded-xl border border-stone-200 text-center text-xs text-charcoal-500 font-medium">
-                          Este colaborador no tiene tareas programadas para vencer en la semana seleccionada.
+                          Este colaborador no tiene tareas asociadas a los filtros seleccionados.
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          {item.tareas.map(t => {
+                        <div className="space-y-2.5">
+                          {item.tareasFiltradas.map(t => {
                             const esPrincipal = t.responsable_id === item.usuario.id;
+                            const remision = resolverRemisionTarea(t, remisionCtx);
+
                             return (
                               <div
                                 key={t.id}
                                 className="p-3.5 bg-white rounded-xl border border-stone-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition-colors"
                               >
-                                <div className="space-y-1">
+                                <div className="space-y-1.5 min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                                       {t.tipo_tarea}
@@ -589,13 +797,25 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
                                     <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
                                       {esPrincipal ? '⭐ Responsable Principal' : '👥 Segundo Responsable'}
                                     </span>
+
+                                    {/* BADGE DESTACADO DE FACULTAD O DEPARTAMENTO REMITENTE */}
+                                    <CmuRemisionBadge remision={remision} size="xs" />
                                   </div>
-                                  <h6 className="text-xs font-bold text-charcoal-900">
+
+                                  <h6 className="text-xs font-bold text-charcoal-900 truncate">
                                     {t.titulo}
                                   </h6>
-                                  <p className="text-[11px] text-charcoal-500">
-                                    {t.curso_nombre || t.proyecto_nombre || 'Asignación General CCV'}
-                                  </p>
+
+                                  <div className="text-[11px] text-charcoal-500 flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-charcoal-700">
+                                      {t.curso_nombre || t.proyecto_nombre || 'Asignación General CCV'}
+                                    </span>
+                                    {remision.subtexto && (
+                                      <span className="text-[10px] text-charcoal-500 font-medium">
+                                        • {remision.subtexto}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center gap-4 shrink-0 sm:text-right">
@@ -605,7 +825,9 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
                                       <span>Est: <strong>{t.tiempo_estimado || 0} hrs</strong></span>
                                     </div>
                                     <span className="text-[10px] text-charcoal-500 block">
-                                      Vence: {t.fecha_vencimiento}
+                                      {t.estado === 'Completada' && t.fecha_completada
+                                        ? `Completada: ${t.fecha_completada}`
+                                        : `Vence: ${t.fecha_vencimiento}`}
                                     </span>
                                   </div>
 
