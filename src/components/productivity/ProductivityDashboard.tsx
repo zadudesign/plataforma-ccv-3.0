@@ -1349,7 +1349,9 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
           tareas={tareas}
           usuarios={usuarios}
           usuarioActual={usuarioActual}
-          isAdmin={Boolean((isAdmin && isAdmin()) || (isRealAdmin && isRealAdmin()))}
+          isAdmin={Boolean(
+            (usuarioActual?.rol_nombre || roles.find(r => r.id === usuarioActual?.rol_id)?.nombre || '').toLowerCase() === 'administrador'
+          )}
           onSelectTask={onSelectTask}
         />
       )}

@@ -88,8 +88,11 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
   onSelectTask,
 }) => {
   // Entidades institucionales desde el contexto de autenticación
-  const { facultades, programas, cursos, proyectos, areas, solicitudesTareas, isAdmin: authIsAdmin, isRealAdmin } = useAuth();
-  const userIsAdmin = Boolean(isAdmin || (authIsAdmin && authIsAdmin()) || (isRealAdmin && isRealAdmin()));
+  const { facultades, programas, cursos, proyectos, areas, solicitudesTareas, roles } = useAuth();
+
+  // Rectificación estricta: visible EXCLUSIVAMENTE cuando el rol activo del usuario es 'Administrador'
+  const rolUsuarioActivo = usuarioActual?.rol_nombre || roles?.find(r => r.id === usuarioActual?.rol_id)?.nombre || '';
+  const userIsAdmin = rolUsuarioActivo.toLowerCase() === 'administrador';
 
   const remisionCtx: RemisionContext = useMemo(() => ({
     facultades,
