@@ -16,6 +16,7 @@ import { LandingHome } from '@/components/home/LandingHome';
 import { DevRoleSimulatorModal } from '@/components/auth/DevRoleSimulatorModal';
 import { DigitalSignatureModal } from '@/components/auth/DigitalSignatureModal';
 import { useAuth } from '@/context/AuthContext';
+import { TimerProvider } from '@/context/TimerContext';
 
 import { 
   fetchTareasDB, 
@@ -451,23 +452,29 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans relative">
-      {/* Floating Left Pill Sidebar */}
-      <Sidebar vistaActual={vistaActual} setVistaActual={setVistaActual} />
+    <TimerProvider>
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans relative">
+        {/* Floating Left Pill Sidebar */}
+        <Sidebar vistaActual={vistaActual} setVistaActual={setVistaActual} />
 
-      {/* Main App Container */}
-      <main className="flex-1 ml-28 mr-6 my-6 min-w-0">
-        {/* Top Hero Blue Banner */}
-        <WelcomeBanner usuarioActual={usuarioActual} />
+        {/* Main App Container */}
+        <main className="flex-1 ml-28 mr-6 my-6 min-w-0">
+          {/* Top Hero Blue Banner */}
+          <WelcomeBanner usuarioActual={usuarioActual} />
 
-        <Header
-          usuarioActual={usuarioActual}
-          onOpenCreateTask={() => setIsCreateTaskOpen(true)}
-          onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
-          busqueda={busqueda}
-          setBusqueda={setBusqueda}
-          onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
-        />
+          <Header
+            usuarioActual={usuarioActual}
+            onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+            onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
+            busqueda={busqueda}
+            setBusqueda={setBusqueda}
+            onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
+            onSelectTaskById={(id) => {
+              const t = tareas.find(x => x.id === id);
+              if (t) setTareaSeleccionada(t);
+            }}
+            onAddHours={handleUpdateTaskHours}
+          />
 
         {/* View Switcher */}
         {vistaActual === 'dashboard' && (
@@ -621,5 +628,6 @@ export default function Home() {
         )}
       </main>
     </div>
+  </TimerProvider>
   );
 }

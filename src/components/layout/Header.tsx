@@ -5,6 +5,8 @@ import { Search, Bell, Plus, Shield, Sparkles, FileSignature, FilePlus } from 'l
 import { Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
+import { HeaderTimerWidget } from './HeaderTimerWidget';
+
 interface HeaderProps {
   usuarioActual?: Usuario;
   onOpenCreateTask: () => void;
@@ -12,6 +14,8 @@ interface HeaderProps {
   busqueda: string;
   setBusqueda: (val: string) => void;
   onOpenSignatureModal?: () => void;
+  onSelectTaskById?: (tareaId: string) => void;
+  onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => Promise<void> | void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,6 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   busqueda,
   setBusqueda,
   onOpenSignatureModal,
+  onSelectTaskById,
+  onAddHours,
 }) => {
   const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin, isAdmin } = useAuth();
   const usuarioActual = propsUsuario || contextUsuario;
@@ -45,6 +51,13 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls Bar */}
       <div className="flex items-center gap-3 flex-wrap justify-end">
+        {/* Global Live Task Timer Widget */}
+        {onAddHours && (
+          <HeaderTimerWidget
+            onSelectTaskById={onSelectTaskById}
+            onAddHours={onAddHours}
+          />
+        )}
         {/* Role Simulator Badge Button (Exclusivo para Admin) */}
         {isRealAdmin() && (
           <button

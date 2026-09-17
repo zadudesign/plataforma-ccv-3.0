@@ -28,6 +28,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
 import { calcularProgresoTareas, PESOS_ESTADO_TAREA } from '@/lib/progressUtils';
+import { TaskTimeTracker } from '@/components/tasks/TaskTimeTracker';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -52,7 +53,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onAddComentario,
   onAddHours,
 }) => {
-  const { areas, facultades, programas, roles, usuarios } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
@@ -779,117 +780,14 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                   )}
                 </div>
 
-                {/* EXCLUSIVO PROYECTOS: Sección Interactiva para Imputar / Sumar Horas de Trabajo */}
+                {/* EXCLUSIVO PROYECTOS: Sección Interactiva para Imputar / Sumar Horas de Trabajo con Cronómetro */}
                 {tareaSeleccionadaLocal.tipo_tarea === 'Proyecto' && onAddHours && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3.5 shadow-2xs">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-2xs">
-                          <Clock className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-extrabold text-charcoal-900 flex items-center gap-1.5">
-                            <span>Imputar Tiempo de Trabajo</span>
-                            <span className="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.2 rounded-full font-black uppercase">
-                              Proyecto
-                            </span>
-                          </h4>
-                          <p className="text-[11px] text-charcoal-600">
-                            Suma bloques de horas trabajadas durante el desarrollo de la tarea.
-                          </p>
-                        </div>
-                      </div>
-
-                      {mostrarExitoHoras && (
-                        <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full animate-bounce flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> ¡Horas sumadas!
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Selector de responsable si hay co-responsable */}
-                    {tareaSeleccionadaLocal.responsable_secundario_nombre && (
-                      <div className="flex items-center gap-2 text-xs bg-white p-2 rounded-xl border border-amber-200">
-                        <span className="text-charcoal-600 font-bold text-[11px]">Imputar a:</span>
-                        <button
-                          type="button"
-                          onClick={() => setImputarParaSecundario(false)}
-                          className={`px-2.5 py-1 rounded-lg font-extrabold text-xs transition-all ${
-                            !imputarParaSecundario
-                              ? 'bg-amber-600 text-white shadow-2xs'
-                              : 'bg-stone-100 text-charcoal-700 hover:bg-stone-200'
-                          }`}
-                        >
-                          Principal: {tareaSeleccionadaLocal.responsable_nombre}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setImputarParaSecundario(true)}
-                          className={`px-2.5 py-1 rounded-lg font-extrabold text-xs transition-all ${
-                            imputarParaSecundario
-                              ? 'bg-blue-600 text-white shadow-2xs'
-                              : 'bg-stone-100 text-charcoal-700 hover:bg-stone-200'
-                          }`}
-                        >
-                          Co-resp: {tareaSeleccionadaLocal.responsable_secundario_nombre}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Botones de incremento rápido */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold text-charcoal-600">Suma rápida:</span>
-                      {[0.5, 1, 2, 4].map(h => (
-                        <button
-                          key={h}
-                          type="button"
-                          onClick={() => handlePresetHoras(h)}
-                          className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 font-black text-xs hover:bg-amber-600 hover:text-white transition-all shadow-2xs"
-                        >
-                          +{h} {h === 1 ? 'hora' : 'horas'}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Formulario de entrada personalizada y nota */}
-                    <form onSubmit={handleSumarHoras} className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-amber-200/60">
-                      <div className="sm:col-span-3">
-                        <label className="block text-[10px] font-black text-charcoal-700 uppercase mb-0.5">Horas a sumar</label>
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0.5"
-                          max="24"
-                          value={horasInput}
-                          onChange={(e) => setHorasInput(e.target.value)}
-                          className="w-full p-2 rounded-xl border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none text-charcoal-900 text-xs font-extrabold"
-                          placeholder="Ej. 1.5"
-                          required
-                        />
-                      </div>
-
-                      <div className="sm:col-span-6">
-                        <label className="block text-[10px] font-black text-charcoal-700 uppercase mb-0.5">Detalle / Nota de avance (Opcional)</label>
-                        <input
-                          type="text"
-                          value={notasHoras}
-                          onChange={(e) => setNotasHoras(e.target.value)}
-                          className="w-full p-2 rounded-xl border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none text-charcoal-900 text-xs"
-                          placeholder="Ej. Ajustes visuales, render 3D, correcciones..."
-                        />
-                      </div>
-
-                      <div className="sm:col-span-3 flex items-end">
-                        <button
-                          type="submit"
-                          className="w-full p-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs transition-all shadow-xs hover:shadow flex items-center justify-center gap-1.5"
-                        >
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Sumar Horas</span>
-                        </button>
-                      </div>
-                    </form>
-                  </div>
+                  <TaskTimeTracker
+                    tarea={tareaSeleccionadaLocal}
+                    usuarioActual={usuarioActual}
+                    onAddHours={onAddHours}
+                    onUpdateStatus={onUpdateStatus}
+                  />
                 )}
 
                 {/* Estado Selector */}
