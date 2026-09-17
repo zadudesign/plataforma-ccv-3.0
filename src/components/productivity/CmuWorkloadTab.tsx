@@ -88,7 +88,8 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
   onSelectTask,
 }) => {
   // Entidades institucionales desde el contexto de autenticación
-  const { facultades, programas, cursos, proyectos, areas, solicitudesTareas } = useAuth();
+  const { facultades, programas, cursos, proyectos, areas, solicitudesTareas, isAdmin: authIsAdmin, isRealAdmin } = useAuth();
+  const userIsAdmin = Boolean(isAdmin || (authIsAdmin && authIsAdmin()) || (isRealAdmin && isRealAdmin()));
 
   const remisionCtx: RemisionContext = useMemo(() => ({
     facultades,
@@ -482,7 +483,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
           </div>
 
           {/* Botón Exclusivo de Admin */}
-          {isAdmin && (
+          {userIsAdmin && (
             <button
               onClick={() => setIsConfigModalOpen(true)}
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs shadow-xs transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
@@ -857,7 +858,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
       </div>
 
       {/* MODAL DE CONFIGURACIÓN EXCLUSIVA DE ADMINISTRADOR */}
-      {isConfigModalOpen && isAdmin && (
+      {isConfigModalOpen && userIsAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="ccv-card w-full max-w-lg bg-white shadow-floating border border-stone-300 rounded-3xl overflow-hidden">
             {/* Cabecera */}

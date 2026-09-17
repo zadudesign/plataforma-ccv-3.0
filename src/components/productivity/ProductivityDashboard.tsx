@@ -6,7 +6,6 @@ import {
   Clock, 
   Calendar, 
   Filter, 
-  Plus, 
   User, 
   Users,
   CheckCircle2, 
@@ -566,7 +565,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
             }`}
           >
             <Users className="w-4 h-4 text-emerald-400" />
-            Carga y Capacidad CMU
+            Carga y Capacidad
           </button>
         </div>
       </div>
@@ -579,19 +578,9 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
           {/* Control Bar & Filters */}
           <div className="ccv-card p-4 bg-white space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="flex items-center justify-between lg:justify-start gap-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                  <Filter className="w-4 h-4 text-sky-600" />
-                  <span>Filtros de Horas:</span>
-                </div>
-
-                <button
-                  onClick={() => setIsLogModalOpen(true)}
-                  className="px-4 py-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-xs transition-all flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                  Imputar Tiempo
-                </button>
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <Filter className="w-4 h-4 text-sky-600" />
+                <span>Filtros de Horas:</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -1360,7 +1349,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
           tareas={tareas}
           usuarios={usuarios}
           usuarioActual={usuarioActual}
-          isAdmin={Boolean(isAdmin || isRealAdmin)}
+          isAdmin={Boolean((isAdmin && isAdmin()) || (isRealAdmin && isRealAdmin()))}
           onSelectTask={onSelectTask}
         />
       )}
