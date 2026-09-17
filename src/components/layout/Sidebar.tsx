@@ -10,7 +10,8 @@ import {
   Settings, 
   LogOut,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  CalendarDays
 } from 'lucide-react';
 import { VistaNavegacion } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -21,19 +22,50 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual }) => {
-  const { usuarioActual, isAdmin, isRealAdmin, setIsDevSimulatorOpen, logout } = useAuth();
+  const { usuarioActual, roles, isAdmin, isRealAdmin, setIsDevSimulatorOpen, logout } = useAuth();
 
-  const allNavItems: { id: VistaNavegacion; label: string; icon: React.ReactNode; requiresAdmin?: boolean }[] = [
+  // Verificar si el usuario es Admin o pertenece a un rol del CMU
+  const isCmuOrAdmin = (): boolean => {
+    if (isAdmin()) return true;
+    const rolName = (usuarioActual?.rol_nombre || '').toLowerCase();
+    const areaName = (usuarioActual?.area_nombre || '').toLowerCase();
+    
+    if (areaName.includes('cmu')) return true;
+    if (['administrador', 'jefe', 'diseño', 'diseno', 'multimedia', 'soporte', 'producción', 'produccion'].includes(rolName)) return true;
+    
+    const rol = roles.find(r => r.id === usuarioActual?.rol_id);
+    if (rol) {
+      const rName = rol.nombre.toLowerCase();
+      const aName = (rol.area_nombre || '').toLowerCase();
+      if (aName.includes('cmu') || ['administrador', 'jefe', 'diseño', 'diseno', 'multimedia', 'soporte', 'producción', 'produccion'].includes(rName)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const allNavItems: { 
+    id: VistaNavegacion; 
+    label: string; 
+    icon: React.ReactNode; 
+    requiresAdmin?: boolean;
+    requiresCmuOrAdmin?: boolean;
+  }[] = [
     { id: 'dashboard', label: 'Métricas Institucionales CCV', icon: <LayoutGrid className="w-5 h-5" /> },
     { id: 'calendar', label: 'Calendario de Entregas & Vencimientos CCV', icon: <Calendar className="w-5 h-5" /> },
     { id: 'kanban', label: 'Tablero Kanban de Producción CCV', icon: <Kanban className="w-5 h-5" /> },
+    { id: 'parrilla', label: 'Parrilla de Contenidos & Calendario Editorial (CMU)', icon: <CalendarDays className="w-5 h-5" />, requiresCmuOrAdmin: true },
     { id: 'productivity', label: 'Panel de Productividad y Control de Entregas', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'academic', label: 'Estructura Académica e Institucional CCV', icon: <FolderTree className="w-5 h-5" /> },
     { id: 'admin', label: 'Panel de Administración RBAC & Asignaciones CCV', icon: <ShieldCheck className="w-5 h-5" />, requiresAdmin: true },
   ];
 
-  // Filter items based on user role (Admin section is exclusive to Nivel 6 / Admin)
-  const navItems = allNavItems.filter(item => !item.requiresAdmin || isAdmin());
+  // Filter items based on user role (Admin section is exclusive to Admin; Parrilla is exclusive to Admin & CMU)
+  const navItems = allNavItems.filter(item => {
+    if (item.requiresAdmin && !isAdmin()) return false;
+    if (item.requiresCmuOrAdmin && !isCmuOrAdmin()) return false;
+    return true;
+  });
 
   return (
     <aside className="fixed left-6 top-6 bottom-6 w-20 flex flex-col items-center justify-between py-6 ccv-pill-sidebar z-40 bg-white">

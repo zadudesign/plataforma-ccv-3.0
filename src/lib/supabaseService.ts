@@ -15,8 +15,10 @@ import {
   TipoTarea,
   SolicitudTareaCCV,
   EstadoSolicitudTarea,
-  CmuCapacidadRol
+  CmuCapacidadRol,
+  PublicacionParrilla
 } from '@/types';
+import { INITIAL_PARRILLA_PUBLICACIONES } from './mockData';
 
 
 // Helper para determinar si Supabase responde adecuadamente con diagnóstico detallado
@@ -1616,5 +1618,262 @@ export async function updateCmuCapacidadRolDB(
     return { success: false, error: err?.message || 'Error de conexión' };
   }
 }
+
+// ----------------------------------------------------------------------------
+// 11. PARRILLA DE PUBLICACIONES Y CALENDARIO EDITORIAL (CONTENT PLANNER)
+// ----------------------------------------------------------------------------
+
+export async function fetchPublicacionesParrillaDB(mes?: string): Promise<PublicacionParrilla[]> {
+  try {
+    let query = supabase
+      .from('parrilla_publicaciones')
+      .select(`
+        *,
+        responsable:usuarios!responsable_id(nombre_completo),
+        proyecto:proyectos!proyecto_id(nombre),
+        curso:cursos!curso_id(nombre),
+        area:areas!area_id(nombre)
+      `)
+      .order('fecha_publicacion', { ascending: true });
+
+    if (mes) {
+      query = query.eq('mes_planeado', mes);
+    }
+
+    const { data, error } = await query;
+
+    if (error || !data || data.length === 0) {
+      // Fallback a mockData si la tabla aún no existe o está vacía
+      let listaMock = [...INITIAL_PARRILLA_PUBLICACIONES];
+      if (mes) {
+        listaMock = listaMock.filter(p => p.mes_planeado === mes);
+      }
+      return listaMock;
+    }
+
+    return data.map((p: any) => ({
+      id: p.id,
+      titulo: p.titulo,
+      descripcion: p.descripcion || '',
+      fecha_publicacion: p.fecha_publicacion,
+      mes_planeado: p.mes_planeado || (p.fecha_publicacion ? p.fecha_publicacion.substring(0, 7) : '2026-09'),
+      estado: p.estado,
+      canal: p.canal,
+      formato: p.formato,
+      link_recursos: p.link_recursos || '',
+      responsable_id: p.responsable_id,
+      responsable_nombre: p.responsable?.nombre_completo,
+      proyecto_id: p.proyecto_id,
+      proyecto_nombre: p.proyecto?.nombre,
+      curso_id: p.curso_id,
+      curso_nombre: p.curso?.nombre,
+      area_id: p.area_id,
+      area_nombre: p.area?.nombre,
+      tarea_vinculada_id: p.tarea_vinculada_id,
+      notas_internas: p.notas_internas || '',
+      created_at: p.created_at,
+      updated_at: p.updated_at
+    }));
+  } catch (err) {
+    console.error('Error en fetchPublicacionesParrillaDB:', err);
+    let listaMock = [...INITIAL_PARRILLA_PUBLICACIONES];
+    if (mes) {
+      listaMock = listaMock.filter(p => p.mes_planeado === mes);
+    }
+    return listaMock;
+  }
+}
+
+export async function createPublicacionParrillaDB(
+  pub: Omit<PublicacionParrilla, 'id'>,
+  crearTareaVinculada: boolean = false
+): Promise<{ success: boolean; data?: PublicacionParrilla; error?: string }> {
+  try {
+    let tareaIdVinculada: string | null = pub.tarea_vinculada_id || null;
+
+    // 1. Si se solicita vincular con una tarea CCV, crear la tarea primero
+    if (crearTareaVinculada && !tareaIdVinculada) {
+      const rolSugerido = (pub.formato?.includes('Video') || pub.canal === 'YouTube' || pub.canal === 'TikTok') ? 'Multimedia' : 'Diseño';
+      const fechaVenc = pub.fecha_publicacion ? pub.fecha_publicacion.split('T')[0] : new Date().toISOString().split('T')[0];
+      
+      const resTarea = await createTareaDB({
+        titulo: `[Parrilla] ${pub.titulo}`,
+        descripcion: `${pub.descripcion || ''}\n\nCanal: ${pub.canal} | Formato: ${pub.formato}\nRecursos: ${pub.link_recursos || 'Por definir'}`,
+        tipo_tarea: 'Proyecto',
+        rol_destino: rolSugerido,
+        responsable_id: pub.responsable_id || undefined,
+        proyecto_id: pub.proyecto_id || undefined,
+        curso_id: pub.curso_id || undefined,
+        area_id: pub.area_id || undefined,
+        fecha_vencimiento: fechaVenc,
+        estado: 'En Proceso',
+        orden_tarea: 0,
+        tiempo_invertido: 0
+      });
+
+      if (resTarea.success && resTarea.data) {
+        tareaIdVinculada = resTarea.data.id;
+      }
+    }
+
+    const payload: any = {
+      titulo: pub.titulo,
+      descripcion: pub.descripcion || '',
+      fecha_publicacion: pub.fecha_publicacion,
+      mes_planeado: pub.mes_planeado || (pub.fecha_publicacion ? pub.fecha_publicacion.substring(0, 7) : '2026-09'),
+      estado: pub.estado || 'Borrador',
+      canal: pub.canal || 'Instagram',
+      formato: pub.formato || 'Post Estático',
+      link_recursos: pub.link_recursos || '',
+      notas_internas: pub.notas_internas || ''
+    };
+
+    if (pub.responsable_id && isGuid(pub.responsable_id)) payload.responsable_id = pub.responsable_id;
+    if (pub.proyecto_id && isGuid(pub.proyecto_id)) payload.proyecto_id = pub.proyecto_id;
+    if (pub.curso_id && isGuid(pub.curso_id)) payload.curso_id = pub.curso_id;
+    if (pub.area_id && isGuid(pub.area_id)) payload.area_id = pub.area_id;
+    if (tareaIdVinculada && isGuid(tareaIdVinculada)) payload.tarea_vinculada_id = tareaIdVinculada;
+
+    const { data, error } = await supabase
+      .from('parrilla_publicaciones')
+      .insert(payload)
+      .select(`
+        *,
+        responsable:usuarios!responsable_id(nombre_completo),
+        proyecto:proyectos!proyecto_id(nombre),
+        curso:cursos!curso_id(nombre),
+        area:areas!area_id(nombre)
+      `)
+      .single();
+
+    if (error) {
+      console.warn('Error al insertar en Supabase parrilla_publicaciones:', error.message);
+      // Fallback local en memoria
+      const fallbackPub: PublicacionParrilla = {
+        ...pub,
+        id: `pub-${Date.now()}`,
+        tarea_vinculada_id: tareaIdVinculada,
+        created_at: new Date().toISOString()
+      };
+      return { success: true, data: fallbackPub };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: data.id,
+        titulo: data.titulo,
+        descripcion: data.descripcion,
+        fecha_publicacion: data.fecha_publicacion,
+        mes_planeado: data.mes_planeado,
+        estado: data.estado,
+        canal: data.canal,
+        formato: data.formato,
+        link_recursos: data.link_recursos,
+        responsable_id: data.responsable_id,
+        responsable_nombre: data.responsable?.nombre_completo || pub.responsable_nombre,
+        proyecto_id: data.proyecto_id,
+        proyecto_nombre: data.proyecto?.nombre || pub.proyecto_nombre,
+        curso_id: data.curso_id,
+        curso_nombre: data.curso?.nombre || pub.curso_nombre,
+        area_id: data.area_id,
+        area_nombre: data.area?.nombre || pub.area_nombre,
+        tarea_vinculada_id: data.tarea_vinculada_id,
+        notas_internas: data.notas_internas,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      }
+    };
+  } catch (err: any) {
+    console.error('Error inesperado en createPublicacionParrillaDB:', err);
+    return { success: false, error: err?.message || 'Error al crear publicación' };
+  }
+}
+
+export async function updatePublicacionParrillaDB(
+  id: string,
+  updates: Partial<PublicacionParrilla>
+): Promise<{ success: boolean; data?: PublicacionParrilla; error?: string }> {
+  try {
+    const payload: any = { ...updates };
+    delete payload.id;
+    delete payload.created_at;
+    delete payload.responsable_nombre;
+    delete payload.proyecto_nombre;
+    delete payload.curso_nombre;
+    delete payload.area_nombre;
+
+    if (payload.fecha_publicacion) {
+      payload.mes_planeado = payload.fecha_publicacion.substring(0, 7);
+    }
+    payload.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('parrilla_publicaciones')
+      .update(payload)
+      .eq('id', id)
+      .select(`
+        *,
+        responsable:usuarios!responsable_id(nombre_completo),
+        proyecto:proyectos!proyecto_id(nombre),
+        curso:cursos!curso_id(nombre),
+        area:areas!area_id(nombre)
+      `)
+      .single();
+
+    if (error) {
+      console.warn('Error actualizando parrilla_publicaciones en Supabase:', error.message);
+      return { success: true, data: { id, ...updates } as PublicacionParrilla };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: data.id,
+        titulo: data.titulo,
+        descripcion: data.descripcion,
+        fecha_publicacion: data.fecha_publicacion,
+        mes_planeado: data.mes_planeado,
+        estado: data.estado,
+        canal: data.canal,
+        formato: data.formato,
+        link_recursos: data.link_recursos,
+        responsable_id: data.responsable_id,
+        responsable_nombre: data.responsable?.nombre_completo,
+        proyecto_id: data.proyecto_id,
+        proyecto_nombre: data.proyecto?.nombre,
+        curso_id: data.curso_id,
+        curso_nombre: data.curso?.nombre,
+        area_id: data.area_id,
+        area_nombre: data.area?.nombre,
+        tarea_vinculada_id: data.tarea_vinculada_id,
+        notas_internas: data.notas_internas,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      }
+    };
+  } catch (err: any) {
+    console.error('Error en updatePublicacionParrillaDB:', err);
+    return { success: false, error: err?.message || 'Error al actualizar' };
+  }
+}
+
+export async function deletePublicacionParrillaDB(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('parrilla_publicaciones')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Error eliminando en parrilla_publicaciones:', error.message);
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error en deletePublicacionParrillaDB:', err);
+    return { success: false, error: err?.message };
+  }
+}
+
 
 

@@ -189,7 +189,7 @@ export interface SolicitudTareaCCV {
   created_at?: string;
 }
 
-export type VistaNavegacion = 'dashboard' | 'calendar' | 'kanban' | 'productivity' | 'academic' | 'admin';
+export type VistaNavegacion = 'dashboard' | 'calendar' | 'kanban' | 'productivity' | 'academic' | 'admin' | 'parrilla';
 
 export type RolCmuNombre = 'Diseño' | 'Soporte' | 'Producción' | 'Multimedia';
 
@@ -197,6 +197,55 @@ export interface CmuCapacidadRol {
   id?: string;
   rol_nombre: RolCmuNombre | string;
   horas_semanales_maximas: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ----------------------------------------------------------------------------
+// PARRILLA DE PUBLICACIONES Y CALENDARIO EDITORIAL (CONTENT PLANNER)
+// ----------------------------------------------------------------------------
+
+export type EstadoPublicacion = 'Borrador' | 'En Diseño' | 'En Revisión' | 'Aprobado' | 'Programado' | 'Publicado';
+
+export type CanalPublicacion = 
+  | 'Instagram' 
+  | 'LinkedIn' 
+  | 'YouTube' 
+  | 'TikTok' 
+  | 'Blog/Web' 
+  | 'Moodle/Boletín' 
+  | 'Facebook' 
+  | 'Otro';
+
+export type FormatoPublicacion = 
+  | 'Reel/Video' 
+  | 'Carrusel' 
+  | 'Post Estático' 
+  | 'Historia' 
+  | 'Artículo' 
+  | 'Podcast' 
+  | 'Infografía';
+
+export interface PublicacionParrilla {
+  id: string;
+  titulo: string;
+  descripcion?: string;
+  fecha_publicacion: string; // ISO string o YYYY-MM-DDTHH:mm
+  mes_planeado: string; // YYYY-MM
+  estado: EstadoPublicacion;
+  canal: CanalPublicacion;
+  formato: FormatoPublicacion;
+  link_recursos?: string;
+  responsable_id?: string | null;
+  responsable_nombre?: string;
+  proyecto_id?: string | null;
+  proyecto_nombre?: string;
+  curso_id?: string | null;
+  curso_nombre?: string;
+  area_id?: string | null;
+  area_nombre?: string;
+  tarea_vinculada_id?: string | null;
+  notas_internas?: string;
   created_at?: string;
   updated_at?: string;
 }

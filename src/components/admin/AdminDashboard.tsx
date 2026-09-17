@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Users, 
@@ -416,6 +416,7 @@ interface AdminDashboardProps {
   usuarios: Usuario[];
   facultades: Facultad[];
   programas: Programa[];
+  pestanaInicial?: 'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes';
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -424,6 +425,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   usuarios: initialUsuarios,
   facultades: initialFacultades,
   programas: initialProgramas,
+  pestanaInicial = 'usuarios',
 }) => {
   const {
     usuarios,
@@ -470,7 +472,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     solicitudesTareas
   } = useAuth();
 
-  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes'>('usuarios');
+  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes'>(pestanaInicial);
+
+  useEffect(() => {
+    if (pestanaInicial) {
+      setPestana(pestanaInicial);
+    }
+  }, [pestanaInicial]);
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroArea, setFiltroArea] = useState<string>('todos');

@@ -29,6 +29,7 @@ import {
 } from '@/lib/supabaseService';
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
+import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
 import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { ShieldAlert } from 'lucide-react';
 
@@ -62,6 +63,7 @@ export default function Home() {
   const [isTaskRequestOpen, setIsTaskRequestOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
+  const [pestanaAdminInicial, setPestanaAdminInicial] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes'>('usuarios');
 
   // Por defecto al ingresar a cada perfil se ingresa directamente al Dashboard como página principal y se requiere firma si está pendiente
   useEffect(() => {
@@ -466,6 +468,10 @@ export default function Home() {
             usuarioActual={usuarioActual}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
             onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
+            onOpenSolicitudes={() => {
+              setPestanaAdminInicial('solicitudes');
+              setVistaActual('admin');
+            }}
             busqueda={busqueda}
             setBusqueda={setBusqueda}
             onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
@@ -524,6 +530,19 @@ export default function Home() {
           />
         )}
 
+        {vistaActual === 'parrilla' && (
+          <ContentPlannerView
+            cursos={cursosVisiblesPorRol}
+            proyectos={proyectosVisiblesPorRol}
+            usuarios={usuarios}
+            usuarioActual={usuarioActual}
+            onSelectTask={(tareaId) => {
+              const t = tareas.find(item => item.id === tareaId);
+              if (t) setTareaSeleccionada(t);
+            }}
+          />
+        )}
+
         {vistaActual === 'productivity' && (
           <ProductivityDashboard
             tareas={tareasFiltradas}
@@ -542,6 +561,7 @@ export default function Home() {
               usuarios={usuarios}
               facultades={facultades}
               programas={programas}
+              pestanaInicial={pestanaAdminInicial}
             />
           ) : (
             <div className="ccv-card p-12 text-center space-y-4 max-w-lg mx-auto my-12 animate-fadeIn">

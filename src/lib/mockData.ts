@@ -1,4 +1,4 @@
-import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa, RegistroHoras } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa, RegistroHoras, PublicacionParrilla } from '@/types';
 
 export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
   { id: 'tar-1', categoria: 'Diseño', tarifa_hora: 35000, descripcion: 'Tarifa por hora (COP) para diseño gráfico, instruccional y diagramación' },
@@ -653,3 +653,104 @@ export const INITIAL_REGISTRO_HORAS: RegistroHoras[] = [
     created_at: '2026-08-07 12:45'
   }
 ];
+
+// ----------------------------------------------------------------------------
+// DATOS DE PRUEBA: PARRILLA DE PUBLICACIONES Y CALENDARIO EDITORIAL
+// ----------------------------------------------------------------------------
+
+export const INITIAL_PARRILLA_PUBLICACIONES: PublicacionParrilla[] = [
+  {
+    id: 'pub-1',
+    titulo: 'Lanzamiento del Diplomado en Inteligencia Artificial y Educación',
+    descripcion: '🚀 ¡La educación evoluciona! Abrimos inscripciones para nuestro Diplomado en IA Aplicada a la Docencia Virtual. Conoce el plan de estudios y certifícate.',
+    fecha_publicacion: '2026-09-05T10:00:00',
+    mes_planeado: '2026-09',
+    estado: 'Publicado',
+    canal: 'Instagram',
+    formato: 'Reel/Video',
+    link_recursos: 'https://drive.google.com/drive/folders/ejemplo-reel-ia',
+    responsable_id: 'u-multi',
+    responsable_nombre: 'Ing. Carlos Mendoza',
+    proyecto_id: 'p-1',
+    proyecto_nombre: 'Diplomado en Inteligencia Artificial Aplicada a la Educación',
+    notas_internas: 'Audio en tendencia y subtítulos animados aprobados por Decanatura.'
+  },
+  {
+    id: 'pub-2',
+    titulo: '5 Claves para Diseñar Rúbricas Auténticas en Moodle',
+    descripcion: 'Evaluar no es calificar: te dejamos 5 recomendaciones prácticas para crear rúbricas que potencien el aprendizaje autónomo en entornos virtuales.',
+    fecha_publicacion: '2026-09-10T14:30:00',
+    mes_planeado: '2026-09',
+    estado: 'Publicado',
+    canal: 'LinkedIn',
+    formato: 'Carrusel',
+    link_recursos: 'https://www.figma.com/file/ejemplo-carrusel-rubricas',
+    responsable_id: 'u-diseno',
+    responsable_nombre: 'Lic. Carlic Bolomboy',
+    curso_id: 'c-1',
+    curso_nombre: 'Pedagogía y Didáctica en Entornos Virtuales',
+    notas_internas: 'Usar colores institucionales de la Facultad de Educación.'
+  },
+  {
+    id: 'pub-3',
+    titulo: 'Tutorial Rápido: Navegación y Recursos en el Campus Virtual 3.0',
+    descripcion: '¿Primera vez en la plataforma? Este video paso a paso te guía por las nuevas herramientas interactivas del Campus Virtual CCV.',
+    fecha_publicacion: '2026-09-14T09:00:00',
+    mes_planeado: '2026-09',
+    estado: 'En Diseño',
+    canal: 'YouTube',
+    formato: 'Reel/Video',
+    link_recursos: 'https://drive.google.com/drive/folders/tutorial-campus',
+    responsable_id: 'u-multi',
+    responsable_nombre: 'Ing. Carlos Mendoza',
+    area_nombre: 'CMU',
+    notas_internas: '⚠️ Publicación atrasada pendiente por ajuste de doblaje y logo animado.'
+  },
+  {
+    id: 'pub-4',
+    titulo: 'Infografía: Cronograma de Entregas y Evaluaciones del Semestre',
+    descripcion: 'Ten presentes las fechas límites de corte de notas y entregas de módulos para tus asignaturas virtuales este semestre.',
+    fecha_publicacion: '2026-09-18T16:00:00',
+    mes_planeado: '2026-09',
+    estado: 'Programado',
+    canal: 'Instagram',
+    formato: 'Post Estático',
+    link_recursos: 'https://www.figma.com/file/infografia-fechas-ccv',
+    responsable_id: 'u-diseno',
+    responsable_nombre: 'Lic. Carlic Bolomboy',
+    area_nombre: 'CMU',
+    notas_internas: 'Artes aprobados por Coordinación Académica.'
+  },
+  {
+    id: 'pub-5',
+    titulo: 'Cápsula de Innovación: Cómo el CMU transforma guiones en experiencias 3D',
+    descripcion: 'Descubre el detrás de cámaras de cómo nuestro equipo multimedia convierte los guiones docentes en simulaciones y recursos interactivos H5P.',
+    fecha_publicacion: '2026-09-22T11:00:00',
+    mes_planeado: '2026-09',
+    estado: 'En Revisión',
+    canal: 'TikTok',
+    formato: 'Reel/Video',
+    link_recursos: 'https://drive.google.com/drive/folders/behind-the-scenes-cmu',
+    responsable_id: 'u-multi',
+    responsable_nombre: 'Ing. Carlos Mendoza',
+    area_nombre: 'CMU',
+    notas_internas: 'Revisión final de voz en off con el líder de producción.'
+  },
+  {
+    id: 'pub-6',
+    titulo: 'Boletín Pedagógico Mensual: Tendencias de Evaluación en Línea',
+    descripcion: 'Edición de Septiembre de nuestro boletín para docentes y líderes de programa con las últimas investigaciones en pedagogía digital.',
+    fecha_publicacion: '2026-09-28T08:00:00',
+    mes_planeado: '2026-09',
+    estado: 'Borrador',
+    canal: 'Blog/Web',
+    formato: 'Artículo',
+    link_recursos: 'https://notion.so/boletin-pedagogico-septiembre',
+    responsable_id: 'u-soporte',
+    responsable_nombre: 'Téc. Andrés Torres',
+    proyecto_id: 'p-3',
+    proyecto_nombre: 'Diseño e Implementación de Objetos Virtuales de Aprendizaje (OVA)',
+    notas_internas: 'Esperando visto bueno del comité editorial docente.'
+  }
+];
+

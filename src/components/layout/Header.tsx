@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { Search, Bell, Plus, Shield, Sparkles, FileSignature, FilePlus } from 'lucide-react';
+import { Search, Plus, Shield, Sparkles, FileSignature, FilePlus, Inbox } from 'lucide-react';
 import { Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -11,6 +10,7 @@ interface HeaderProps {
   usuarioActual?: Usuario;
   onOpenCreateTask: () => void;
   onOpenTaskRequest?: () => void;
+  onOpenSolicitudes?: () => void;
   busqueda: string;
   setBusqueda: (val: string) => void;
   onOpenSignatureModal?: () => void;
@@ -22,14 +22,17 @@ export const Header: React.FC<HeaderProps> = ({
   usuarioActual: propsUsuario,
   onOpenCreateTask,
   onOpenTaskRequest,
+  onOpenSolicitudes,
   busqueda,
   setBusqueda,
   onOpenSignatureModal,
   onSelectTaskById,
   onAddHours,
 }) => {
-  const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin, isAdmin } = useAuth();
+  const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin, isAdmin, solicitudesTareas } = useAuth();
   const usuarioActual = propsUsuario || contextUsuario;
+
+  const solicitudesPendientes = solicitudesTareas?.filter(s => s.estado === 'Pendiente').length || 0;
 
   if (!usuarioActual) return null;
 
@@ -87,26 +90,35 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Notification Bell */}
-        <button 
-          className="relative w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-800 hover:bg-slate-100 transition-colors shadow-2xs"
-          title="Notificaciones"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />
-        </button>
-
-        {/* Action Button: Nueva Tarea (Exclusivo Admin) vs Solicitar Tarea (Otros Usuarios con el mismo estilo) */}
+        {/* Action Button: Nueva Tarea (Exclusivo Admin) con Alerta de Solicitudes vs Solicitar Tarea */}
         {isAdmin() ? (
-          <button
-            onClick={onOpenCreateTask}
-            id="btn-header-nueva-tarea"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
-            title="Crear nueva tarea en la plataforma CCV"
-          >
-            <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
-            <span>Nueva Tarea</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Alerta de Bandeja de Solicitudes si hay solicitudes pendientes recibidas */}
+            {solicitudesPendientes > 0 && onOpenSolicitudes && (
+              <button
+                onClick={onOpenSolicitudes}
+                id="btn-header-alerta-solicitudes"
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-black transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 animate-pulse cursor-pointer"
+                title={`${solicitudesPendientes} solicitud(es) nueva(s) en la Bandeja. Haz clic para revisar.`}
+              >
+                <Inbox className="w-4 h-4 text-white" />
+                <span className="hidden sm:inline">Solicitudes</span>
+                <span className="w-5 h-5 rounded-full bg-white text-amber-700 text-[11px] font-black flex items-center justify-center shadow-2xs">
+                  {solicitudesPendientes}
+                </span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenCreateTask}
+              id="btn-header-nueva-tarea"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 cursor-pointer"
+              title="Crear nueva tarea en la plataforma CCV"
+            >
+              <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
+              <span>Nueva Tarea</span>
+            </button>
+          </div>
         ) : onOpenTaskRequest ? (
           <button
             onClick={onOpenTaskRequest}
