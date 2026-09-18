@@ -1,4 +1,4 @@
-import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa, RegistroHoras, PublicacionParrilla } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa, RegistroHoras, PublicacionParrilla, SolicitudTareaCCV } from '@/types';
 
 export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
   { id: 'tar-1', categoria: 'Diseño', tarifa_hora: 35000, descripcion: 'Tarifa por hora (COP) para diseño gráfico, instruccional y diagramación' },
@@ -753,4 +753,65 @@ export const INITIAL_PARRILLA_PUBLICACIONES: PublicacionParrilla[] = [
     notas_internas: 'Esperando visto bueno del comité editorial docente.'
   }
 ];
+
+export const INITIAL_SOLICITUDES_TAREAS: SolicitudTareaCCV[] = [
+  {
+    id: 'sol-1',
+    titulo: 'Producción Audiovisual de Cápsulas Pedagógicas para Moodle',
+    descripcion: 'Se requiere la grabación y edición de 3 cápsulas en video con subtítulos y diapositivas de apoyo para la bienvenida del curso de Bioética.',
+    tipo_origen: 'Facultad',
+    origen_id: 'fac-1',
+    origen_nombre: 'Facultad de Ciencias de la Salud',
+    fecha_estimada_entrega: '2026-09-26',
+    hora_estimada: '16:00',
+    solicitante_id: 'u-docente',
+    solicitante_nombre: 'Prof. David Morales',
+    solicitante_email: 'david.docente@ccv.edu.co',
+    solicitante_rol: 'Docente',
+    solicitante_contacto: '+57 311 456 7890',
+    enlace_recurso: 'https://drive.google.com/drive/folders/capsulas-bioetica-ccv',
+    prioridad: 'Alta',
+    estado: 'Pendiente',
+    created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+  },
+  {
+    id: 'sol-2',
+    titulo: 'Diseño Gráfico de Infografías y Banners para Curso Virtual',
+    descripcion: 'Diseño de 4 infografías en formato vertical y banner cabecera de aula virtual para el programa de Administración.',
+    tipo_origen: 'Facultad',
+    origen_id: 'fac-2',
+    origen_nombre: 'Facultad de Ciencias Administrativas',
+    fecha_estimada_entrega: '2026-09-29',
+    hora_estimada: '18:00',
+    solicitante_id: 'u-decano',
+    solicitante_nombre: 'Dra. Patricia Morales (Jefe CCV)',
+    solicitante_email: 'patricia.jefe@ccv.edu.co',
+    solicitante_rol: 'Jefe',
+    solicitante_contacto: '+57 300 111 2233',
+    enlace_recurso: 'https://www.figma.com/file/banners-administracion',
+    prioridad: 'Normal',
+    estado: 'Pendiente',
+    created_at: new Date(Date.now() - 5 * 3600 * 1000).toISOString()
+  },
+  {
+    id: 'sol-3',
+    titulo: 'Empaquetado SCORM de Módulos Interactivos H5P',
+    descripcion: 'Empaquetado y validación técnica de 5 actividades SCORM para la plataforma Canvas.',
+    tipo_origen: 'Departamento/Área',
+    origen_id: 'a-4-1',
+    origen_nombre: 'Departamento de Innovación y Educación Virtual CCV',
+    fecha_estimada_entrega: '2026-09-18',
+    hora_estimada: '12:00',
+    solicitante_id: 'u-admin',
+    solicitante_nombre: 'Administrador Principal CCV',
+    solicitante_email: 'admin@ccv.edu.co',
+    solicitante_rol: 'Administrador',
+    solicitante_contacto: '+57 300 000 0001',
+    enlace_recurso: 'https://drive.google.com/drive/folders/scorm-h5p-actividades',
+    prioridad: 'Baja',
+    estado: 'Aprobada',
+    created_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+  }
+];
+
 

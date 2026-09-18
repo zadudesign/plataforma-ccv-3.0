@@ -18,7 +18,7 @@ import {
   CmuCapacidadRol,
   PublicacionParrilla
 } from '@/types';
-import { INITIAL_PARRILLA_PUBLICACIONES } from './mockData';
+import { INITIAL_PARRILLA_PUBLICACIONES, INITIAL_SOLICITUDES_TAREAS } from './mockData';
 
 
 // Helper para determinar si Supabase responde adecuadamente con diagnóstico detallado
@@ -1331,7 +1331,7 @@ export async function fetchSolicitudesTareasDB(): Promise<SolicitudTareaCCV[]> {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (rawErr || !rawData) return [];
+      if (rawErr || !rawData || rawData.length === 0) return [...INITIAL_SOLICITUDES_TAREAS];
       return rawData.map((s: any) => ({
         id: s.id,
         titulo: s.titulo,
@@ -1355,6 +1355,10 @@ export async function fetchSolicitudesTareasDB(): Promise<SolicitudTareaCCV[]> {
         fecha_revision: s.fecha_revision || null,
         created_at: s.created_at
       }));
+    }
+
+    if (!data || data.length === 0) {
+      return [...INITIAL_SOLICITUDES_TAREAS];
     }
 
     return data.map((s: any) => ({
@@ -1383,7 +1387,7 @@ export async function fetchSolicitudesTareasDB(): Promise<SolicitudTareaCCV[]> {
     }));
   } catch (err) {
     console.error('Error en fetchSolicitudesTareasDB:', err);
-    return [];
+    return [...INITIAL_SOLICITUDES_TAREAS];
   }
 }
 
