@@ -73,7 +73,7 @@ export function esContenidoAtrasado(post: PublicacionParrilla): boolean {
   return fechaPost < hoy;
 }
 
-const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 export const ContentCalendarGrid: React.FC<ContentCalendarGridProps> = ({
   mesSeleccionado,
@@ -86,8 +86,8 @@ export const ContentCalendarGrid: React.FC<ContentCalendarGridProps> = ({
   const ultimoDiaMes = new Date(anio, mesNum, 0);
 
   const numDiasMes = ultimoDiaMes.getDate();
-  // En JS getDay() es 0=Domingo, 1=Lunes. Lo convertimos a 0=Lunes, 6=Domingo
-  const diaSemanaInicio = (primerDiaMes.getDay() + 6) % 7;
+  // En JS getDay() es 0=Domingo, 1=Lunes, ..., 6=Sábado (iniciamos en Domingo)
+  const diaSemanaInicio = primerDiaMes.getDay();
 
   const hoyStr = new Date().toISOString().split('T')[0];
 
@@ -148,7 +148,7 @@ export const ContentCalendarGrid: React.FC<ContentCalendarGridProps> = ({
       {/* Cabecera de Días de la Semana */}
       <div className="grid grid-cols-7 bg-slate-100/80 border-b border-slate-200 text-center text-xs font-black text-slate-700 py-3">
         {DIAS_SEMANA.map((dia, idx) => (
-          <div key={dia} className={`${idx >= 5 ? 'text-slate-400' : ''}`}>
+          <div key={dia} className={`${idx === 0 || idx === 6 ? 'text-slate-400' : ''}`}>
             <span className="hidden sm:inline">{dia}</span>
             <span className="sm:hidden">{dia.substring(0, 3)}</span>
           </div>
