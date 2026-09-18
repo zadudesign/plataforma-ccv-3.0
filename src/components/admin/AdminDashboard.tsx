@@ -45,6 +45,7 @@ import { CreateRoleModal } from './CreateRoleModal';
 import { CreateAreaModal } from './CreateAreaModal';
 import { ConfirmDeleteAreaModal } from './ConfirmDeleteAreaModal';
 import { SolicitudesInboxTab } from './SolicitudesInboxTab';
+import { PlantillaCursosTab } from './PlantillaCursosTab';
 
 interface AreaHierarchyNodeProps {
   area: Area;
@@ -416,7 +417,7 @@ interface AdminDashboardProps {
   usuarios: Usuario[];
   facultades: Facultad[];
   programas: Programa[];
-  pestanaInicial?: 'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes';
+  pestanaInicial?: 'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes' | 'plantillas';
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -469,10 +470,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     asignarCoLiderProyecto,
     tarifasProyecto,
     actualizarTarifaProyecto,
-    solicitudesTareas
+    solicitudesTareas,
+    plantillaTareas,
+    crearPlantillaTarea,
+    editarPlantillaTarea,
+    eliminarPlantillaTarea
   } = useAuth();
 
-  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes'>(pestanaInicial);
+  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes' | 'plantillas'>(pestanaInicial);
 
   useEffect(() => {
     if (pestanaInicial) {
@@ -707,6 +712,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {solicitudesTareas.filter(s => s.estado === 'Pendiente').length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setPestana('plantillas')}
+            className={`px-4 py-2 rounded-full transition-all flex items-center gap-1.5 ${
+              pestana === 'plantillas' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-sage-400" />
+            <span>Plantilla Cursos</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-sage-700 text-white text-[10px] font-bold">
+              {plantillaTareas.length}
+            </span>
           </button>
         </div>
       </div>
@@ -1947,6 +1964,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           cursos={cursos}
           proyectos={proyectos}
           areas={areas}
+        />
+      )}
+
+      {/* Plantilla Cursos Tab */}
+      {pestana === 'plantillas' && (
+        <PlantillaCursosTab
+          plantillaTareas={plantillaTareas}
+          usuarios={usuarios}
+          onCrearTarea={crearPlantillaTarea}
+          onEditarTarea={editarPlantillaTarea}
+          onEliminarTarea={eliminarPlantillaTarea}
         />
       )}
 

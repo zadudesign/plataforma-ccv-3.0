@@ -16,8 +16,11 @@ import {
   SolicitudTareaCCV,
   EstadoSolicitudTarea,
   CmuCapacidadRol,
-  PublicacionParrilla
+  PublicacionParrilla,
+  PlantillaTareaCurso,
+  PlantillaTareaDependencia
 } from '@/types';
+import { INITIAL_PLANTILLA_CURSOS } from './mockData';
 
 
 // Helper para determinar si Supabase responde adecuadamente con diagnóstico detallado
@@ -877,6 +880,10 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
         tarifa_tarea: Number(t.tarifa_tarea || 0),
         enlace_recurso: t.enlace_recurso || undefined,
+        plantilla_origen_id: t.plantilla_origen_id || undefined,
+        estado_bloqueo: t.estado_bloqueo || (t.curso_id && t.plantilla_origen_id ? 'BLOQUEADA' : 'DISPONIBLE'),
+        dependencias_operativas: t.dependencias_operativas || [],
+        fecha_inicial: t.fecha_inicial || undefined,
         created_at: t.created_at
       }));
     }
@@ -910,6 +917,10 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
       tarifa_tarea: Number(t.tarifa_tarea || 0),
       enlace_recurso: t.enlace_recurso || undefined,
+      plantilla_origen_id: t.plantilla_origen_id || undefined,
+      estado_bloqueo: t.estado_bloqueo || (t.curso_id && t.plantilla_origen_id ? 'BLOQUEADA' : 'DISPONIBLE'),
+      dependencias_operativas: t.dependencias_operativas || [],
+      fecha_inicial: t.fecha_inicial || undefined,
       created_at: t.created_at
     }));
   } catch (err) {
@@ -1866,6 +1877,226 @@ export async function deletePublicacionParrillaDB(id: string): Promise<{ success
   } catch (err: any) {
     console.error('Error en deletePublicacionParrillaDB:', err);
     return { success: false, error: err?.message };
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 12. MOTOR DE PLANTILLAS Y SECUENCIA DE TAREAS (CURSOS VIRTUALES)
+// ----------------------------------------------------------------------------
+
+export async function fetchPlantillaTareasCursoDB(): Promise<PlantillaTareaCurso[]> {
+  try {
+    const { data: tareasData, error: tareasErr } = await supabase
+      .from('plantilla_tareas_curso')
+      .select('*, usuarios!cmu_usuario_fijo_id(nombre_completo)')
+      .order('orden', { ascending: true });
+
+    if (tareasErr || !tareasData || tareasData.length === 0) {
+      // Si la tabla aún no existe o está vacía en Supabase, usar INITIAL_PLANTILLA_CURSOS como respaldo
+      return INITIAL_PLANTILLA_CURSOS;
+    }
+
+    const { data: depsData } = await supabase
+      .from('plantilla_tareas_dependencias')
+      .select('*');
+
+    const depsMap: Record<string, string[]> = {};
+    (depsData || []).forEach((d: any) => {
+      if (!depsMap[d.tarea_plantilla_id]) depsMap[d.tarea_plantilla_id] = [];
+      depsMap[d.tarea_plantilla_id].push(d.depende_de_id);
+    });
+
+    return tareasData.map((t: any) => ({
+      id: t.id,
+      codigo: t.codigo,
+      titulo: t.titulo,
+      descripcion: t.descripcion || '',
+      orden: t.orden || 0,
+      tipo_responsable: t.tipo_responsable,
+      cmu_usuario_fijo_id: t.cmu_usuario_fijo_id || undefined,
+      cmu_usuario_fijo_nombre: t.usuarios?.nombre_completo || undefined,
+      tipo_tarea: t.tipo_tarea || 'PRODUCCION',
+      tiempo_estimado: Number(t.tiempo_estimado || 0),
+      activa: t.activa !== false,
+      dependencias: depsMap[t.id] || [],
+      created_at: t.created_at
+    }));
+  } catch (err) {
+    console.error('Excepción en fetchPlantillaTareasCursoDB:', err);
+    return INITIAL_PLANTILLA_CURSOS;
+  }
+}
+
+export async function createPlantillaTareaDB(
+  tarea: Omit<PlantillaTareaCurso, 'id'>,
+  dependenciasIds: string[] = []
+): Promise<PlantillaTareaCurso | null> {
+  try {
+    const payload = {
+      codigo: tarea.codigo,
+      titulo: tarea.titulo,
+      descripcion: tarea.descripcion || null,
+      orden: tarea.orden,
+      tipo_responsable: tarea.tipo_responsable,
+      cmu_usuario_fijo_id: tarea.cmu_usuario_fijo_id || null,
+      tipo_tarea: tarea.tipo_tarea || 'PRODUCCION',
+      tiempo_estimado: tarea.tiempo_estimado || 0,
+      activa: tarea.activa !== false
+    };
+
+    const { data, error } = await supabase
+      .from('plantilla_tareas_curso')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.warn('Error al insertar tarea de plantilla en Supabase:', error?.message);
+      // Fallback local
+      return {
+        ...tarea,
+        id: `pt-${Date.now()}`,
+        dependencias: dependenciasIds
+      };
+    }
+
+    // Insertar dependencias si fueron especificadas
+    if (dependenciasIds.length > 0) {
+      const depsPayload = dependenciasIds.map(depId => ({
+        tarea_plantilla_id: data.id,
+        depende_de_id: depId
+      }));
+      await supabase.from('plantilla_tareas_dependencias').insert(depsPayload);
+    }
+
+    return {
+      id: data.id,
+      codigo: data.codigo,
+      titulo: data.titulo,
+      descripcion: data.descripcion || '',
+      orden: data.orden,
+      tipo_responsable: data.tipo_responsable,
+      cmu_usuario_fijo_id: data.cmu_usuario_fijo_id || undefined,
+      tipo_tarea: data.tipo_tarea,
+      tiempo_estimado: data.tiempo_estimado,
+      activa: data.activa,
+      dependencias: dependenciasIds,
+      created_at: data.created_at
+    };
+  } catch (err) {
+    console.error('Excepción en createPlantillaTareaDB:', err);
+    return {
+      ...tarea,
+      id: `pt-${Date.now()}`,
+      dependencias: dependenciasIds
+    };
+  }
+}
+
+export async function updatePlantillaTareaDB(
+  id: string,
+  updates: Partial<PlantillaTareaCurso>,
+  dependenciasIds?: string[]
+): Promise<boolean> {
+  try {
+    const payload: any = {};
+    if (updates.codigo !== undefined) payload.codigo = updates.codigo;
+    if (updates.titulo !== undefined) payload.titulo = updates.titulo;
+    if (updates.descripcion !== undefined) payload.descripcion = updates.descripcion;
+    if (updates.orden !== undefined) payload.orden = updates.orden;
+    if (updates.tipo_responsable !== undefined) payload.tipo_responsable = updates.tipo_responsable;
+    if (updates.cmu_usuario_fijo_id !== undefined) payload.cmu_usuario_fijo_id = updates.cmu_usuario_fijo_id || null;
+    if (updates.tipo_tarea !== undefined) payload.tipo_tarea = updates.tipo_tarea;
+    if (updates.tiempo_estimado !== undefined) payload.tiempo_estimado = updates.tiempo_estimado;
+    if (updates.activa !== undefined) payload.activa = updates.activa;
+
+    const { error } = await supabase
+      .from('plantilla_tareas_curso')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Error al actualizar plantilla_tareas_curso:', error.message);
+    }
+
+    // Actualizar dependencias si se proveyeron
+    if (dependenciasIds !== undefined) {
+      await supabase.from('plantilla_tareas_dependencias').delete().eq('tarea_plantilla_id', id);
+      if (dependenciasIds.length > 0) {
+        const depsPayload = dependenciasIds.map(depId => ({
+          tarea_plantilla_id: id,
+          depende_de_id: depId
+        }));
+        await supabase.from('plantilla_tareas_dependencias').insert(depsPayload);
+      }
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Excepción en updatePlantillaTareaDB:', err);
+    return false;
+  }
+}
+
+export async function deletePlantillaTareaDB(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('plantilla_tareas_curso')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Error eliminando en plantilla_tareas_curso:', error.message);
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción en deletePlantillaTareaDB:', err);
+    return false;
+  }
+}
+
+export async function inicializarTareasCursoDB(cursoId: string): Promise<{ success: boolean; message: string; total?: number }> {
+  try {
+    const { data, error } = await supabase.rpc('inicializar_tareas_curso', {
+      p_curso_id: cursoId
+    });
+
+    if (error) {
+      console.warn('Error llamando a RPC inicializar_tareas_curso:', error.message);
+      return { success: false, message: error.message };
+    }
+
+    return data || { success: true, message: 'Tareas cargadas con éxito.' };
+  } catch (err: any) {
+    console.error('Excepción en inicializarTareasCursoDB:', err);
+    return { success: false, message: err?.message || 'Error de conexión al cargar la plantilla.' };
+  }
+}
+
+export async function forzarDesbloqueoAdminDB(tareaId: string, adminId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const { data, error } = await supabase.rpc('forzar_desbloqueo_admin', {
+      p_tarea_id: tareaId,
+      p_admin_id: adminId
+    });
+
+    if (error) {
+      console.warn('Error llamando a RPC forzar_desbloqueo_admin:', error.message);
+      // Fallback directo actualizando la tabla
+      const { error: updErr } = await supabase
+        .from('tareas')
+        .update({ estado_bloqueo: 'DISPONIBLE' })
+        .eq('id', tareaId);
+
+      if (updErr) return { success: false, message: updErr.message };
+
+      return { success: true, message: 'Desbloqueo forzado aplicado exitosamente.' };
+    }
+
+    return data || { success: true, message: 'Desbloqueada exitosamente por contingencia.' };
+  } catch (err: any) {
+    console.error('Excepción en forzarDesbloqueoAdminDB:', err);
+    return { success: false, message: err?.message || 'Error al ejecutar desbloqueo de contingencia.' };
   }
 }
 

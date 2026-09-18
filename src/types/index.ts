@@ -96,6 +96,32 @@ export type EstadoTarea = 'Pendiente' | 'En Proceso' | 'En Revisión' | 'Complet
 export type TipoTarea = 'Curso Virtual' | 'Proyecto';
 export type CategoriaTareaProyecto = 'Diseño' | 'Multimedia' | 'Soporte' | 'Transmisión';
 
+// TIPOS PARA MOTOR DE PLANTILLAS Y SECUENCIA DE TAREAS (CURSOS)
+export type TipoResponsablePlantilla = 'DOCENTE' | 'PAR_EVALUADOR' | 'CMU_FIJO';
+export type EstadoBloqueoTarea = 'BLOQUEADA' | 'DISPONIBLE' | 'EN_PROCESO' | 'COMPLETADA';
+
+export interface PlantillaTareaCurso {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descripcion?: string;
+  orden: number;
+  tipo_responsable: TipoResponsablePlantilla;
+  cmu_usuario_fijo_id?: string;
+  cmu_usuario_fijo_nombre?: string;
+  tipo_tarea?: string;
+  tiempo_estimado?: number; // minutos
+  activa: boolean;
+  dependencias?: string[]; // IDs de tareas_plantilla de las que depende
+  created_at?: string;
+}
+
+export interface PlantillaTareaDependencia {
+  id: string;
+  tarea_plantilla_id: string;
+  depende_de_id: string;
+}
+
 export interface ConfiguracionTarifa {
   id?: string;
   categoria: CategoriaTareaProyecto;
@@ -134,6 +160,10 @@ export interface TareaCCV {
   tarifa_hora?: number; // valor por hora asignado
   tarifa_tarea?: number; // valor monetario total (tiempo_invertido * tarifa_hora o asignado)
   enlace_recurso?: string; // URL externa a material, Google Drive, OneDrive, Figma, etc.
+  plantilla_origen_id?: string;
+  estado_bloqueo?: EstadoBloqueoTarea;
+  dependencias_operativas?: string[]; // IDs de tareas del mismo curso que la bloquean
+  fecha_inicial?: string;
   created_at?: string;
 }
 

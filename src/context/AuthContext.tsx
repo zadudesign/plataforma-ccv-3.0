@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto, SolicitudTareaCCV, EstadoSolicitudTarea, TareaCCV } from '@/types';
+import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto, SolicitudTareaCCV, EstadoSolicitudTarea, TareaCCV, PlantillaTareaCurso } from '@/types';
 import { 
   INITIAL_PERMISOS, 
   ROLES_PERMISOS_MAP,
@@ -45,7 +45,13 @@ import {
   fetchSolicitudesTareasDB,
   crearSolicitudTareaDB,
   actualizarEstadoSolicitudDB,
-  convertirSolicitudEnTareaDB
+  convertirSolicitudEnTareaDB,
+  fetchPlantillaTareasCursoDB,
+  createPlantillaTareaDB,
+  updatePlantillaTareaDB,
+  deletePlantillaTareaDB,
+  inicializarTareasCursoDB,
+  forzarDesbloqueoAdminDB
 } from '@/lib/supabaseService';
 
 interface AuthContextType {
@@ -124,6 +130,16 @@ interface AuthContextType {
   enviarSolicitudTarea: (solicitud: Omit<SolicitudTareaCCV, 'id' | 'created_at'>) => Promise<{ success: boolean; data?: SolicitudTareaCCV; error?: string }>;
   actualizarEstadoSolicitud: (id: string, estado: EstadoSolicitudTarea, motivoRechazo?: string) => Promise<boolean>;
   aprobarYConvertirSolicitud: (solicitudId: string, tareaData: Omit<TareaCCV, 'id'>) => Promise<{ success: boolean; data?: TareaCCV; error?: string }>;
+
+  // Motor de Plantillas de Cursos
+  plantillaTareas: PlantillaTareaCurso[];
+  plantillaLoading: boolean;
+  cargarPlantillaTareas: () => Promise<void>;
+  crearPlantillaTarea: (tarea: Omit<PlantillaTareaCurso, 'id'>, dependenciasIds?: string[]) => Promise<PlantillaTareaCurso | null>;
+  editarPlantillaTarea: (id: string, updates: Partial<PlantillaTareaCurso>, dependenciasIds?: string[]) => Promise<boolean>;
+  eliminarPlantillaTarea: (id: string) => Promise<boolean>;
+  inicializarTareasCurso: (cursoId: string) => Promise<{ success: boolean; message: string; total?: number }>;
+  forzarDesbloqueoAdmin: (tareaId: string, adminId: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -145,6 +161,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Solicitudes de Tareas Públicas (Bandeja Admin)
   const [solicitudesTareas, setSolicitudesTareas] = useState<SolicitudTareaCCV[]>([]);
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
+
+  // Plantilla Predeterminada de Tareas (Cursos)
+  const [plantillaTareas, setPlantillaTareas] = useState<PlantillaTareaCurso[]>([]);
+  const [plantillaLoading, setPlantillaLoading] = useState(false);
 
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
@@ -178,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Cargar datos iniciales desde Supabase o Fallback
   useEffect(() => {
     const loadInitialData = async () => {
-      const [dbAreas, dbRoles, dbUsuarios, dbFacultades, dbProgramas, dbCursos, dbProyectos, dbPermisosMap, dbPermisosDef, dbSolicitudes] = await Promise.all([
+      const [dbAreas, dbRoles, dbUsuarios, dbFacultades, dbProgramas, dbCursos, dbProyectos, dbPermisosMap, dbPermisosDef, dbSolicitudes, dbPlantilla] = await Promise.all([
         fetchAreas(),
         fetchRoles(),
         fetchUsuarios(),
@@ -188,7 +208,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchProyectos(),
         fetchRolesPermisosMapDB(),
         fetchPermisosDefDB(),
-        fetchSolicitudesTareasDB()
+        fetchSolicitudesTareasDB(),
+        fetchPlantillaTareasCursoDB()
       ]);
 
       if (dbAreas.length > 0) setAreas(dbAreas);
@@ -199,6 +220,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (dbCursos.length > 0) setCursos(dbCursos);
       if (dbProyectos.length > 0) setProyectos(dbProyectos);
       if (dbSolicitudes && dbSolicitudes.length > 0) setSolicitudesTareas(dbSolicitudes);
+      if (dbPlantilla && dbPlantilla.length > 0) setPlantillaTareas(dbPlantilla);
       if (Object.keys(dbPermisosMap).length > 0) {
         setRolesPermisosMap(prev => ({ ...prev, ...dbPermisosMap }));
       }
@@ -953,6 +975,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return res;
   };
 
+  const cargarPlantillaTareas = async () => {
+    setPlantillaLoading(true);
+    const data = await fetchPlantillaTareasCursoDB();
+    setPlantillaTareas(data);
+    setPlantillaLoading(false);
+  };
+
+  const crearPlantillaTarea = async (
+    tarea: Omit<PlantillaTareaCurso, 'id'>,
+    dependenciasIds: string[] = []
+  ): Promise<PlantillaTareaCurso | null> => {
+    const nueva = await createPlantillaTareaDB(tarea, dependenciasIds);
+    if (nueva) {
+      setPlantillaTareas(prev => [...prev, nueva].sort((a, b) => a.orden - b.orden));
+    }
+    return nueva;
+  };
+
+  const editarPlantillaTarea = async (
+    id: string,
+    updates: Partial<PlantillaTareaCurso>,
+    dependenciasIds?: string[]
+  ): Promise<boolean> => {
+    const ok = await updatePlantillaTareaDB(id, updates, dependenciasIds);
+    if (ok) {
+      setPlantillaTareas(prev => prev.map(p => {
+        if (p.id === id) {
+          return {
+            ...p,
+            ...updates,
+            dependencias: dependenciasIds !== undefined ? dependenciasIds : p.dependencias
+          };
+        }
+        return p;
+      }).sort((a, b) => a.orden - b.orden));
+    }
+    return ok;
+  };
+
+  const eliminarPlantillaTarea = async (id: string): Promise<boolean> => {
+    const ok = await deletePlantillaTareaDB(id);
+    if (ok) {
+      setPlantillaTareas(prev => prev.filter(p => p.id !== id));
+    }
+    return ok;
+  };
+
+  const inicializarTareasCurso = async (cursoId: string) => {
+    return await inicializarTareasCursoDB(cursoId);
+  };
+
+  const forzarDesbloqueoAdmin = async (tareaId: string, adminId: string) => {
+    return await forzarDesbloqueoAdminDB(tareaId, adminId);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -978,6 +1055,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         enviarSolicitudTarea,
         actualizarEstadoSolicitud,
         aprobarYConvertirSolicitud,
+        plantillaTareas,
+        plantillaLoading,
+        cargarPlantillaTareas,
+        crearPlantillaTarea,
+        editarPlantillaTarea,
+        eliminarPlantillaTarea,
+        inicializarTareasCurso,
+        forzarDesbloqueoAdmin,
         hasPermission,
         canAccessLevel,
         isAdmin,

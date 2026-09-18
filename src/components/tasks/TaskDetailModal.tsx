@@ -16,11 +16,14 @@ import {
   FolderKanban,
   ChevronRight,
   Link as LinkIcon,
-  ExternalLink
+  ExternalLink,
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { TaskTimeTracker } from './TaskTimeTracker';
+import { ConfirmCompleteTaskModal } from './ConfirmCompleteTaskModal';
 
 interface TaskDetailModalProps {
   tarea: TareaCCV | null;
@@ -45,6 +48,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
   const { roles, usuarios } = useAuth();
   const [nuevoComentario, setNuevoComentario] = useState('');
+  const [confirmarCompletadaOpen, setConfirmarCompletadaOpen] = useState(false);
+
+  const handleCambiarEstado = (est: EstadoTarea) => {
+    if (!tarea) return;
+    if (tarea.tipo_tarea === 'Curso Virtual' && tarea.estado_bloqueo === 'BLOQUEADA' && est !== 'Pendiente') {
+      alert('Esta tarea está bloqueada en la secuencia del curso por dependencias previas no completadas.');
+      return;
+    }
+    if (tarea.tipo_tarea === 'Curso Virtual' && est === 'Completada' && tarea.estado !== 'Completada') {
+      setConfirmarCompletadaOpen(true);
+      return;
+    }
+    onUpdateStatus(tarea.id, est);
+  };
 
   // Helper para resolver el nombre legible del rol o limpiar IDs técnicos
   const getNombreRol = (rolDestinoOrId?: string, userId?: string) => {
@@ -313,9 +330,19 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 </span>
               )}
             </div>
+
+            {/* Aviso si la tarea está bloqueada por secuencia */}
+            {tarea.tipo_tarea === 'Curso Virtual' && tarea.estado_bloqueo === 'BLOQUEADA' && (
+              <div className="p-3 bg-stone-100 border border-stone-300 rounded-xl text-xs text-stone-700 flex items-center gap-2 mb-3">
+                <Lock className="w-4 h-4 text-stone-600 shrink-0" />
+                <span>Esta tarea se encuentra <strong>BLOQUEADA</strong> en la secuencia del curso. Requiere completar las fases anteriores antes de iniciar.</span>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               {(['Pendiente', 'En Proceso', 'En Revisión', 'Completada'] as EstadoTarea[]).map((est) => {
                 const isActive = tarea.estado === est;
+                const esBloqueada = tarea.tipo_tarea === 'Curso Virtual' && tarea.estado_bloqueo === 'BLOQUEADA' && est !== 'Pendiente';
                 const getActiveBtnStyle = (estado: EstadoTarea) => {
                   switch (estado) {
                     case 'Pendiente': return 'bg-rose-600 text-white ring-2 ring-rose-300';
@@ -328,11 +355,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 return (
                   <button
                     key={est}
-                    onClick={() => onUpdateStatus(tarea.id, est)}
+                    onClick={() => handleCambiarEstado(est)}
+                    disabled={esBloqueada}
                     className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all ${
-                      isActive
-                        ? `${getActiveBtnStyle(est)} shadow-md scale-105`
-                        : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200 border border-stone-200'
+                      esBloqueada
+                        ? 'opacity-40 bg-stone-200 text-stone-500 border border-stone-300 cursor-not-allowed'
+                        : isActive
+                        ? `${getActiveBtnStyle(est)} shadow-md scale-105 cursor-pointer`
+                        : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200 border border-stone-200 cursor-pointer'
                     }`}
                   >
                     {est}
@@ -405,6 +435,17 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal de Confirmación de Finalización */}
+      <ConfirmCompleteTaskModal
+        isOpen={confirmarCompletadaOpen}
+        tarea={tarea}
+        onClose={() => setConfirmarCompletadaOpen(false)}
+        onConfirm={() => {
+          if (tarea) onUpdateStatus(tarea.id, 'Completada');
+          setConfirmarCompletadaOpen(false);
+        }}
+      />
     </div>
   );
 };

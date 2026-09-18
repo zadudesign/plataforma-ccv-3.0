@@ -21,7 +21,12 @@ import {
   MessageSquare,
   Send,
   Link as LinkIcon,
-  ExternalLink
+  ExternalLink,
+  Lock,
+  Unlock,
+  ShieldAlert,
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -29,6 +34,8 @@ import { getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
 import { calcularProgresoTareas, PESOS_ESTADO_TAREA } from '@/lib/progressUtils';
 import { TaskTimeTracker } from '@/components/tasks/TaskTimeTracker';
+import { validarRequisitosCargaPlantilla, obtenerTareasBloqueantes } from '@/lib/courseTemplateUtils';
+import { ConfirmCompleteTaskModal } from '@/components/tasks/ConfirmCompleteTaskModal';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -40,6 +47,7 @@ interface CourseProjectProgressModalProps {
   onUpdateStatus?: (tareaId: string, nuevoEstado: EstadoTarea) => void;
   onAddComentario?: (tareaId: string, texto: string) => void;
   onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => void;
+  onRefreshTareas?: () => Promise<void>;
 }
 
 export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProps> = ({
@@ -52,8 +60,9 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onUpdateStatus,
   onAddComentario,
   onAddHours,
+  onRefreshTareas,
 }) => {
-  const { areas, facultades, programas, roles, usuarios, usuarioActual } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, forzarDesbloqueoAdmin } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
@@ -62,6 +71,12 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const [notasHoras, setNotasHoras] = useState('');
   const [imputarParaSecundario, setImputarParaSecundario] = useState(false);
   const [mostrarExitoHoras, setMostrarExitoHoras] = useState(false);
+
+  // Estados del Motor de Plantillas y Secuencia
+  const [cargandoPlantilla, setCargandoPlantilla] = useState(false);
+  const [mensajePlantilla, setMensajePlantilla] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  const [tareaParaConfirmar, setTareaParaConfirmar] = useState<TareaCCV | null>(null);
+  const [forzandoId, setForzandoId] = useState<string | null>(null);
 
   // Helper para resolver el nombre legible del rol o limpiar IDs técnicos
   const getNombreRol = (rolDestinoOrId?: string, userId?: string) => {
@@ -236,6 +251,57 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const comentariosTarea = tareaSeleccionadaLocal 
     ? comentarios.filter(c => c.tarea_id === tareaSeleccionadaLocal.id) 
     : [];
+
+  // Validaciones del Motor de Plantilla para Cursos
+  const validacionPlantilla = esCurso && curso ? validarRequisitosCargaPlantilla(curso, tareasEntidad) : null;
+  const yaTienePlantilla = tareasEntidad.some(t => !!t.plantilla_origen_id);
+
+  const handleCargarPlantilla = async () => {
+    if (!curso) return;
+    setCargandoPlantilla(true);
+    setMensajePlantilla(null);
+    try {
+      const res = await inicializarTareasCurso(curso.id);
+      if (res.success) {
+        setMensajePlantilla({ tipo: 'exito', texto: res.message });
+        if (onRefreshTareas) await onRefreshTareas();
+      } else {
+        setMensajePlantilla({ tipo: 'error', texto: res.message });
+      }
+    } catch (err: any) {
+      setMensajePlantilla({ tipo: 'error', texto: err?.message || 'Error al cargar la plantilla.' });
+    } finally {
+      setCargandoPlantilla(false);
+    }
+  };
+
+  const handleForzarDesbloqueo = async (tareaId: string) => {
+    if (!usuarioActual) return;
+    setForzandoId(tareaId);
+    try {
+      const res = await forzarDesbloqueoAdmin(tareaId, usuarioActual.id);
+      if (res.success) {
+        if (onRefreshTareas) await onRefreshTareas();
+        if (onAddComentario) {
+          onAddComentario(tareaId, `⚠️ Desbloqueada manualmente por contingencia por Admin: ${usuarioActual.nombre_completo}`);
+        }
+      } else {
+        alert(res.message);
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error al forzar el desbloqueo.');
+    } finally {
+      setForzandoId(null);
+    }
+  };
+
+  const handleSolicitarCambioEstado = (t: TareaCCV, nuevoEstado: EstadoTarea) => {
+    if (esCurso && nuevoEstado === 'Completada' && t.estado !== 'Completada') {
+      setTareaParaConfirmar(t);
+    } else {
+      if (onUpdateStatus) onUpdateStatus(t.id, nuevoEstado);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
@@ -515,6 +581,59 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
               {/* Task Breakdown Section */}
               <div className="space-y-4 pt-2">
+                {/* Banner de Plantilla Predeterminada exclusivo para Cursos */}
+                {esCurso && curso && (
+                  <div className="p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-cream-50/80 border-stone-200 shadow-2xs">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-sage-700 text-white shadow-2xs">
+                          Flujo Secuencial
+                        </span>
+                        {yaTienePlantilla && (
+                          <span className="text-xs font-bold text-emerald-800 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Plantilla Vinculada ({tareasEntidad.filter(t => !!t.plantilla_origen_id).length} tareas)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-charcoal-800">
+                        Ruta metodológica de producción con dependencias y desbloqueo en cascada
+                      </p>
+                      {!validacionPlantilla?.valido && !yaTienePlantilla && (
+                        <p className="text-[11px] text-amber-800 flex items-center gap-1 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          {validacionPlantilla?.motivo}
+                        </p>
+                      )}
+                      {mensajePlantilla && (
+                        <p className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                          mensajePlantilla.tipo === 'exito' 
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                            : 'bg-rose-50 text-rose-800 border-rose-200'
+                        }`}>
+                          {mensajePlantilla.texto}
+                        </p>
+                      )}
+                    </div>
+
+                    {!yaTienePlantilla && (
+                      <button
+                        onClick={handleCargarPlantilla}
+                        disabled={!validacionPlantilla?.valido || cargandoPlantilla}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shrink-0 ${
+                          validacionPlantilla?.valido && !cargandoPlantilla
+                            ? 'bg-sage-700 hover:bg-sage-800 text-white shadow-md hover:shadow-lg cursor-pointer'
+                            : 'bg-stone-200 text-stone-400 border border-stone-300 cursor-not-allowed'
+                        }`}
+                        title={!validacionPlantilla?.valido ? validacionPlantilla?.motivo : 'Instanciar el paquete de 52 tareas predeterminadas'}
+                      >
+                        <Layers className="w-4 h-4" />
+                        {cargandoPlantilla ? 'Instanciando Secuencia...' : 'Cargar Tareas Predeterminadas'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100">
                   <h3 className="text-base font-extrabold text-charcoal-900 flex items-center gap-2">
                     <Layers className="w-4 h-4 text-sage-600" />
@@ -553,80 +672,130 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 {/* Task Items List */}
                 {tareasMostrar.length > 0 ? (
                   <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                    {tareasMostrar.map((t) => {
-                      const isDone = t.estado === 'Completada';
-                      const costoTarea = t.tarifa_tarea !== undefined 
-                        ? t.tarifa_tarea 
-                        : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_invertido || 1) : undefined);
+                        {tareasMostrar.map((t) => {
+                          const isDone = t.estado === 'Completada';
+                          const estaBloqueada = esCurso && t.estado_bloqueo === 'BLOQUEADA';
+                          const estaDisponible = esCurso && t.estado_bloqueo === 'DISPONIBLE';
+                          const bloqueantes = estaBloqueada ? obtenerTareasBloqueantes(t, tareasEntidad) : [];
+                          const costoTarea = t.tarifa_tarea !== undefined 
+                            ? t.tarifa_tarea 
+                            : (t.tarifa_hora ? t.tarifa_hora * (t.tiempo_invertido || 1) : undefined);
 
-                      return (
-                        <div
-                          key={t.id}
-                          className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${getCardStyle(t.estado)}`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <button
-                              onClick={() => onUpdateStatus && onUpdateStatus(t.id, isDone ? 'En Proceso' : 'Completada')}
-                              className={`w-6 h-6 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                                isDone 
-                                  ? 'bg-emerald-600 text-white' 
-                                  : 'border-2 border-stone-400 hover:border-emerald-600 bg-white text-transparent'
+                          return (
+                            <div
+                              key={t.id}
+                              className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                estaBloqueada 
+                                  ? 'bg-stone-50/80 border-stone-200 opacity-90' 
+                                  : getCardStyle(t.estado)
                               }`}
-                              title={isDone ? 'Marcar como pendiente' : 'Marcar como completada'}
                             >
-                              <CheckCircle2 className="w-4 h-4" />
-                            </button>
+                              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                                {estaBloqueada ? (
+                                  <div 
+                                    className="w-6 h-6 rounded-full flex items-center justify-center bg-stone-200 border border-stone-300 text-stone-500 shrink-0 cursor-not-allowed shadow-2xs mt-0.5 sm:mt-0"
+                                    title={bloqueantes.length > 0 
+                                      ? `Bloqueada: Requiere completar ${bloqueantes.map(b => b.titulo).join(', ')}`
+                                      : 'Tarea bloqueada por secuencia'}
+                                  >
+                                    <Lock className="w-3.5 h-3.5 text-stone-600" />
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => handleSolicitarCambioEstado(t, isDone ? 'En Proceso' : 'Completada')}
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all shrink-0 cursor-pointer mt-0.5 sm:mt-0 ${
+                                      isDone 
+                                        ? 'bg-emerald-600 text-white shadow-xs' 
+                                        : 'border-2 border-stone-400 hover:border-emerald-600 bg-white text-transparent'
+                                    }`}
+                                    title={isDone ? 'Revertir estado' : 'Marcar como completada (desbloqueará siguientes tareas)'}
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </button>
+                                )}
 
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-md uppercase bg-white border border-stone-200 text-charcoal-800">
-                                  {t.categoria_proyecto || t.tipo_tarea}
-                                </span>
-                                <h4 
-                                  onClick={() => handleVerDetalleTarea(t)}
-                                  className={`font-bold text-xs cursor-pointer hover:underline truncate ${
-                                    isDone ? 'line-through text-stone-500' : 'text-charcoal-900'
-                                  }`}
-                                >
-                                  {t.titulo}
-                                </h4>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-md uppercase bg-white border border-stone-200 text-charcoal-800">
+                                      {t.categoria_proyecto || t.tipo_tarea}
+                                    </span>
+                                    {esCurso && t.plantilla_origen_id && (
+                                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-sage-50 text-sage-800 border border-sage-200">
+                                        Fase #{t.orden_tarea || 1}
+                                      </span>
+                                    )}
+                                    <h4 
+                                      onClick={() => handleVerDetalleTarea(t)}
+                                      className={`font-bold text-xs cursor-pointer hover:underline truncate ${
+                                        isDone ? 'line-through text-stone-500' : 'text-charcoal-900'
+                                      }`}
+                                    >
+                                      {t.titulo}
+                                    </h4>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 text-[11px] text-charcoal-600 mt-1 flex-wrap">
+                                    <span>
+                                      Responsable{t.responsable_secundario_nombre ? 's' : ''}: <strong className="text-charcoal-900 font-bold">{t.responsable_nombre || 'Sin Asignar'}</strong>
+                                      {t.responsable_secundario_nombre && (
+                                        <span className="text-blue-700 font-bold"> & {t.responsable_secundario_nombre}</span>
+                                      )}
+                                    </span>
+                                    {t.fecha_vencimiento && <span>• Vence: {t.fecha_vencimiento}</span>}
+                                    {t.tiempo_invertido !== undefined && <span>• {t.tiempo_invertido || 0} hrs</span>}
+                                    {costoTarea !== undefined && costoTarea > 0 && (
+                                      <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
+                                        ${costoTarea.toLocaleString('es-CO')} COP
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Tooltip explicativo de dependencias faltantes */}
+                                  {estaBloqueada && bloqueantes.length > 0 && (
+                                    <div className="mt-1.5 text-[10px] text-amber-800 bg-amber-50/90 border border-amber-200 px-2.5 py-1 rounded-xl flex items-center gap-1.5 w-fit">
+                                      <Lock className="w-3 h-3 text-amber-700 shrink-0" />
+                                      <span>Bloqueada: requiere completar <strong>{bloqueantes.map(b => b.titulo).join(', ')}</strong></span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
 
-                              <div className="flex items-center gap-3 text-[11px] text-charcoal-600 mt-1 flex-wrap">
-                                <span>
-                                  Responsable{t.responsable_secundario_nombre ? 's' : ''}: <strong className="text-charcoal-900 font-bold">{t.responsable_nombre || 'Sin Asignar'}</strong>
-                                  {t.responsable_secundario_nombre && (
-                                    <span className="text-blue-700 font-bold"> & {t.responsable_secundario_nombre}</span>
-                                  )}
-                                </span>
-                                <span>• Vence: {t.fecha_vencimiento}</span>
-                                <span>• {t.tiempo_invertido || 0} hrs</span>
-                                {costoTarea !== undefined && costoTarea > 0 && (
-                                  <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
-                                    ${costoTarea.toLocaleString('es-CO')} COP
+                              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                                {estaBloqueada ? (
+                                  <span className="text-[10px] font-black px-2.5 py-1 rounded-full border bg-stone-200 text-stone-700 border-stone-300 flex items-center gap-1">
+                                    <Lock className="w-3 h-3" /> Bloqueada
+                                  </span>
+                                ) : (
+                                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border shadow-xs ${getBadgeStyle(t.estado)}`}>
+                                    {t.estado}
                                   </span>
                                 )}
+
+                                {/* Bypass Contingencia Exclusivo para Admin */}
+                                {estaBloqueada && isAdmin() && (
+                                  <button
+                                    onClick={() => handleForzarDesbloqueo(t.id)}
+                                    disabled={forzandoId === t.id}
+                                    className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                                    title="Forzar desbloqueo de contingencia (Bypass Admin)"
+                                  >
+                                    <ShieldAlert className="w-3 h-3 text-amber-700" />
+                                    <span>{forzandoId === t.id ? 'Desbloqueando...' : 'Forzar Desbloqueo'}</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => handleVerDetalleTarea(t)}
+                                  className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-white border border-stone-200 text-charcoal-700 hover:bg-stone-100 flex items-center gap-1 shadow-2xs cursor-pointer"
+                                  title="Ver información detallada de esta tarea"
+                                >
+                                  <span>Ver Información</span>
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border shadow-xs ${getBadgeStyle(t.estado)}`}>
-                              {t.estado}
-                            </span>
-
-                            <button
-                              onClick={() => handleVerDetalleTarea(t)}
-                              className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-white border border-stone-200 text-charcoal-700 hover:bg-stone-100 flex items-center gap-1 shadow-2xs"
-                              title="Ver información detallada de esta tarea"
-                            >
-                              <span>Ver Información</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
                   </div>
                 ) : (
                   <div className="p-8 bg-cream-50/60 border border-stone-200/80 rounded-2xl text-center space-y-2">
@@ -885,6 +1054,26 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
             )
           )}
         </div>
+        {/* Modal de Confirmación para Completar Tarea del Curso */}
+        <ConfirmCompleteTaskModal
+          isOpen={!!tareaParaConfirmar}
+          tarea={tareaParaConfirmar}
+          tareasDependientes={
+            tareaParaConfirmar 
+              ? tareasEntidad.filter(dep => dep.dependencias_operativas?.includes(tareaParaConfirmar.id))
+              : []
+          }
+          onClose={() => setTareaParaConfirmar(null)}
+          onConfirm={() => {
+            if (tareaParaConfirmar && onUpdateStatus) {
+              onUpdateStatus(tareaParaConfirmar.id, 'Completada');
+              if (tareaSeleccionadaLocal && tareaSeleccionadaLocal.id === tareaParaConfirmar.id) {
+                setTareaSeleccionadaLocal({ ...tareaSeleccionadaLocal, estado: 'Completada', estado_bloqueo: 'COMPLETADA' });
+              }
+            }
+            setTareaParaConfirmar(null);
+          }}
+        />
       </div>
     </div>
   );

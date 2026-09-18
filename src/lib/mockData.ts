@@ -1,4 +1,4 @@
-import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa, RegistroHoras, PublicacionParrilla, SolicitudTareaCCV } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, ProyectoEspecial, CursoVirtual, TareaCCV, TareaComentario, PermisoDef, ConfiguracionTarifa, RegistroHoras, PublicacionParrilla, SolicitudTareaCCV, PlantillaTareaCurso } from '@/types';
 
 export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
   { id: 'tar-1', categoria: 'Diseño', tarifa_hora: 35000, descripcion: 'Tarifa por hora (COP) para diseño gráfico, instruccional y diagramación' },
@@ -813,5 +813,108 @@ export const INITIAL_SOLICITUDES_TAREAS: SolicitudTareaCCV[] = [
     created_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString()
   }
 ];
+
+// ============================================================================
+// DATOS DE PRUEBA: PLANTILLA PREDETERMINADA DE TAREAS PARA CURSOS VIRTUALES
+// ============================================================================
+export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
+  {
+    id: 'pt-1',
+    codigo: 'T01',
+    titulo: 'Entrega de Microcurrículo y Plan de Asignatura',
+    descripcion: 'El docente carga la propuesta curricular, resultados de aprendizaje y metodología del curso.',
+    orden: 1,
+    tipo_responsable: 'DOCENTE',
+    tipo_tarea: 'PRODUCCION',
+    tiempo_estimado: 120,
+    activa: true,
+    dependencias: []
+  },
+  {
+    id: 'pt-2',
+    codigo: 'T02',
+    titulo: 'Revisión Pedagógica y Didáctica',
+    descripcion: 'El par evaluador verifica la coherencia curricular, rúbricas de evaluación y diseño instruccional.',
+    orden: 2,
+    tipo_responsable: 'PAR_EVALUADOR',
+    tipo_tarea: 'REVISION',
+    tiempo_estimado: 90,
+    activa: true,
+    dependencias: ['pt-1']
+  },
+  {
+    id: 'pt-3',
+    codigo: 'T03',
+    titulo: 'Ajustes Pedagógicos y Aprobación Curricular',
+    descripcion: 'El docente realiza las correcciones sugeridas por el par evaluador y valida la versión definitiva.',
+    orden: 3,
+    tipo_responsable: 'DOCENTE',
+    tipo_tarea: 'PRODUCCION',
+    tiempo_estimado: 60,
+    activa: true,
+    dependencias: ['pt-2']
+  },
+  {
+    id: 'pt-4',
+    codigo: 'T04',
+    titulo: 'Entrega de Guiones y Contenidos de Módulos',
+    descripcion: 'Elaboración de contenidos textuales, lecturas, guías y especificaciones de recursos multimedia.',
+    orden: 4,
+    tipo_responsable: 'DOCENTE',
+    tipo_tarea: 'PRODUCCION',
+    tiempo_estimado: 180,
+    activa: true,
+    dependencias: ['pt-3']
+  },
+  {
+    id: 'pt-5',
+    codigo: 'T05',
+    titulo: 'Diseño Gráfico y Maquetación de Materiales',
+    descripcion: 'El equipo CMU diseña infografías, banners de unidades, plantillas interactivas y presentaciones.',
+    orden: 5,
+    tipo_responsable: 'CMU_FIJO',
+    tipo_tarea: 'PRODUCCION',
+    tiempo_estimado: 240,
+    activa: true,
+    dependencias: ['pt-4']
+  },
+  {
+    id: 'pt-6',
+    codigo: 'T06',
+    titulo: 'Producción Audiovisual y Cápsulas Educativas',
+    descripcion: 'Grabación, edición y postproducción de videos introductorios y cápsulas temáticas del curso.',
+    orden: 6,
+    tipo_responsable: 'CMU_FIJO',
+    tipo_tarea: 'PRODUCCION',
+    tiempo_estimado: 300,
+    activa: true,
+    dependencias: ['pt-4']
+  },
+  {
+    id: 'pt-7',
+    codigo: 'T07',
+    titulo: 'Montaje y Parametrización en LMS (Moodle)',
+    descripcion: 'Configuración de secciones, cuestionarios, foros, tareas y recursos didácticos en el aula virtual.',
+    orden: 7,
+    tipo_responsable: 'CMU_FIJO',
+    tipo_tarea: 'SOPORTE',
+    tiempo_estimado: 180,
+    activa: true,
+    dependencias: ['pt-5', 'pt-6']
+  },
+  {
+    id: 'pt-8',
+    codigo: 'T08',
+    titulo: 'Certificación de Calidad y Validación Final',
+    descripcion: 'El par evaluador y CCV realizan la auditoría final del curso previa a la apertura a estudiantes.',
+    orden: 8,
+    tipo_responsable: 'PAR_EVALUADOR',
+    tipo_tarea: 'REVISION',
+    tiempo_estimado: 120,
+    activa: true,
+    dependencias: ['pt-7']
+  }
+];
+
 
 

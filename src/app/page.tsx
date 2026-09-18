@@ -31,6 +31,7 @@ import { CourseProjectProgressModal } from '@/components/academic/CourseProjectP
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
 import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
 import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
+import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
 import { ShieldAlert } from 'lucide-react';
 
 export default function Home() {
@@ -212,33 +213,45 @@ export default function Home() {
 
   // Handlers
   const handleUpdateStatus = async (tareaId: string, nuevoEstado: EstadoTarea) => {
+    const targetTarea = tareas.find(t => t.id === tareaId);
+    if (targetTarea && targetTarea.curso_id && targetTarea.estado_bloqueo === 'BLOQUEADA' && nuevoEstado !== 'Pendiente') {
+      alert('Esta tarea está bloqueada en la secuencia del curso por dependencias previas no completadas.');
+      return;
+    }
+
     await updateTareaEstadoDB(tareaId, nuevoEstado);
 
-    setTareas(prev => prev.map(t => {
-      if (t.id === tareaId) {
-        const fechaCompletada = nuevoEstado === 'Completada' ? new Date().toISOString().split('T')[0] : undefined;
-        // Consolidación de costos si es Proyecto y pasa a completado
-        const totalHoras = (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0);
-        const tarifaConsolidada = (t.tipo_tarea === 'Proyecto' && t.tarifa_hora) ? totalHoras * t.tarifa_hora : t.tarifa_tarea;
-
-        if (nuevoEstado === 'Completada' && t.tipo_tarea === 'Proyecto') {
-          updateTareaFullDB(tareaId, {
-            estado: 'Completada',
-            tarifa_tarea: tarifaConsolidada,
-            tiempo_invertido: t.tiempo_invertido,
-            tiempo_invertido_secundario: t.tiempo_invertido_secundario
-          });
-        }
-
-        return {
-          ...t,
-          estado: nuevoEstado,
-          fecha_completada: fechaCompletada,
-          tarifa_tarea: tarifaConsolidada
-        };
+    setTareas(prev => {
+      let base = prev;
+      if (targetTarea && targetTarea.curso_id) {
+        base = simularDesbloqueoEnCascada(tareaId, nuevoEstado, prev);
       }
-      return t;
-    }));
+
+      return base.map(t => {
+        if (t.id === tareaId) {
+          const fechaCompletada = nuevoEstado === 'Completada' ? new Date().toISOString().split('T')[0] : undefined;
+          const totalHoras = (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0);
+          const tarifaConsolidada = (t.tipo_tarea === 'Proyecto' && t.tarifa_hora) ? totalHoras * t.tarifa_hora : t.tarifa_tarea;
+
+          if (nuevoEstado === 'Completada' && t.tipo_tarea === 'Proyecto') {
+            updateTareaFullDB(tareaId, {
+              estado: 'Completada',
+              tarifa_tarea: tarifaConsolidada,
+              tiempo_invertido: t.tiempo_invertido,
+              tiempo_invertido_secundario: t.tiempo_invertido_secundario
+            });
+          }
+
+          return {
+            ...t,
+            estado: nuevoEstado,
+            fecha_completada: fechaCompletada,
+            tarifa_tarea: tarifaConsolidada
+          };
+        }
+        return t;
+      });
+    });
 
     if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
       setTareaSeleccionada(prev => {
@@ -249,7 +262,8 @@ export default function Home() {
           ...prev, 
           estado: nuevoEstado,
           fecha_completada: nuevoEstado === 'Completada' ? new Date().toISOString().split('T')[0] : undefined,
-          tarifa_tarea: tarifaConsolidada
+          tarifa_tarea: tarifaConsolidada,
+          estado_bloqueo: nuevoEstado === 'Completada' ? 'COMPLETADA' : nuevoEstado === 'Pendiente' ? 'DISPONIBLE' : 'EN_PROCESO'
         };
       });
     }
@@ -640,6 +654,10 @@ export default function Home() {
             onUpdateStatus={handleUpdateStatus}
             onAddComentario={handleAddComment}
             onAddHours={handleUpdateTaskHours}
+            onRefreshTareas={async () => {
+              const dbTareas = await fetchTareasDB();
+              setTareas(ordenarTareasPorVencimiento(dbTareas || []));
+            }}
           />
         )}
         {/* Digital Signature Modal */}

@@ -529,4 +529,319 @@ FOR ALL
 USING (public.es_admin(auth.uid()))
 WITH CHECK (public.es_admin(auth.uid()));
 
+-- ----------------------------------------------------------------------------
+-- 12. FASE 12: MOTOR DE PLANTILLAS Y SECUENCIA DE TAREAS POR DEPENDENCIAS (EXCLUSIVO PARA CURSOS)
+-- ----------------------------------------------------------------------------
+
+-- Tabla: Catálogo Maestro de Tareas de Plantilla
+CREATE TABLE IF NOT EXISTS public.plantilla_tareas_curso (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codigo TEXT UNIQUE NOT NULL, -- Ej: 'T01', 'T02'
+    titulo TEXT NOT NULL,
+    descripcion TEXT,
+    orden INT NOT NULL,
+    tipo_responsable TEXT NOT NULL CHECK (tipo_responsable IN ('DOCENTE', 'PAR_EVALUADOR', 'CMU_FIJO')),
+    cmu_usuario_fijo_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    tipo_tarea TEXT DEFAULT 'PRODUCCION',
+    tiempo_estimado INT DEFAULT 0, -- Minutos
+    activa BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_plantilla_tareas_orden ON public.plantilla_tareas_curso(orden ASC);
+CREATE INDEX IF NOT EXISTS idx_plantilla_tareas_activa ON public.plantilla_tareas_curso(activa);
+
+-- Tabla: Mapeo de Dependencias Base (Qué tarea de plantilla bloquea a cuál)
+CREATE TABLE IF NOT EXISTS public.plantilla_tareas_dependencias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tarea_plantilla_id UUID NOT NULL REFERENCES public.plantilla_tareas_curso(id) ON DELETE CASCADE,
+    depende_de_id UUID NOT NULL REFERENCES public.plantilla_tareas_curso(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT uq_plantilla_dependencia UNIQUE (tarea_plantilla_id, depende_de_id),
+    CONSTRAINT chk_no_auto_dependencia CHECK (tarea_plantilla_id <> depende_de_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_plantilla_dep_tarea ON public.plantilla_tareas_dependencias(tarea_plantilla_id);
+CREATE INDEX IF NOT EXISTS idx_plantilla_dep_depende ON public.plantilla_tareas_dependencias(depende_de_id);
+
+-- Campos adicionales en la tabla operativa de tareas
+ALTER TABLE public.tareas
+    ADD COLUMN IF NOT EXISTS plantilla_origen_id UUID REFERENCES public.plantilla_tareas_curso(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS estado_bloqueo TEXT NOT NULL DEFAULT 'DISPONIBLE' 
+        CHECK (estado_bloqueo IN ('BLOQUEADA', 'DISPONIBLE', 'EN_PROCESO', 'COMPLETADA')),
+    ADD COLUMN IF NOT EXISTS dependencias_operativas UUID[] DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS fecha_inicial DATE;
+
+CREATE INDEX IF NOT EXISTS idx_tareas_curso_bloqueo ON public.tareas(curso_id, estado_bloqueo);
+CREATE INDEX IF NOT EXISTS idx_tareas_dependencias_gin ON public.tareas USING GIN (dependencias_operativas);
+
+-- RLS para Plantilla de Tareas
+ALTER TABLE public.plantilla_tareas_curso ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plantilla_tareas_dependencias ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Lectura pública/autenticada de plantilla de tareas" ON public.plantilla_tareas_curso;
+CREATE POLICY "Lectura pública/autenticada de plantilla de tareas"
+ON public.plantilla_tareas_curso FOR SELECT
+USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Gestión de plantilla exclusiva para administradores" ON public.plantilla_tareas_curso;
+CREATE POLICY "Gestión de plantilla exclusiva para administradores"
+ON public.plantilla_tareas_curso FOR ALL
+USING (public.es_admin(auth.uid()))
+WITH CHECK (public.es_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Lectura pública/autenticada de dependencias plantilla" ON public.plantilla_tareas_dependencias;
+CREATE POLICY "Lectura pública/autenticada de dependencias plantilla"
+ON public.plantilla_tareas_dependencias FOR SELECT
+USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Gestión de dependencias plantilla exclusiva para admin" ON public.plantilla_tareas_dependencias;
+CREATE POLICY "Gestión de dependencias plantilla exclusiva para admin"
+ON public.plantilla_tareas_dependencias FOR ALL
+USING (public.es_admin(auth.uid()))
+WITH CHECK (public.es_admin(auth.uid()));
+
+-- Función RPC: Instanciar Plantilla en un Curso
+CREATE OR REPLACE FUNCTION public.inicializar_tareas_curso(p_curso_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_curso RECORD;
+    v_total_existentes INT;
+    v_pt RECORD;
+    v_tarea_id UUID;
+    v_map_ids JSONB := '{}'::jsonb;
+    v_deps_nuevas UUID[];
+    v_bloqueo_inicial TEXT;
+    v_responsable_id UUID;
+    v_rol_destino TEXT;
+BEGIN
+    -- 1. Validar existencia del curso
+    SELECT * INTO v_curso FROM public.cursos WHERE id = p_curso_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'message', 'El curso especificado no existe.');
+    END IF;
+
+    -- 2. Validación estricta: docente y par evaluador asignados
+    IF v_curso.docente_id IS NULL OR v_curso.evaluador_id IS NULL THEN
+        RETURN jsonb_build_object(
+            'success', false, 
+            'message', 'Para cargar la plantilla, el curso debe tener docente y par evaluador asignados.'
+        );
+    END IF;
+
+    -- 3. Validar que no tenga tareas previas generadas desde la plantilla
+    SELECT COUNT(*) INTO v_total_existentes 
+    FROM public.tareas 
+    WHERE curso_id = p_curso_id AND plantilla_origen_id IS NOT NULL;
+
+    IF v_total_existentes > 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', 'El curso ya tiene tareas cargadas desde la plantilla predeterminada.');
+    END IF;
+
+    -- 4. Iterar e insertar tareas activas de la plantilla
+    FOR v_pt IN 
+        SELECT * FROM public.plantilla_tareas_curso 
+        WHERE activa = true 
+        ORDER BY orden ASC 
+    LOOP
+        -- Asignar responsable y rol según el tipo
+        IF v_pt.tipo_responsable = 'DOCENTE' THEN
+            v_responsable_id := v_curso.docente_id;
+            v_rol_destino := 'Docente';
+        ELSIF v_pt.tipo_responsable = 'PAR_EVALUADOR' THEN
+            v_responsable_id := v_curso.evaluador_id;
+            v_rol_destino := 'Par Evaluador';
+        ELSIF v_pt.tipo_responsable = 'CMU_FIJO' THEN
+            v_responsable_id := v_pt.cmu_usuario_fijo_id;
+            v_rol_destino := 'CMU / Producción';
+        ELSE
+            v_responsable_id := NULL;
+            v_rol_destino := 'General';
+        END IF;
+
+        INSERT INTO public.tareas (
+            titulo,
+            descripcion,
+            curso_id,
+            responsable_id,
+            rol_destino,
+            orden_tarea,
+            estado,
+            estado_bloqueo,
+            tipo_tarea,
+            tiempo_estimado,
+            plantilla_origen_id,
+            dependencias_operativas
+        ) VALUES (
+            v_pt.titulo,
+            v_pt.descripcion,
+            p_curso_id,
+            v_responsable_id,
+            v_rol_destino,
+            v_pt.orden,
+            'Pendiente',
+            'BLOQUEADA',
+            'Curso Virtual',
+            ROUND((v_pt.tiempo_estimado::numeric / 60.0), 2),
+            v_pt.id,
+            '{}'
+        ) RETURNING id INTO v_tarea_id;
+
+        v_map_ids := jsonb_set(v_map_ids, ARRAY[v_pt.id::text], to_jsonb(v_tarea_id::text));
+    END LOOP;
+
+    -- 5. Mapear dependencias operativas y calcular estado_bloqueo inicial
+    FOR v_pt IN SELECT * FROM public.plantilla_tareas_curso WHERE activa = true LOOP
+        v_tarea_id := (v_map_ids->>v_pt.id::text)::uuid;
+
+        SELECT COALESCE(array_agg((v_map_ids->>dep.depende_de_id::text)::uuid), '{}')
+        INTO v_deps_nuevas
+        FROM public.plantilla_tareas_dependencias dep
+        WHERE dep.tarea_plantilla_id = v_pt.id
+          AND v_map_ids ? dep.depende_de_id::text;
+
+        IF array_length(v_deps_nuevas, 1) IS NULL OR array_length(v_deps_nuevas, 1) = 0 THEN
+            v_bloqueo_inicial := 'DISPONIBLE';
+        ELSE
+            v_bloqueo_inicial := 'BLOQUEADA';
+        END IF;
+
+        UPDATE public.tareas
+        SET dependencias_operativas = v_deps_nuevas,
+            estado_bloqueo = v_bloqueo_inicial
+        WHERE id = v_tarea_id;
+    END LOOP;
+
+    RETURN jsonb_build_object(
+        'success', true, 
+        'message', 'Secuencia de tareas instanciada exitosamente en el curso.',
+        'total', (SELECT count(*) FROM public.tareas WHERE curso_id = p_curso_id AND plantilla_origen_id IS NOT NULL)
+    );
+END;
+$$;
+
+-- Función Trigger: Desbloqueo en Cascada y Rollback Automático
+CREATE OR REPLACE FUNCTION public.fn_desbloqueo_en_cascada()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_tarea_dep RECORD;
+    v_faltantes INT;
+BEGIN
+    -- Caso 1: La tarea pasa a Completada -> Desbloqueo de tareas dependientes
+    IF (NEW.estado = 'Completada' OR NEW.estado_bloqueo = 'COMPLETADA') AND 
+       (OLD.estado <> 'Completada' OR OLD.estado_bloqueo <> 'COMPLETADA') THEN
+        
+        NEW.estado_bloqueo := 'COMPLETADA';
+
+        -- Buscar tareas del mismo curso bloqueadas que dependan de esta
+        FOR v_tarea_dep IN
+            SELECT id, dependencias_operativas
+            FROM public.tareas
+            WHERE curso_id = NEW.curso_id
+              AND estado_bloqueo = 'BLOQUEADA'
+              AND NEW.id = ANY(dependencias_operativas)
+        LOOP
+            -- Contar cuántas dependencias faltan por completar (excluyendo NEW que ya se está completando)
+            SELECT COUNT(*) INTO v_faltantes
+            FROM public.tareas
+            WHERE id = ANY(v_tarea_dep.dependencias_operativas)
+              AND estado <> 'Completada'
+              AND id <> NEW.id;
+
+            -- Si no falta ninguna, pasa automáticamente a DISPONIBLE
+            IF v_faltantes = 0 THEN
+                UPDATE public.tareas
+                SET estado_bloqueo = 'DISPONIBLE'
+                WHERE id = v_tarea_dep.id;
+            END IF;
+        END LOOP;
+
+    -- Caso 2: Rollback - La tarea se revierte a 'Pendiente', 'En Proceso' o 'En Revisión'
+    ELSIF (OLD.estado = 'Completada' OR OLD.estado_bloqueo = 'COMPLETADA') AND 
+          (NEW.estado <> 'Completada' AND NEW.estado_bloqueo <> 'COMPLETADA') THEN
+        
+        IF NEW.estado = 'Pendiente' THEN
+            NEW.estado_bloqueo := 'DISPONIBLE';
+        ELSE
+            NEW.estado_bloqueo := 'EN_PROCESO';
+        END IF;
+
+        -- Bloquear de nuevo las dependientes directas que aún sigan en DISPONIBLE y 'Pendiente'
+        FOR v_tarea_dep IN
+            SELECT id
+            FROM public.tareas
+            WHERE curso_id = NEW.curso_id
+              AND estado_bloqueo = 'DISPONIBLE'
+              AND estado = 'Pendiente'
+              AND NEW.id = ANY(dependencias_operativas)
+        LOOP
+            UPDATE public.tareas
+            SET estado_bloqueo = 'BLOQUEADA'
+            WHERE id = v_tarea_dep.id;
+        END LOOP;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_desbloqueo_cascada ON public.tareas;
+CREATE TRIGGER trg_desbloqueo_cascada
+BEFORE UPDATE ON public.tareas
+FOR EACH ROW
+EXECUTE FUNCTION public.fn_desbloqueo_en_cascada();
+
+-- Función RPC: Forzar Desbloqueo Manual por Contingencia (Exclusivo Admin Nivel 6)
+CREATE OR REPLACE FUNCTION public.forzar_desbloqueo_admin(p_tarea_id UUID, p_admin_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_es_admin BOOLEAN;
+    v_admin_nombre TEXT;
+    v_tarea RECORD;
+BEGIN
+    -- Validar con la función de seguridad del sistema
+    v_es_admin := public.es_admin(p_admin_id);
+
+    IF NOT v_es_admin THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Permiso denegado. Se requiere rol de Administrador.');
+    END IF;
+
+    SELECT u.nombre_completo INTO v_admin_nombre
+    FROM public.usuarios u
+    WHERE u.id = p_admin_id;
+
+    SELECT * INTO v_tarea FROM public.tareas WHERE id = p_tarea_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Tarea no encontrada.');
+    END IF;
+
+    -- Desbloquear directamente
+    UPDATE public.tareas
+    SET estado_bloqueo = 'DISPONIBLE'
+    WHERE id = p_tarea_id;
+
+    -- Registrar auditoría en comentarios
+    INSERT INTO public.tarea_comentarios (
+        tarea_id,
+        usuario_id,
+        contenido
+    ) VALUES (
+        p_tarea_id,
+        p_admin_id,
+        CONCAT('⚠️ Desbloqueada manualmente por contingencia por Admin: ', COALESCE(v_admin_nombre, 'Administrador'))
+    );
+
+    RETURN jsonb_build_object('success', true, 'message', 'Tarea desbloqueada exitosamente por contingencia.');
+END;
+$$;
+
+
 
