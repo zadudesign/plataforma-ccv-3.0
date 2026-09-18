@@ -91,6 +91,18 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
   const totalActivas = plantillaTareas.filter(t => t.activa).length;
   const totalConDependencias = plantillaTareas.filter(t => t.dependencias && t.dependencias.length > 0).length;
 
+  const totalMinutosTodas = useMemo(() => {
+    return plantillaTareas.reduce((acc, t) => acc + (Number(t.tiempo_estimado) || 0), 0);
+  }, [plantillaTareas]);
+
+  const formatearDuracion = (minutos: number) => {
+    const horas = Math.floor(minutos / 60);
+    const mins = minutos % 60;
+    if (horas === 0) return `${mins}m`;
+    if (mins === 0) return `${horas}h`;
+    return `${horas}h ${mins}m`;
+  };
+
   const handleOpenNueva = () => {
     setTareaEnEdicion(null);
     setModalOpen(true);
@@ -148,10 +160,23 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
       </div>
 
       {/* Metric Pills */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
           <span className="text-[10px] font-bold text-charcoal-500 uppercase tracking-wider">Total Tareas Base</span>
           <p className="text-2xl font-black text-charcoal-900">{plantillaTareas.length}</p>
+        </div>
+
+        <div className="p-4 bg-white rounded-2xl border border-purple-200/90 shadow-2xs space-y-1 bg-gradient-to-b from-purple-50/40 to-white">
+          <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-purple-600" />
+            Duración Total
+          </span>
+          <p className="text-2xl font-black text-purple-800">
+            {formatearDuracion(totalMinutosTodas)}
+          </p>
+          <span className="text-[10px] text-purple-600/80 font-bold block">
+            {totalMinutosTodas.toLocaleString('es-CO')} min acumulados
+          </span>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
@@ -361,6 +386,25 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
                 })
               )}
             </tbody>
+            {tareasFiltradas.length > 0 && (
+              <tfoot className="bg-stone-50/90 border-t-2 border-stone-200">
+                <tr className="font-extrabold text-charcoal-800">
+                  <td colSpan={3} className="py-3 px-4 text-right text-[11px] uppercase tracking-wider text-charcoal-500">
+                    Totalización según filtro ({tareasFiltradas.length} tareas):
+                  </td>
+                  <td className="py-3 px-4"></td>
+                  <td className="py-3 px-3 font-black text-purple-700">
+                    <span className="flex items-center gap-1 text-xs">
+                      <Clock className="w-3.5 h-3.5 text-purple-600" />
+                      {formatearDuracion(tareasFiltradas.reduce((acc, t) => acc + (Number(t.tiempo_estimado) || 0), 0))}
+                    </span>
+                  </td>
+                  <td colSpan={3} className="py-3 px-4 text-[10px] text-charcoal-400 font-medium italic">
+                    {tareasFiltradas.reduce((acc, t) => acc + (Number(t.tiempo_estimado) || 0), 0).toLocaleString('es-CO')} min acumulados
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
