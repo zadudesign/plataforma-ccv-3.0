@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { fetchTareasDB } from '@/lib/supabaseService';
-import { INITIAL_TAREAS } from '@/lib/mockData';
 
 interface StatConfig {
   id: string;
@@ -29,7 +28,7 @@ interface StatConfig {
 
 export const HomeStats: React.FC = () => {
   const { programas, cursos, proyectos, usuarios } = useAuth();
-  const [tareasCount, setTareasCount] = useState<number>(INITIAL_TAREAS.length);
+  const [tareasCount, setTareasCount] = useState<number>(0);
   const [hasAnimated, setHasAnimated] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 

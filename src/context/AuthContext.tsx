@@ -5,8 +5,7 @@ import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVir
 import { 
   INITIAL_PERMISOS, 
   ROLES_PERMISOS_MAP,
-  INITIAL_TARIFAS_PROYECTO,
-  INITIAL_SOLICITUDES_TAREAS
+  INITIAL_TARIFAS_PROYECTO
 } from '@/lib/mockData';
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -144,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tarifasProyecto, setTarifasProyecto] = useState<ConfiguracionTarifa[]>(INITIAL_TARIFAS_PROYECTO);
   
   // Solicitudes de Tareas Públicas (Bandeja Admin)
-  const [solicitudesTareas, setSolicitudesTareas] = useState<SolicitudTareaCCV[]>(INITIAL_SOLICITUDES_TAREAS);
+  const [solicitudesTareas, setSolicitudesTareas] = useState<SolicitudTareaCCV[]>([]);
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
 
   // Default logged in user: null (mostrando la pantalla de Login por defecto)
