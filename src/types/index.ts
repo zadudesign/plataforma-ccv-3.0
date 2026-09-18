@@ -97,7 +97,7 @@ export type TipoTarea = 'Curso Virtual' | 'Proyecto';
 export type CategoriaTareaProyecto = 'Diseño' | 'Multimedia' | 'Soporte' | 'Transmisión';
 
 // TIPOS PARA MOTOR DE PLANTILLAS Y SECUENCIA DE TAREAS (CURSOS)
-export type TipoResponsablePlantilla = 'DOCENTE' | 'PAR_EVALUADOR' | 'CMU_FIJO';
+export type TipoResponsablePlantilla = 'DOCENTE' | 'PAR_EVALUADOR' | 'COORDINADOR' | 'DECANO' | 'CMU_FIJO';
 export type EstadoBloqueoTarea = 'BLOQUEADA' | 'DISPONIBLE' | 'EN_PROCESO' | 'COMPLETADA';
 
 export interface PlantillaTareaCurso {
@@ -220,6 +220,9 @@ export interface SolicitudTareaCCV {
 }
 
 export type VistaNavegacion = 'dashboard' | 'calendar' | 'kanban' | 'productivity' | 'academic' | 'admin' | 'parrilla';
+
+export type PestanaAdmin = 'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes' | 'plantillas';
+export type CategoriaAdmin = 'rbac' | 'academica' | 'operaciones';
 
 export type RolCmuNombre = 'Diseño' | 'Soporte' | 'Producción' | 'Multimedia';
 

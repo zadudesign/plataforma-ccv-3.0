@@ -195,6 +195,8 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
             <option value="todos">Todos los Responsables</option>
             <option value="DOCENTE">Docente del Curso</option>
             <option value="PAR_EVALUADOR">Par Evaluador</option>
+            <option value="COORDINADOR">Coordinador de Programa</option>
+            <option value="DECANO">Decano de Facultad</option>
             <option value="CMU_FIJO">Usuario Fijo CMU</option>
           </select>
         </div>
@@ -269,6 +271,16 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
                         {tarea.tipo_responsable === 'PAR_EVALUADOR' && (
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1 w-fit">
                             <UserCheck className="w-3 h-3" /> Par Evaluador
+                          </span>
+                        )}
+                        {tarea.tipo_responsable === 'COORDINADOR' && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center gap-1 w-fit">
+                            <UserCheck className="w-3 h-3" /> Coordinador
+                          </span>
+                        )}
+                        {tarea.tipo_responsable === 'DECANO' && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-fit">
+                            <UserCheck className="w-3 h-3" /> Decano
                           </span>
                         )}
                         {tarea.tipo_responsable === 'CMU_FIJO' && (

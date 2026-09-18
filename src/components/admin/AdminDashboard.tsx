@@ -35,7 +35,7 @@ import {
   ChevronRight,
   Inbox
 } from 'lucide-react';
-import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto, PestanaAdmin, CategoriaAdmin } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { UserFormModal } from './UserFormModal';
 import { RolePermissionsModal } from './RolePermissionsModal';
@@ -411,13 +411,21 @@ const formatUltimaConexion = (timestamp?: string): InfoConexion => {
   }
 };
 
+export const getCategoriaFromPestana = (p?: PestanaAdmin): CategoriaAdmin => {
+  if (!p) return 'rbac';
+  if (p === 'usuarios' || p === 'roles' || p === 'areas') return 'rbac';
+  if (p === 'asignaciones' || p === 'plantillas') return 'academica';
+  if (p === 'solicitudes' || p === 'tarifas') return 'operaciones';
+  return 'rbac';
+};
+
 interface AdminDashboardProps {
   areas: Area[];
   roles: Rol[];
   usuarios: Usuario[];
   facultades: Facultad[];
   programas: Programa[];
-  pestanaInicial?: 'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes' | 'plantillas';
+  pestanaInicial?: PestanaAdmin;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -477,11 +485,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     eliminarPlantillaTarea
   } = useAuth();
 
-  const [pestana, setPestana] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes' | 'plantillas'>(pestanaInicial);
+  const [categoriaActiva, setCategoriaActiva] = useState<CategoriaAdmin>(() => getCategoriaFromPestana(pestanaInicial));
+  const [pestana, setPestana] = useState<PestanaAdmin>(pestanaInicial);
 
   useEffect(() => {
     if (pestanaInicial) {
       setPestana(pestanaInicial);
+      setCategoriaActiva(getCategoriaFromPestana(pestanaInicial));
     }
   }, [pestanaInicial]);
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
@@ -643,88 +653,293 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  // Solicitudes pendientes de revisión
+  const solicitudesPendientes = solicitudesTareas.filter(s => s.estado === 'Pendiente').length;
+
+  const categoriasMenu = [
+    {
+      id: 'rbac' as CategoriaAdmin,
+      titulo: 'Control de Acceso & RBAC',
+      subtitulo: 'Usuarios, roles y organigrama institucional',
+      icono: ShieldCheck,
+      badge: `${usuarios.length} Usuarios`,
+      pestanas: [
+        {
+          id: 'usuarios' as PestanaAdmin,
+          titulo: 'Directorio de Usuarios',
+          subtitulo: 'Cuentas y estados de conexión',
+          icono: Users,
+          badge: usuarios.length,
+          badgeClass: 'bg-stone-100 text-charcoal-800'
+        },
+        {
+          id: 'roles' as PestanaAdmin,
+          titulo: 'Roles & Permisos',
+          subtitulo: 'Matriz de 9 roles oficiales',
+          icono: Key,
+          badge: roles.length,
+          badgeClass: 'bg-stone-100 text-charcoal-800'
+        },
+        {
+          id: 'areas' as PestanaAdmin,
+          titulo: 'Áreas Jerárquicas',
+          subtitulo: 'Organigrama institucional y RLS',
+          icono: Building2,
+          badge: areas.length,
+          badgeClass: 'bg-stone-100 text-charcoal-800'
+        }
+      ]
+    },
+    {
+      id: 'academica' as CategoriaAdmin,
+      titulo: 'Gestión Académica & Cursos',
+      subtitulo: 'Asignaciones de cursos, facultades y plantillas',
+      icono: GraduationCap,
+      badge: `${cursos.length} Cursos`,
+      pestanas: [
+        {
+          id: 'asignaciones' as PestanaAdmin,
+          titulo: 'Asignaciones Académicas',
+          subtitulo: 'Facultades, Programas y Cursos',
+          icono: GraduationCap,
+          badge: `${facultades.length} Fac • ${cursos.length} Cur`,
+          badgeClass: 'bg-blue-100 text-blue-900'
+        },
+        {
+          id: 'plantillas' as PestanaAdmin,
+          titulo: 'Plantilla Cursos',
+          subtitulo: 'Catálogo de 52 tareas secuenciales',
+          icono: Layers,
+          badge: `${plantillaTareas.length} Tareas`,
+          badgeClass: 'bg-sage-100 text-sage-900 font-extrabold'
+        }
+      ]
+    },
+    {
+      id: 'operaciones' as CategoriaAdmin,
+      titulo: 'Operaciones & Servicios CCV',
+      subtitulo: 'Bandeja de requerimientos y parametrización de costos',
+      icono: Briefcase,
+      alertaCount: solicitudesPendientes,
+      badge: solicitudesPendientes > 0 ? `${solicitudesPendientes} Pendientes` : `${tarifasProyecto.length} Especialidades`,
+      pestanas: [
+        {
+          id: 'solicitudes' as PestanaAdmin,
+          titulo: 'Bandeja de Solicitudes',
+          subtitulo: 'Cambios de fecha y requerimientos',
+          icono: Inbox,
+          badge: solicitudesPendientes > 0 ? `${solicitudesPendientes} Nuevas` : solicitudesTareas.length,
+          badgeClass: solicitudesPendientes > 0 ? 'bg-amber-500 text-white font-black animate-pulse' : 'bg-stone-100 text-charcoal-800'
+        },
+        {
+          id: 'tarifas' as PestanaAdmin,
+          titulo: 'Tarifas por Categoría',
+          subtitulo: 'Tarifas horarias de proyectos especiales',
+          icono: DollarSign,
+          badge: `${tarifasProyecto.length} Cat`,
+          badgeClass: 'bg-stone-100 text-charcoal-800'
+        }
+      ]
+    }
+  ];
+
+  const handleSelectCategoria = (catId: CategoriaAdmin) => {
+    setCategoriaActiva(catId);
+    const cat = categoriasMenu.find(c => c.id === catId);
+    if (cat && !cat.pestanas.some(sp => sp.id === pestana)) {
+      setPestana(cat.pestanas[0].id);
+    }
+  };
+
+  const categoriaActualConfig = categoriasMenu.find(c => c.id === categoriaActiva) || categoriasMenu[0];
+  const subPestanaActivaConfig = categoriaActualConfig.pestanas.find(sp => sp.id === pestana) || categoriaActualConfig.pestanas[0];
+
   return (
     <div className="space-y-6 animate-fadeIn font-sans">
       {/* Header Banner */}
       <div className="ccv-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold text-charcoal-900 flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7 text-sage-600" />
-            Panel de Administración RBAC & Asignaciones CCV
-          </h2>
-          <p className="text-xs text-charcoal-500 mt-1">
-            Gestión completa de usuarios, asignación de los 9 roles oficiales, permisos CRUD, asignaciones académicas y áreas jerárquicas.
-          </p>
+        <div className="flex items-start gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-sage-100 text-sage-800 flex items-center justify-center shrink-0 shadow-2xs">
+            <ShieldCheck className="w-7 h-7 text-sage-700" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-2xl font-black text-charcoal-900 tracking-tight">
+                Panel de Administración RBAC & Asignaciones CCV
+              </h2>
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 border border-sage-200">
+                Administrador
+              </span>
+            </div>
+            <p className="text-xs text-charcoal-500 mt-1 max-w-2xl">
+              Control integral de identidades y permisos RBAC, asignaciones académicas institucionales, catálogo de plantillas de cursos y servicios operativos CCV.
+            </p>
+          </div>
         </div>
 
-        {/* Tab Selection */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-cream-100 rounded-full border border-stone-200 text-xs font-bold flex-wrap">
-          <button
-            onClick={() => setPestana('usuarios')}
-            className={`px-4 py-2 rounded-full transition-all ${
-              pestana === 'usuarios' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Usuarios ({usuarios.length})
-          </button>
-          <button
-            onClick={() => setPestana('asignaciones')}
-            className={`px-4 py-2 rounded-full transition-all ${
-              pestana === 'asignaciones' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Asignaciones Académicas
-          </button>
-          <button
-            onClick={() => setPestana('roles')}
-            className={`px-4 py-2 rounded-full transition-all ${
-              pestana === 'roles' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Roles ({roles.length})
-          </button>
-          <button
-            onClick={() => setPestana('areas')}
-            className={`px-4 py-2 rounded-full transition-all ${
-              pestana === 'areas' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Áreas Jerárquicas
-          </button>
-          <button
-            onClick={() => setPestana('tarifas')}
-            className={`px-4 py-2 rounded-full transition-all ${
-              pestana === 'tarifas' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Tarifas por Categoría
-          </button>
-          <button
-            onClick={() => setPestana('solicitudes')}
-            className={`px-4 py-2 rounded-full transition-all flex items-center gap-1.5 ${
-              pestana === 'solicitudes' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            <Inbox className="w-3.5 h-3.5 text-accent-400" />
-            <span>Bandeja de Solicitudes</span>
-            {solicitudesTareas.filter(s => s.estado === 'Pendiente').length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black animate-pulse">
-                {solicitudesTareas.filter(s => s.estado === 'Pendiente').length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setPestana('plantillas')}
-            className={`px-4 py-2 rounded-full transition-all flex items-center gap-1.5 ${
-              pestana === 'plantillas' ? 'bg-charcoal-900 text-white shadow' : 'text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-sage-400" />
-            <span>Plantilla Cursos</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-sage-700 text-white text-[10px] font-bold">
-              {plantillaTareas.length}
+        {/* Quick Actions / Simulator */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {solicitudesPendientes > 0 && (
+            <button
+              onClick={() => {
+                setCategoriaActiva('operaciones');
+                setPestana('solicitudes');
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-extrabold rounded-full border border-amber-300 shadow-xs transition-all animate-pulse"
+              title="Revisar solicitudes pendientes de fecha o asignación"
+            >
+              <Inbox className="w-4 h-4 text-amber-600" />
+              <span>{solicitudesPendientes} Solicitudes Pendientes</span>
+            </button>
+          )}
+          {isRealAdmin() && (
+            <button
+              onClick={() => setIsDevSimulatorOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-coral-50 hover:bg-coral-100 text-coral-700 text-xs font-extrabold rounded-full border border-coral-200 shadow-xs transition-all"
+              title="Simular la vista de otro usuario del sistema"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Simular Perfil
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* CLASIFICACIÓN DE SUB-SECCIONES: Nivel 1 (Categorías Principales) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        {categoriasMenu.map(cat => {
+          const isActiva = categoriaActiva === cat.id;
+          const Icono = cat.icono;
+          return (
+            <div
+              key={cat.id}
+              onClick={() => handleSelectCategoria(cat.id)}
+              className={`cursor-pointer text-left p-4 rounded-3xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${
+                isActiva
+                  ? 'bg-white border-charcoal-900 shadow-md ring-2 ring-charcoal-900/10'
+                  : 'bg-cream-50/70 border-stone-200/90 hover:bg-white hover:border-stone-300 hover:shadow-xs'
+              }`}
+            >
+              {/* Indicador de acento superior activo */}
+              {isActiva && (
+                <div className="absolute top-0 left-0 right-0 h-1 bg-charcoal-900 rounded-t-3xl" />
+              )}
+
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
+                      isActiva
+                        ? 'bg-charcoal-900 text-white shadow-xs'
+                        : 'bg-white text-charcoal-700 border border-stone-200 group-hover:bg-cream-100'
+                    }`}>
+                      <Icono className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className={`text-sm font-black tracking-tight ${
+                        isActiva ? 'text-charcoal-900' : 'text-charcoal-800'
+                      }`}>
+                        {cat.titulo}
+                      </h3>
+                      <p className="text-[11px] text-charcoal-500 mt-0.5 line-clamp-1">
+                        {cat.subtitulo}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Badge de estado / notificación */}
+                  {cat.alertaCount && cat.alertaCount > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black animate-pulse shadow-xs shrink-0">
+                      {cat.alertaCount} pendientes
+                    </span>
+                  ) : cat.badge ? (
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${
+                      isActiva
+                        ? 'bg-sage-50 text-sage-800 border-sage-200'
+                        : 'bg-white text-charcoal-600 border-stone-200'
+                    }`}>
+                      {cat.badge}
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Sub-secciones rápidas (chips directos de 1 clic) */}
+                <div className="flex items-center gap-1.5 flex-wrap mt-3 pt-2.5 border-t border-stone-200/60">
+                  {cat.pestanas.map(sp => {
+                    const isEstaPestanaActiva = pestana === sp.id;
+                    const SpIcon = sp.icono;
+                    return (
+                      <button
+                        key={sp.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCategoriaActiva(cat.id);
+                          setPestana(sp.id);
+                        }}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 ${
+                          isEstaPestanaActiva
+                            ? 'bg-charcoal-900 text-white shadow-xs font-black'
+                            : isActiva
+                              ? 'bg-cream-100 hover:bg-stone-200 text-charcoal-700'
+                              : 'bg-white hover:bg-cream-100 text-charcoal-600 border border-stone-200/80'
+                        }`}
+                      >
+                        <SpIcon className={`w-3 h-3 ${isEstaPestanaActiva ? 'text-sage-300' : 'text-charcoal-500'}`} />
+                        <span>{sp.titulo}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* CLASIFICACIÓN DE SUB-SECCIONES: Nivel 2 (Sub-secciones de la Categoría Activa) */}
+      <div className="p-3 bg-white rounded-3xl border border-stone-200/90 shadow-2xs space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-black uppercase tracking-wider text-charcoal-400 mr-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-sage-600" />
+              Sub-sección Activa:
             </span>
-          </button>
+
+            {categoriaActualConfig.pestanas.map(sub => {
+              const isSubActiva = pestana === sub.id;
+              const SubIcono = sub.icono;
+              return (
+                <button
+                  key={sub.id}
+                  onClick={() => setPestana(sub.id)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
+                    isSubActiva
+                      ? 'bg-charcoal-900 text-white shadow-sm ring-1 ring-charcoal-950'
+                      : 'bg-cream-50 hover:bg-cream-100 text-charcoal-700 border border-stone-200/80 hover:text-charcoal-900'
+                  }`}
+                >
+                  <SubIcono className={`w-4 h-4 ${isSubActiva ? 'text-sage-300' : 'text-sage-600'}`} />
+                  <span>{sub.titulo}</span>
+                  {sub.badge !== undefined && (
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      isSubActiva
+                        ? 'bg-charcoal-800 text-cream-200'
+                        : sub.badgeClass || 'bg-stone-200/70 text-charcoal-700'
+                    }`}>
+                      {sub.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Breadcrumb contextual de navegación */}
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-charcoal-500 font-medium shrink-0 bg-cream-50 px-3 py-1.5 rounded-full border border-stone-200/70">
+            <span className="font-bold text-charcoal-700">{categoriaActualConfig.titulo}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-charcoal-400" />
+            <span className="font-extrabold text-sage-800">{subPestanaActivaConfig?.titulo}</span>
+          </div>
         </div>
       </div>
 

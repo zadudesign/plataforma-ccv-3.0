@@ -248,7 +248,7 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
               Asignación de Responsabilidad al Instanciar *
             </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
               <label className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
                 tipoResponsable === 'DOCENTE'
                   ? 'bg-sky-50 border-sky-300 text-sky-900 font-black ring-1 ring-sky-300'
@@ -263,8 +263,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
                   className="accent-sky-600"
                 />
                 <div>
-                  <p className="leading-tight">Docente</p>
-                  <p className="text-[10px] text-charcoal-500 font-normal">Hereda del curso</p>
+                  <p className="leading-tight font-bold">Docente del Curso</p>
+                  <p className="text-[10px] text-charcoal-500 font-normal">Hereda del curso virtual</p>
                 </div>
               </label>
 
@@ -282,8 +282,46 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
                   className="accent-purple-600"
                 />
                 <div>
-                  <p className="leading-tight">Par Evaluador</p>
-                  <p className="text-[10px] text-charcoal-500 font-normal">Hereda del curso</p>
+                  <p className="leading-tight font-bold">Par Evaluador</p>
+                  <p className="text-[10px] text-charcoal-500 font-normal">Hereda del curso virtual</p>
+                </div>
+              </label>
+
+              <label className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
+                tipoResponsable === 'COORDINADOR'
+                  ? 'bg-indigo-50 border-indigo-300 text-indigo-900 font-black ring-1 ring-indigo-300'
+                  : 'bg-white border-stone-200 text-charcoal-700 hover:bg-stone-50 font-medium'
+              }`}>
+                <input
+                  type="radio"
+                  name="tipoResponsable"
+                  value="COORDINADOR"
+                  checked={tipoResponsable === 'COORDINADOR'}
+                  onChange={() => setTipoResponsable('COORDINADOR')}
+                  className="accent-indigo-600"
+                />
+                <div>
+                  <p className="leading-tight font-bold">Coordinador de Programa</p>
+                  <p className="text-[10px] text-charcoal-500 font-normal">Hereda del programa del curso</p>
+                </div>
+              </label>
+
+              <label className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
+                tipoResponsable === 'DECANO'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-black ring-1 ring-emerald-300'
+                  : 'bg-white border-stone-200 text-charcoal-700 hover:bg-stone-50 font-medium'
+              }`}>
+                <input
+                  type="radio"
+                  name="tipoResponsable"
+                  value="DECANO"
+                  checked={tipoResponsable === 'DECANO'}
+                  onChange={() => setTipoResponsable('DECANO')}
+                  className="accent-emerald-600"
+                />
+                <div>
+                  <p className="leading-tight font-bold">Decano de Facultad</p>
+                  <p className="text-[10px] text-charcoal-500 font-normal">Hereda de la facultad del curso</p>
                 </div>
               </label>
 
@@ -301,8 +339,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
                   className="accent-amber-600"
                 />
                 <div>
-                  <p className="leading-tight">CMU Específico</p>
-                  <p className="text-[10px] text-charcoal-500 font-normal">Usuario fijo</p>
+                  <p className="leading-tight font-bold">CMU Específico</p>
+                  <p className="text-[10px] text-charcoal-500 font-normal">Usuario fijo predeterminado</p>
                 </div>
               </label>
             </div>
@@ -370,8 +408,11 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
                         </span>
                         <span className="truncate">{candidata.titulo}</span>
                       </div>
-                      <span className="text-[10px] text-charcoal-400 shrink-0">
-                        {candidata.tipo_responsable}
+                      <span className="text-[10px] text-charcoal-500 font-bold shrink-0">
+                        {candidata.tipo_responsable === 'DOCENTE' ? 'Docente' :
+                         candidata.tipo_responsable === 'PAR_EVALUADOR' ? 'Par Eval.' :
+                         candidata.tipo_responsable === 'COORDINADOR' ? 'Coordinador' :
+                         candidata.tipo_responsable === 'DECANO' ? 'Decano' : 'CMU Fijo'}
                       </span>
                     </div>
                   );

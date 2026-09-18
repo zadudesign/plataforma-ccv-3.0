@@ -540,7 +540,7 @@ CREATE TABLE IF NOT EXISTS public.plantilla_tareas_curso (
     titulo TEXT NOT NULL,
     descripcion TEXT,
     orden INT NOT NULL,
-    tipo_responsable TEXT NOT NULL CHECK (tipo_responsable IN ('DOCENTE', 'PAR_EVALUADOR', 'CMU_FIJO')),
+    tipo_responsable TEXT NOT NULL CHECK (tipo_responsable IN ('DOCENTE', 'PAR_EVALUADOR', 'COORDINADOR', 'DECANO', 'CMU_FIJO')),
     cmu_usuario_fijo_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     tipo_tarea TEXT DEFAULT 'PRODUCCION',
     tiempo_estimado INT DEFAULT 0, -- Minutos
@@ -654,6 +654,19 @@ BEGIN
         ELSIF v_pt.tipo_responsable = 'PAR_EVALUADOR' THEN
             v_responsable_id := v_curso.evaluador_id;
             v_rol_destino := 'Par Evaluador';
+        ELSIF v_pt.tipo_responsable = 'COORDINADOR' THEN
+            -- Obtener el coordinador del programa del curso
+            SELECT pr.coordinador_id INTO v_responsable_id
+            FROM public.programas pr
+            WHERE pr.id = v_curso.programa_id;
+            v_rol_destino := 'Coordinador de Programa';
+        ELSIF v_pt.tipo_responsable = 'DECANO' THEN
+            -- Obtener el decano de la facultad del curso
+            SELECT f.decano_id INTO v_responsable_id
+            FROM public.programas pr
+            JOIN public.facultades f ON f.id = pr.facultad_id
+            WHERE pr.id = v_curso.programa_id;
+            v_rol_destino := 'Decano de Facultad';
         ELSIF v_pt.tipo_responsable = 'CMU_FIJO' THEN
             v_responsable_id := v_pt.cmu_usuario_fijo_id;
             v_rol_destino := 'CMU / Producción';

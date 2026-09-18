@@ -30,7 +30,7 @@ import {
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
 import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
-import { VistaNavegacion, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
+import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
 import { ShieldAlert } from 'lucide-react';
 
@@ -64,7 +64,7 @@ export default function Home() {
   const [isTaskRequestOpen, setIsTaskRequestOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
-  const [pestanaAdminInicial, setPestanaAdminInicial] = useState<'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes'>('usuarios');
+  const [pestanaAdminInicial, setPestanaAdminInicial] = useState<PestanaAdmin>('usuarios');
 
   // Por defecto al ingresar a cada perfil se ingresa directamente al Dashboard como página principal y se requiere firma si está pendiente
   useEffect(() => {
