@@ -268,18 +268,20 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
   const nombreMes = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(currentDate);
 
   return (
-    <div className="flex-1 pl-32 pr-10 py-8 max-w-[1600px] mx-auto min-h-screen">
+    <div className="space-y-6 animate-fadeIn font-sans pb-10 w-full">
       {/* Header Superior con Identidad y Acciones Principales */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-5 border-b border-slate-200">
+      <div className="ccv-card p-6 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-sky-600 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-sky-600 uppercase tracking-wider mb-1">
-            <CalendarDays className="w-4 h-4" />
-            <span>Centro Multimedial Universitario (CMU) &middot; Estrategia de Contenidos</span>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+              <CalendarDays className="w-7 h-7 text-sky-600" />
+              Parrilla de Publicaciones y Calendario Editorial
+            </h2>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
+              CMU Contenidos
+            </span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            Parrilla de Publicaciones y Calendario Editorial
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 mt-1">
             Planifica, programa y monitorea la producción de contenidos multicanal sincronizados con proyectos y cursos CCV.
           </p>
         </div>
@@ -290,33 +292,33 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
             onClick={cargarPublicaciones}
             disabled={loading}
             title="Recargar datos desde Supabase"
-            className="p-2 text-slate-500 hover:text-slate-800 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
+            className="p-2 text-slate-500 hover:text-slate-800 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sky-600' : ''}`} />
           </button>
 
           {/* Toggle Vista Calendario / Tabla */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div className="flex items-center bg-slate-100 p-1.5 rounded-full border border-slate-200">
             <button
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-full transition-all cursor-pointer ${
                 viewMode === 'calendar'
-                  ? 'bg-white text-slate-900 shadow-2xs'
+                  ? 'bg-slate-800 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <CalendarIcon className="w-3.5 h-3.5" />
+              <CalendarIcon className="w-4 h-4 text-sky-400" />
               <span>Calendario</span>
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-full transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white text-slate-900 shadow-2xs'
+                  ? 'bg-slate-800 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <TableIcon className="w-3.5 h-3.5" />
+              <TableIcon className="w-4 h-4 text-sky-400" />
               <span>Tabla Editorial</span>
             </button>
           </div>
@@ -324,9 +326,9 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
           {/* Botón Nueva Publicación */}
           <button
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus className="w-4 h-4 stroke-[3]" />
             <span>Nueva Publicación</span>
           </button>
         </div>
