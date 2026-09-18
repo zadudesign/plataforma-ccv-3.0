@@ -25,8 +25,7 @@ import {
   Lock,
   Unlock,
   ShieldAlert,
-  AlertTriangle,
-  Sparkles
+  AlertTriangle
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
