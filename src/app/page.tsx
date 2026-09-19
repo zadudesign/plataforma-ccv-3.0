@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { WelcomeBanner } from '@/components/layout/WelcomeBanner';
@@ -467,9 +467,7 @@ export default function Home() {
     return tareasVisiblesPorRol.some(t => t.id === com.tarea_id);
   });
 
-  const tareasPendientesCount = useMemo(() => {
-    return tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente').length;
-  }, [tareasVisiblesPorRol]);
+  const tareasPendientesCount = tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente').length;
 
   return (
     <TimerProvider>
