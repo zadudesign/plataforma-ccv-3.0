@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoría Técnica y Reporte de Arquitectura - PrismaLab CCV 3.0</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    @page {
+      size: A4 portrait;
+      margin: 18mm 16mm 18mm 16mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      background-color: #ffffff;
+      line-height: 1.55;
+      font-size: 10pt;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Print Break Utilities */
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    .avoid-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Cover Page */
+    .cover {
+      min-height: 94vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2.5rem 1rem 1rem 1rem;
+    }
+
+    .cover-top {
+      border-bottom: 3px solid #4f46e5;
+      padding-bottom: 1.5rem;
+    }
+
+    .badge-hero {
+      display: inline-block;
+      background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
+      color: #4338ca;
+      font-weight: 700;
+      font-size: 8.5pt;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+      border: 1px solid #c7d2fe;
+    }
+
+    .cover-title {
+      font-size: 26pt;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+
+    .cover-subtitle {
+      font-size: 12.5pt;
+      color: #475569;
+      font-weight: 400;
+      max-width: 90%;
+      line-height: 1.4;
+    }
+
+    .cover-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 2rem 0;
+    }
+
+    .kpi-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .kpi-number {
+      font-size: 17pt;
+      font-weight: 800;
+      color: #4f46e5;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .kpi-label {
+      font-size: 7.5pt;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .cover-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      border-left: 4px solid #4f46e5;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-title {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .meta-value {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .cover-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+
+    /* Headings & Content Typography */
+    h2.section-header {
+      font-size: 14.5pt;
+      font-weight: 800;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2.section-header .section-num {
+      background: #4f46e5;
+      color: white;
+      font-size: 9.5pt;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    h3.sub-header {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      border-left: 3px solid #6366f1;
+      padding-left: 8px;
+    }
+
+    h4.minor-header {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #334155;
+      margin-top: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+
+    p {
+      margin-bottom: 0.65rem;
+      color: #334155;
+      text-align: justify;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0 1.25rem 0;
+      font-size: 8.5pt;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+      text-align: left;
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      text-transform: uppercase;
+      font-size: 7.5pt;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* Badges & Tags */
+    .badge {
+      display: inline-block;
+      font-size: 7pt;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-amber { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-purple { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+    .badge-rose { background: #ffe4e6; color: #9f1239; border: 1px solid #fecdd3; }
+    .badge-slate { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    /* Code Blocks */
+    pre, code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    code.inline-code {
+      background: #f1f5f9;
+      color: #4338ca;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 8pt;
+      border: 1px solid #e2e8f0;
+    }
+
+    pre.code-block {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 7.8pt;
+      line-height: 1.45;
+      overflow-x: hidden;
+      margin: 0.75rem 0;
+      border: 1px solid #334155;
+    }
+
+    /* Callout Boxes */
+    .callout {
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 0.85rem 0;
+      font-size: 8.5pt;
+      line-height: 1.45;
+    }
+
+    .callout-info {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      color: #1e3a8a;
+    }
+
+    .callout-success {
+      background: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      color: #14532d;
+    }
+
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      color: #78350f;
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 9pt;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Directory Tree visual */
+    .dir-tree {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8pt;
+      line-height: 1.4;
+      color: #334155;
+      margin: 0.75rem 0;
+    }
+
+    .dir-folder {
+      color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .dir-desc {
+      color: #64748b;
+      font-family: 'Inter', sans-serif;
+      font-size: 8pt;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 0.75rem 0;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px;
+    }
+
+    .card-title {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-text {
+      font-size: 8pt;
+      color: #475569;
+      line-height: 1.35;
+    }
+
+    /* Footer on content pages */
+    .page-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= COVER PAGE ================= -->
+  <div class="cover">
+    <div class="cover-top">
+      <span class="badge-hero">Auditoría Técnica Oficial · Arquitectura de Software</span>
+      <h1 class="cover-title">Informe Técnico Exhaustivo y Arquitectura de Plataforma</h1>
+      <p class="cover-subtitle">
+        Auditoría técnica integral del ecosistema <strong>PrismaLab / Plataforma CCV 3.0</strong>:
+        revisión estructural de código, modelo relacional PostgreSQL (Supabase), políticas de seguridad RLS jerárquicas,
+        motor de tareas con dependencias y pipeline operativo de producción virtual.
+      </p>
+    </div>
+
+    <div class="cover-kpis">
+      <div class="kpi-box">
+        <div class="kpi-number">Next 14</div>
+        <div class="kpi-label">App Router & Hybrid UI</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-number">15 Tablas</div>
+        <div class="kpi-label">Modelo Relacional DDL</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-number">6 Niveles</div>
+        <div class="kpi-label">Jerarquía RBAC & RLS</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-number">100% Cascada</div>
+        <div class="kpi-label">Desbloqueo de Tareas</div>
+      </div>
+    </div>
+
+    <div class="cover-meta-grid">
+      <div class="meta-item">
+        <span class="meta-title">Organización / Entidad</span>
+        <span class="meta-value">Centro de Educación Virtual (CCV)</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-title">Plataforma & Versión</span>
+        <span class="meta-value">PrismaLab CCV v3.0.0 (Production-Ready)</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-title">Perfil Auditor</span>
+        <span class="meta-value">Arquitecto de Software Senior & Auditor Full-Stack</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-title">Stack Principal</span>
+        <span class="meta-value">Next.js 14, React 18, TypeScript, Tailwind CSS, Supabase</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-title">Fecha del Informe</span>
+        <span class="meta-value">Septiembre 2026</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-title">Estado de Validación</span>
+        <span class="meta-value" style="color: #16a34a;">✓ Build Verificado & Git Sync en Main</span>
+      </div>
+    </div>
+
+    <div class="cover-footer">
+      <span>PrismaLab CCV 3.0 — Documento Técnico Confidencial para Dirección CCV</span>
+      <span>Generado desde Repositorio Local</span>
+    </div>
+  </div>
+
+  <!-- ================= CAPÍTULO 1 ================= -->
+  <div class="page-break"></div>
+
+  <h2 class="section-header">
+    <span class="section-num">1</span>
+    Estructura General y Arquitectura de Directorios
+  </h2>
+
+  <p>
+    La plataforma <strong>PrismaLab (CCV 3.0)</strong> está estructurada como una solución web full-stack moderna construida sobre <strong>Next.js 14</strong> con la convención del <em>App Router</em>. Su arquitectura implementa un enfoque <strong>Feature-Based & Modular</strong> combinado con <strong>Separación Estricta de UI y Lógica de Negocio</strong>, permitiendo que la plataforma escale sin incurrir en acoplamientos rígidos entre componentes visuales y la capa de datos.
+  </p>
+
+  <h3 class="sub-header">1.1 Árbol de Directorios del Código Fuente (`/src`)</h3>
+
+  <div class="dir-tree">
+    📁 <strong>src/</strong><br>
+    ├── 📁 <span class="dir-folder">app/</span> <span class="dir-desc">— App Router de Next.js. Define rutas principales (`page.tsx`), layouts (`layout.tsx`), estilos globales (`globals.css`) y endpoints API protegidos (`/api/admin/users`).</span><br>
+    ├── 📁 <span class="dir-folder">components/</span> <span class="dir-desc">— Librería modular de componentes de interfaz categorizada por 13 dominios de negocio:</span><br>
+    │   ├── 📁 <span class="dir-folder">academic/</span> <span class="dir-desc">— Modales y árboles de Facultades, Programas, Cursos, Proyectos Especiales y progreso del curso.</span><br>
+    │   ├── 📁 <span class="dir-folder">admin/</span> <span class="dir-desc">— Panel de Control RBAC, Matriz de Roles, Tarifas, Aprobación de Usuarios, y Catálogo de Plantilla Cursos.</span><br>
+    │   ├── 📁 <span class="dir-folder">tasks/</span> <span class="dir-desc">— Tarjetas de tareas (`TaskCard`), detalle modal enriquecido (`TaskDetailModal`) y creación dinámica.</span><br>
+    │   ├── 📁 <span class="dir-folder">kanban/</span> <span class="dir-desc">— Tablero Kanban con Drag & Drop nativo y persistencia de estados en tiempo real.</span><br>
+    │   ├── 📁 <span class="dir-folder">calendar/</span> <span class="dir-desc">— Calendario operativo de trabajo con visualización cronológica mensual y semanal.</span><br>
+    │   ├── 📁 <span class="dir-folder">planner/</span> <span class="dir-desc">— Parrilla de Publicaciones CCV y Calendario Editorial con segmentación multicanal.</span><br>
+    │   ├── 📁 <span class="dir-folder">productivity/</span> <span class="dir-desc">— Barra flotante global de cronómetro (`GlobalTimerBar`) y seguimiento de tiempos en vivo.</span><br>
+    │   ├── 📁 <span class="dir-folder">dashboard/</span> <span class="dir-desc">— Módulo analítico, tarjetas de KPI ejecutivos y gráficos interactivos con Recharts.</span><br>
+    │   ├── 📁 <span class="dir-folder">auth/</span> <span class="dir-desc">— Pantalla de Login, registro de usuarios y recuperación de credenciales.</span><br>
+    │   ├── 📁 <span class="dir-folder">home/</span> <span class="dir-desc">— Vista de inicio con accesos rápidos, métricas de carga y resumen personalizado del usuario.</span><br>
+    │   ├── 📁 <span class="dir-folder">layout/</span> <span class="dir-desc">— Header principal con selector de roles y Sidebar de navegación responsiva.</span><br>
+    │   ├── 📁 <span class="dir-folder">common/</span> <span class="dir-desc">— Modales de confirmación accesibles y componentes reutilizables de UI.</span><br>
+    │   └── 📁 <span class="dir-folder">providers/</span> <span class="dir-desc">— Contenedor raíz de contextos globales de la aplicación (`Providers.tsx`).</span><br>
+    ├── 📁 <span class="dir-folder">context/</span> <span class="dir-desc">— Proveedores de Estado React: `AuthContext.tsx` (sesión y RBAC) y `TimerContext.tsx` (cronómetro).</span><br>
+    ├── 📁 <span class="dir-folder">lib/</span> <span class="dir-desc">— Servicios de acceso a datos (`supabase.ts`, `coursesService.ts`, `categoryRates.ts`, etc.) y utilidades (`utils.ts`).</span><br>
+    └── 📁 <span class="dir-folder">types/</span> <span class="dir-desc">— Definición central de interfaces TypeScript (`Task`, `Course`, `User`, `PlantillaTareaCurso`, etc.).</span>
+  </div>
+
+  <h3 class="sub-header">1.2 Patrones de Diseño Arquitectónico Implementados</h3>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-title">
+        <span>Capa de Servicios Desacoplada</span>
+        <span class="badge badge-blue">Patrón Service Layer</span>
+      </div>
+      <p class="card-text">
+        Las consultas a la base de datos están encapsuladas en archivos dentro de <code>/src/lib/</code> (ej. <code>coursesService.ts</code>, <code>facultadesService.ts</code>). Los componentes de la UI no construyen queries directas de Supabase a bajo nivel, facilitando pruebas y mantenimiento.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Gestión de Estado Híbrido</span>
+        <span class="badge badge-green">Context API + Local State</span>
+      </div>
+      <p class="card-text">
+        Se adopta Context API para estados transversales globales (Sesión de Autenticación, Permisos del Perfil, y Cronómetro Flotante), mientras que el estado local efímero y de formularios se mantiene dentro de cada componente con React Hooks estandarizados.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Diseño Primero (Design-First)</span>
+        <span class="badge badge-purple">Hybrid UI System</span>
+      </div>
+      <p class="card-text">
+        La interfaz de usuario implementa un sistema de diseño híbrido con Tailwind CSS y Framer Motion, empleando elevación de capas, paletas cromáticas armónicas (Indigo, Esmeralda, Ámbar), microinteracciones fluidas y retroalimentación táctil de confirmación.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>API Routes Seguras para Admin</span>
+        <span class="badge badge-rose">BFF / Serverless</span>
+      </div>
+      <p class="card-text">
+        Las operaciones administrativas críticas (como el aprovisionamiento de cuentas en Supabase Auth o el borrado forzado de perfiles) se ejecutan mediante Serverless API Routes en <code>/src/app/api/admin/</code> utilizando la clave maestra <code>SUPABASE_SERVICE_ROLE_KEY</code>, aislando el cliente de privilegios elevados.
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= CAPÍTULO 2 ================= -->
+  <div class="page-break"></div>
+
+  <h2 class="section-header">
+    <span class="section-num">2</span>
+    Matriz de Dependencias y Tecnologías
+  </h2>
+
+  <p>
+    El proyecto cuenta con un stack moderno, equilibrado y de alto rendimiento. Todas las librerías se encuentran sincronizadas y compatibles con React 18 y el motor de compilación Next.js 14.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Capa / Categoría</th>
+        <th style="width: 25%;">Librería & Versión</th>
+        <th style="width: 20%;">Propósito Principal</th>
+        <th style="width: 30%;">Evaluación Arquitectónica</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Framework Core</strong></td>
+        <td><code>next@14.2.15</code></td>
+        <td>Renderizado híbrido, enrutador App Router y Serverless Functions.</td>
+        <td><span class="badge badge-green">Excelente</span> — Soporta SSR, RSC y optimización de assets.</td>
+      </tr>
+      <tr>
+        <td><strong>Librería Base</strong></td>
+        <td><code>react@18.3.1</code> / <code>react-dom</code></td>
+        <td>Biblioteca de construcción de interfaces basadas en componentes.</td>
+        <td><span class="badge badge-green">Estable</span> — Máxima compatibilidad con el ecosistema.</td>
+      </tr>
+      <tr>
+        <td><strong>Tipado Estricto</strong></td>
+        <td><code>typescript@5.6.3</code></td>
+        <td>Seguridad de tipos estática en tiempo de desarrollo y compilación.</td>
+        <td><span class="badge badge-blue">Robusto</span> — Evita errores en tiempo de ejecución.</td>
+      </tr>
+      <tr>
+        <td><strong>Framework CSS</strong></td>
+        <td><code>tailwindcss@3.4.14</code></td>
+        <td>Sistema de diseño utilitario, responsivo y extensible.</td>
+        <td><span class="badge badge-green">Óptimo</span> — Cero CSS sobrante en producción.</td>
+      </tr>
+      <tr>
+        <td><strong>Cliente Backend</strong></td>
+        <td><code>@supabase/supabase-js@2.45.0</code></td>
+        <td>Conexión con PostgreSQL, Autenticación, RLS y RPCs.</td>
+        <td><span class="badge badge-blue">Oficial</span> — Manejo fluido de sesiones y DDL.</td>
+      </tr>
+      <tr>
+        <td><strong>Iconografía</strong></td>
+        <td><code>lucide-react@0.453.0</code></td>
+        <td>Set de más de 400 iconos SVG coherentes y optimizados para tree-shaking.</td>
+        <td><span class="badge badge-green">Líder</span> — Reemplazo moderno y liviano a Feather Icons.</td>
+      </tr>
+      <tr>
+        <td><strong>Visualización de Datos</strong></td>
+        <td><code>recharts@2.13.0</code></td>
+        <td>Gráficas de barras, dona, líneas y distribución de productividad.</td>
+        <td><span class="badge badge-purple">Potente</span> — Gráficos declarativos e interactivos con SVG.</td>
+      </tr>
+      <tr>
+        <td><strong>Animaciones & UX</strong></td>
+        <td><code>framer-motion@11.11.8</code></td>
+        <td>Transiciones entre pestañas, animaciones modales y microinteracciones.</td>
+        <td><span class="badge badge-amber">Fluido</span> — Aumenta sustancialmente el valor percibido de UI.</td>
+      </tr>
+      <tr>
+        <td><strong>Celebraciones & Feedback</strong></td>
+        <td><code>canvas-confetti@1.9.4</code></td>
+        <td>Efecto visual de confeti al completar tareas o cursos clave.</td>
+        <td><span class="badge badge-slate">Ligero</span> — Impacto positivo en la gamificación docente.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub-header">2.1 Gestión de Estado y Flujo de Datos</h3>
+  <p>
+    En lugar de incorporar gestores pesados y sobre-dimensionados (como Redux o Zustand), PrismaLab implementa <strong>Context API</strong> respaldada por estados locales efímeros. Para la sincronización con Supabase se utilizan llamadas asíncronas directas con manejo de estados de carga (<code>loading</code>) y banderas de error (<code>error</code>).
+  </p>
+
+  <div class="callout callout-info">
+    <div class="callout-title">ℹ️ Nota de Arquitectura sobre Drag & Drop</div>
+    El tablero Kanban implementa la <strong>HTML5 Drag and Drop API nativa</strong> con gestión de eventos (<code>onDragStart</code>, <code>onDragOver</code>, <code>onDrop</code>), eliminando la necesidad de paquetes pesados de terceros como <code>react-beautiful-dnd</code> o <code>@dnd-kit</code>, logrando un bundle de cliente significativamente más ligero.
+  </div>
+
+  <!-- ================= CAPÍTULO 3 ================= -->
+  <div class="page-break"></div>
+
+  <h2 class="section-header">
+    <span class="section-num">3</span>
+    Modelo de Datos y Capa Backend (Supabase PostgreSQL)
+  </h2>
+
+  <p>
+    La base de datos de PrismaLab está diseñada bajo un modelo relacional de alta integridad en PostgreSQL (alojado en Supabase), estructurado a lo largo de <strong>12 Fases de desarrollo DDL</strong> con extensiones UUID nativas.
+  </p>
+
+  <h3 class="sub-header">3.1 Inventario de Entidades y Tablas Principales</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Tabla</th>
+        <th style="width: 40%;">Campos Clave</th>
+        <th style="width: 35%;">Descripción Funcional</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>usuarios</code></td>
+        <td><code>id (UUID PK -> auth.users), nombre_completo, email, rol_id, activo, ultima_conexion, firma_digital</code></td>
+        <td>Perfil ampliado de usuario enlazado a la autenticación oficial de Supabase.</td>
+      </tr>
+      <tr>
+        <td><code>areas</code></td>
+        <td><code>id, nombre, nivel (1 a 6), parent_id (Self FK), jefe_id, color, icono</code></td>
+        <td>Estructura jerárquica de la institución (Admin, CMU, Departamentos, etc.).</td>
+      </tr>
+      <tr>
+        <td><code>roles</code> / <code>roles_permisos</code></td>
+        <td><code>id, nombre, area_id</code> / <code>rol_id, permiso_id</code></td>
+        <td>Matriz de Control de Acceso Basado en Roles (RBAC) con permisos granulares.</td>
+      </tr>
+      <tr>
+        <td><code>facultades</code></td>
+        <td><code>id, nombre, decano_id (FK usuarios), color, icono</code></td>
+        <td>Unidades académicas mayores de la Universidad.</td>
+      </tr>
+      <tr>
+        <td><code>programas</code></td>
+        <td><code>id, nombre, facultad_id (FK), coordinador_id (FK usuarios)</code></td>
+        <td>Programas académicos adscritos a cada facultad.</td>
+      </tr>
+      <tr>
+        <td><code>cursos</code></td>
+        <td><code>id, nombre, codigo (UNIQUE), programa_id, periodo, docente_id, evaluador_id, estado</code></td>
+        <td>Cursos virtuales que atraviesan las fases de diseño, producción y revisión.</td>
+      </tr>
+      <tr>
+        <td><code>proyectos</code></td>
+        <td><code>id, nombre, descripcion, area_id, lider_id, estado</code></td>
+        <td>Proyectos especiales e iniciativas institucionales transversales del CCV.</td>
+      </tr>
+      <tr>
+        <td><code>tareas</code></td>
+        <td><code>id, titulo, curso_id, proyecto_id, responsable_id, orden_tarea, estado, estado_bloqueo, dependencias_operativas (UUID[]), plantilla_origen_id</code></td>
+        <td>Unidad operativa de trabajo. Soporta time-tracking, tarifas y dependencias secuenciales.</td>
+      </tr>
+      <tr>
+        <td><code>plantilla_tareas_curso</code></td>
+        <td><code>id, titulo, descripcion, orden, tipo_responsable, tiempo_estimado, activa</code></td>
+        <td>Catálogo maestro de tareas predeterminadas para los cursos virtuales.</td>
+      </tr>
+      <tr>
+        <td><code>plantilla_tareas_dependencias</code></td>
+        <td><code>id, tarea_plantilla_id, depende_de_id</code></td>
+        <td>Grafo de dependencias que define qué tareas bloquean a cuáles en el pipeline.</td>
+      </tr>
+      <tr>
+        <td><code>parrilla_publicaciones</code></td>
+        <td><code>id, titulo, formato, canal, fecha_publicacion, estado, copy, link_arte</code></td>
+        <td>Calendario editorial y gestión de publicaciones de marketing y divulgación.</td>
+      </tr>
+      <tr>
+        <td><code>registro_horas</code></td>
+        <td><code>id, tarea_id, usuario_id, rol_destino, horas_registradas, fecha, descripcion</code></td>
+        <td>Registro de horas de productividad y cálculo de costos operativos.</td>
+      </tr>
+      <tr>
+        <td><code>category_rates</code></td>
+        <td><code>id, categoria, tarifa_hora</code></td>
+        <td>Tabulador salarial y de honorarios por categoría profesional CCV.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub-header">3.2 Políticas de Seguridad Row Level Security (RLS) y Jerarquía</h3>
+  <p>
+    La seguridad se basa en la jerarquía descendente de 6 niveles institucional:
+  </p>
+  <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem; font-size: 8.5pt;">
+    <li><strong>Nivel 6 (Administrador General):</strong> Acceso global e irrestricto mediante bypass seguro validado con la función <code>public.es_admin(auth.uid())</code>.</li>
+    <li><strong>Nivel 5 (CMU / Centro de Medios):</strong> Supervisión de producción audiovisual, diseño y contenidos en toda la universidad.</li>
+    <li><strong>Nivel 4 (Departamentos / Jefaturas):</strong> Visibilidad de su área y subáreas descendientes resuelta mediante la función recursiva <code>public.get_subarea_ids(root_area_id)</code>.</li>
+    <li><strong>Nivel 3 (Decanaturas):</strong> Supervisión de todas las facultades y programas asociados a su decano.</li>
+    <li><strong>Nivel 2 (Coordinaciones de Programa):</strong> Gestión de los cursos y docentes de su programa académico.</li>
+    <li><strong>Nivel 1 (Docentes y Operativos):</strong> Acceso restringido exclusivamente a las tareas y cursos donde han sido asignados como responsables directos.</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <div class="callout-title">🛡️ Prevención de Recursión Infinita en Supabase RLS</div>
+    Para evitar el fallo habitual de recursión cíclica al evaluar si un usuario es administrador en las políticas de RLS, el esquema implementa la función <code>public.es_admin(user_id)</code> marcada como <code>SECURITY DEFINER STABLE</code>. Esto permite validar el rol del usuario de forma aislada sin re-disparar las políticas de la tabla <code>usuarios</code>.
+  </div>
+
+  <h3 class="sub-header">3.3 Lógica de Negocio en Base de Datos: Triggers y Funciones RPC</h3>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-title">
+        <span>RPC inicializar_tareas_curso</span>
+        <span class="badge badge-blue">Pipeline Instantiation</span>
+      </div>
+      <p class="card-text">
+        Clona en bloque la secuencia predeterminada al crear un curso. Resuelve dinámicamente el responsable según su rol (Docente, Par Evaluador, Coordinador de Programa, Decano o CMU Fijo) y mapea el grafo de dependencias asignando <code>DISPONIBLE</code> a las iniciales y <code>BLOQUEADA</code> a las subsecuentes.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Trigger trg_desbloqueo_cascada</span>
+        <span class="badge badge-green">Cascading Unblocker</span>
+      </div>
+      <p class="card-text">
+        Al completarse una tarea, evalúa automáticamente todas las tareas dependientes del mismo curso. Si ya no tienen dependencias pendientes, las promueve a <code>DISPONIBLE</code>. Implementa además <strong>Rollback Automático</strong> si una tarea completada es devuelta a un estado anterior.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>RPC forzar_desbloqueo_admin</span>
+        <span class="badge badge-rose">Emergency Bypass</span>
+      </div>
+      <p class="card-text">
+        Permite a un usuario de Nivel 6 forzar el desbloqueo de cualquier tarea estancada por contingencia, registrando una traza de auditoría inmutable en la tabla de comentarios de la tarea.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Trigger handle_new_user</span>
+        <span class="badge badge-purple">Auth Provisioning</span>
+      </div>
+      <p class="card-text">
+        Escucha las inserciones en <code>auth.users</code> y aprovisiona automáticamente el registro correspondiente en la tabla <code>public.usuarios</code> con el rol asignado o Docente por defecto.
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= CAPÍTULO 4 ================= -->
+  <div class="page-break"></div>
+
+  <h2 class="section-header">
+    <span class="section-num">4</span>
+    Inventario de Funcionalidades Técnicas y Módulos Activos
+  </h2>
+
+  <h3 class="sub-header">4.1 Sistema de Autenticación y Control de Acceso RBAC</h3>
+  <p>
+    El módulo de autenticación (<code>src/components/auth/LoginScreen.tsx</code> y <code>src/context/AuthContext.tsx</code>) gestiona el ciclo de vida completo de la sesión. Al autenticarse, se cargan los permisos específicos del perfil a través del RPC <code>get_mis_permisos()</code>. El sistema dispone de un <strong>Simulador de Roles</strong> en el Header (exclusivo para administradores), permitiendo verificar la experiencia de usuario bajo cualquier rol con un solo clic.
+  </p>
+
+  <h3 class="sub-header">4.2 Estructura Jerárquica e Institucional</h3>
+  <p>
+    El panel de administración (<code>AdminDashboard.tsx</code>) se encuentra organizado en una navegación de dos niveles con 3 dominios funcionales:
+  </p>
+  <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem; font-size: 8.5pt;">
+    <li><strong>Control de Acceso & RBAC:</strong> Gestión integral de usuarios (activación/desactivación, roles asignados), matriz de permisos y árbol de áreas jerárquicas con asignación de líderes de departamento.</li>
+    <li><strong>Gestión Académica & Cursos:</strong> Administración de Facultades (con asignación de Decanos), Programas (con asignación de Coordinadores), Proyectos Especiales y el <em>Catálogo Maestro de Tareas de Plantilla</em>.</li>
+    <li><strong>Operaciones & Servicios CCV:</strong> Tabulador de tarifas por categoría profesional, bandeja de solicitudes de soporte y directorio operativo CCV.</li>
+  </ul>
+
+  <h3 class="sub-header">4.3 Módulo de Tareas, Dependencias y Productividad</h3>
+  <p>
+    Las tareas se gestionan mediante <code>TaskDetailModal.tsx</code> y <code>TaskCard.tsx</code>. Este módulo integra:
+  </p>
+  <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem; font-size: 8.5pt;">
+    <li><strong>Visualización de Bloqueo:</strong> Insignias dinámicas que alertan si la tarea está <code>BLOQUEADA</code> por una tarea predecesora, indicando el título de la dependencia pendiente.</li>
+    <li><strong>Cálculo Automático de Costos:</strong> Integración con la tabla de tarifas por categoría para estimar el costo financiero de la tarea en función de las horas estimadas e invertidas.</li>
+    <li><strong>Cronómetro Global en Vivo:</strong> Controlado desde <code>GlobalTimerBar.tsx</code> y <code>TimerContext.tsx</code>, permitiendo a los operativos iniciar, pausar y registrar tiempos reales directamente en la tarea activa.</li>
+  </ul>
+
+  <h3 class="sub-header">4.4 Vistas Avanzadas del Flujo de Trabajo</h3>
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-title">
+        <span>Tablero Kanban Dinámico</span>
+        <span class="badge badge-blue">KanbanBoard.tsx</span>
+      </div>
+      <p class="card-text">
+        Organizado en 4 columnas (<em>Pendiente, En Proceso, En Revisión, Completada</em>). Al arrastrar una tarjeta a 'Completada', se dispara automáticamente el trigger de desbloqueo en cascada y se disparan efectos visuales de celebración con <code>canvas-confetti</code>.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Calendario de Trabajo</span>
+        <span class="badge badge-green">CalendarView.tsx</span>
+      </div>
+      <p class="card-text">
+        Proyección cronológica mensual y semanal con diferenciación cromática por estado y facultad. Al pulsar sobre cualquier evento se abre de inmediato el modal de detalle con todas las acciones operativas disponibles.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Parrilla de Publicaciones</span>
+        <span class="badge badge-purple">ParrillaPublicacionesView.tsx</span>
+      </div>
+      <p class="card-text">
+        Planificador de contenidos multicanal (Instagram, LinkedIn, YouTube, Web CCV) con seguimiento de copies, enlaces a artes en Google Drive o Figma y estados de aprobación.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Monitor de Cursos y Proyectos</span>
+        <span class="badge badge-amber">CourseProjectProgressModal.tsx</span>
+      </div>
+      <p class="card-text">
+        Visualizador de avance porcentual en tiempo real de cursos virtuales, mostrando la secuencia completa de tareas, dependencias completadas y cuellos de botella operativos.
+      </p>
+    </div>
+  </div>
+
+  <h3 class="sub-header">4.5 Panel Analítico y Dashboard</h3>
+  <p>
+    El módulo <code>DashboardAnalytics.tsx</code> sintetiza métricas clave mediante tarjetas de KPI (Total de Cursos Activos, Tareas en Proceso, Horas Invertidas, Eficiencia de Cumplimiento) y gráficos interactivos de <strong>Recharts</strong> que desglosan la productividad por área, docente y estado de avance.
+  </p>
+
+  <h3 class="sub-header">4.6 Canales de Integración Externa Preparados</h3>
+  <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem; font-size: 8.5pt;">
+    <li><strong>Sincronización con ClickUp:</strong> La tabla <code>tareas</code> cuenta con el campo <code>clickup_task_id</code> para enlace bidireccional de tareas externas.</li>
+    <li><strong>Webhooks de Automatización (Make / n8n):</strong> Estructura lista en backend para emisión de payloads JSON al aprovisionar nuevos cursos virtuales.</li>
+    <li><strong>Estructura Parametrizada de Google Drive:</strong> Enlace nativo mediante el campo <code>enlace_recurso</code> en tareas y parrilla de publicaciones.</li>
+    <li><strong>Firma Digital Táctil:</strong> Soporte en el esquema (<code>usuarios.firma_digital</code>) para validación de actas y entregables académicos.</li>
+  </ul>
+
+  <!-- ================= CAPÍTULO 5 ================= -->
+  <div class="page-break"></div>
+
+  <h2 class="section-header">
+    <span class="section-num">5</span>
+    Variables de Entorno y Conexiones Externas
+  </h2>
+
+  <p>
+    La configuración de conectividad del proyecto se gestiona mediante variables de entorno estandarizadas de Next.js, separando las credenciales públicas accesibles en el navegador de las credenciales con privilegios elevados del servidor.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 30%;">Variable de Entorno</th>
+        <th style="width: 15%;">Ámbito / Scope</th>
+        <th style="width: 25%;">Servicio Destino</th>
+        <th style="width: 30%;">Propósito y Nivel de Sensibilidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+        <td><span class="badge badge-blue">Cliente & Servidor</span></td>
+        <td>Supabase API Gateway</td>
+        <td>URL del proyecto Supabase (ej. <code>https://xyz.supabase.co</code>). Público, define el host de la base de datos y endpoints REST.</td>
+      </tr>
+      <tr>
+        <td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+        <td><span class="badge badge-blue">Cliente & Servidor</span></td>
+        <td>Supabase Auth / REST</td>
+        <td>Clave pública anónima. Protegida estrictamente por las políticas de Row Level Security (RLS) en la base de datos.</td>
+      </tr>
+      <tr>
+        <td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+        <td><span class="badge badge-rose">Solo Servidor (Secret)</span></td>
+        <td>Supabase Auth Admin</td>
+        <td>Clave maestra con bypass de RLS. Utilizada exclusivamente en rutas <code>/api/admin/*</code> para gestión administrativa de cuentas de usuario.</td>
+      </tr>
+      <tr>
+        <td><code>NEXT_PUBLIC_MAKE_WEBHOOK_URL</code></td>
+        <td><span class="badge badge-slate">Opcional</span></td>
+        <td>Make / n8n Workflow</td>
+        <td>Endpoint webhook para automatizaciones externas al instanciar cursos o notificar eventos críticos.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <div class="callout-title">⚠️ Regla Crítica de Seguridad: Service Role Key</div>
+    Bajo ninguna circunstancia se debe anteponer el prefijo <code>NEXT_PUBLIC_</code> a la variable <code>SUPABASE_SERVICE_ROLE_KEY</code>. Esta clave debe residir exclusivamente en el entorno de ejecución del servidor (Vercel / Node.js) para impedir que sea expuesta en el bundle de JavaScript del cliente.
+  </div>
+
+  <!-- ================= CAPÍTULO 6 ================= -->
+  <h2 class="section-header">
+    <span class="section-num">6</span>
+    Deuda Técnica, Puntos Críticos y Recomendaciones
+  </h2>
+
+  <h3 class="sub-header">6.1 Hallazgos de la Auditoría</h3>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-title">
+        <span>Consultas en Cascada sin Caché</span>
+        <span class="badge badge-amber">Rendimiento</span>
+      </div>
+      <p class="card-text">
+        Actualmente, varios componentes ejecutan llamadas directas a Supabase en sus efectos de montaje sin un mecanismo de deduplicación de peticiones (como TanStack Query o SWR). Si múltiples modales se abren sucesivamente, se repiten consultas a tablas maestras (facultades, programas, áreas).
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Índices Faltantes en Dependencias</span>
+        <span class="badge badge-amber">Base de Datos</span>
+      </div>
+      <p class="card-text">
+        El campo <code>tareas.dependencias_operativas</code> almacena un array <code>UUID[]</code>. En cursos con secuencias de más de 30 tareas, la consulta <code>NEW.id = ANY(dependencias_operativas)</code> en el trigger de cascada puede degradarse sin un índice de tipo <strong>GIN</strong> sobre este array.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Suscripción a Realtime Supabase</span>
+        <span class="badge badge-blue">Escalabilidad</span>
+      </div>
+      <p class="card-text">
+        El tablero Kanban actualiza estados de forma reactiva local, pero no escucha los canales de <em>Supabase Realtime WebSockets</em>. Si dos administradores trabajan simultáneamente, uno no verá de inmediato el cambio de estado del otro sin recargar la vista.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Validación de Formularios</span>
+        <span class="badge badge-slate">Mantenibilidad</span>
+      </div>
+      <p class="card-text">
+        Los formularios de creación de cursos y tareas manejan validación manual. Se recomienda estandarizar con <code>zod</code> y <code>react-hook-form</code> para unificar mensajes de error y esquemas de validación compartidos entre cliente y servidor.
+      </p>
+    </div>
+  </div>
+
+  <h3 class="sub-header">6.2 Recomendaciones Inmediatas para Despliegue a Producción</h3>
+
+  <ol style="margin-left: 1.5rem; font-size: 8.5pt; line-height: 1.6;">
+    <li><strong>Crear Índice GIN en Postgres:</strong> Ejecutar en el SQL Editor de Supabase:
+      <br><code class="inline-code">CREATE INDEX IF NOT EXISTS idx_tareas_deps_gin ON public.tareas USING GIN (dependencias_operativas);</code>
+    </li>
+    <li><strong>Implementar TanStack Query (React Query):</strong> Configurar un <code>QueryClient</code> con un <code>staleTime</code> de 5 minutos para tablas paramétricas (áreas, facultades, programas y roles).</li>
+    <li><strong>Habilitar Supabase Realtime en Tareas:</strong> Activar la replicación en la tabla <code>tareas</code> para permitir sincronización colaborativa multi-usuario en el Tablero Kanban.</li>
+    <li><strong>Variables de Entorno en Vercel:</strong> Asegurarse de cargar <code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code> en el panel de Vercel (Production & Preview).</li>
+    <li><strong>Población de Datos Semilla:</strong> Ejecutar el script <code>supabase/seed_plantilla_cursos.sql</code> en el entorno de producción para cargar el catálogo inicial de tareas y dependencias predeterminadas.</li>
+  </ol>
+
+  <div class="page-footer">
+    <span>PrismaLab CCV 3.0 — Informe de Auditoría Técnica y Arquitectura</span>
+    <span>Aprobado para Paso a Producción</span>
+  </div>
+
+</body>
+</html>

@@ -19,9 +19,10 @@ import { useAuth } from '@/context/AuthContext';
 interface SidebarProps {
   vistaActual: VistaNavegacion;
   setVistaActual: (vista: VistaNavegacion) => void;
+  tareasPendientesCount?: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual, tareasPendientesCount = 0 }) => {
   const { usuarioActual, roles, isAdmin, isRealAdmin, setIsDevSimulatorOpen, logout } = useAuth();
 
   // Verificar si el usuario es Admin o pertenece a un rol del CMU
@@ -96,6 +97,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual })
               }`}
             >
               {item.icon}
+              {item.id === 'kanban' && tareasPendientesCount > 0 && (
+                <span 
+                  className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[18px] text-[9px] font-black rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs border border-white animate-pulse"
+                  title={`${tareasPendientesCount} Tareas Pendientes`}
+                >
+                  {tareasPendientesCount > 99 ? '99+' : tareasPendientesCount}
+                </span>
+              )}
               {isActive && (
                 <span className="absolute -right-1 w-1.5 h-1.5 rounded-full bg-sky-500" />
               )}

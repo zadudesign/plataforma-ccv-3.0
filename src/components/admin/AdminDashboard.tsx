@@ -33,7 +33,8 @@ import {
   FolderKanban,
   Tag,
   ChevronRight,
-  Inbox
+  Inbox,
+  ListTodo
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto, PestanaAdmin, CategoriaAdmin } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -426,6 +427,8 @@ interface AdminDashboardProps {
   facultades: Facultad[];
   programas: Programa[];
   pestanaInicial?: PestanaAdmin;
+  tareasPendientesCount?: number;
+  onNavigateKanban?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -435,6 +438,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   facultades: initialFacultades,
   programas: initialProgramas,
   pestanaInicial = 'usuarios',
+  tareasPendientesCount = 0,
+  onNavigateKanban,
 }) => {
   const {
     usuarios,
@@ -779,6 +784,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Quick Actions / Simulator */}
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {tareasPendientesCount > 0 && onNavigateKanban && (
+            <button
+              onClick={onNavigateKanban}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-900 text-xs font-extrabold rounded-full border border-rose-300 shadow-xs transition-all animate-pulse"
+              title="Revisar tareas pendientes en el Tablero Kanban"
+            >
+              <ListTodo className="w-4 h-4 text-rose-600" />
+              <span>{tareasPendientesCount} Tareas Pendientes</span>
+            </button>
+          )}
           {solicitudesPendientes > 0 && (
             <button
               onClick={() => {

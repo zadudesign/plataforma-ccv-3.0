@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Plus, Shield, Sparkles, FileSignature, FilePlus, Inbox } from 'lucide-react';
+import { Search, Plus, Shield, Sparkles, FileSignature, FilePlus, Inbox, ListTodo } from 'lucide-react';
 import { Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -11,6 +11,8 @@ interface HeaderProps {
   onOpenCreateTask: () => void;
   onOpenTaskRequest?: () => void;
   onOpenSolicitudes?: () => void;
+  onOpenTareasPendientes?: () => void;
+  tareasPendientesCount?: number;
   busqueda: string;
   setBusqueda: (val: string) => void;
   onOpenSignatureModal?: () => void;
@@ -23,6 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCreateTask,
   onOpenTaskRequest,
   onOpenSolicitudes,
+  onOpenTareasPendientes,
+  tareasPendientesCount = 0,
   busqueda,
   setBusqueda,
   onOpenSignatureModal,
@@ -33,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   const usuarioActual = propsUsuario || contextUsuario;
 
   const solicitudesPendientes = solicitudesTareas?.filter(s => s.estado === 'Pendiente').length || 0;
+  const tareasPendientes = tareasPendientesCount;
 
   if (!usuarioActual) return null;
 
@@ -90,65 +95,102 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Action Button: Nueva Tarea (Exclusivo Admin) con Alerta de Solicitudes Vigentes vs Solicitar Tarea */}
-        {isAdmin() ? (
-          <div className="flex items-center gap-2.5">
-            {/* Alerta de Bandeja de Solicitudes (Visible siempre al lado de Nueva Tarea para saber solicitudes vigentes) */}
-            {onOpenSolicitudes && (
-              <button
-                onClick={onOpenSolicitudes}
-                id="btn-header-alerta-solicitudes"
-                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md scale-100 hover:scale-105 active:scale-95 cursor-pointer border ${
-                  solicitudesPendientes > 0
-                    ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 ring-2 ring-amber-400/40 animate-pulse'
-                    : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
-                }`}
-                title={
-                  solicitudesPendientes > 0
-                    ? `⚠️ Hay ${solicitudesPendientes} solicitud(es) vigente(s) pendiente(s) por revisar. Haz clic para abrir la Bandeja.`
-                    : 'Bandeja de Solicitudes al día (0 solicitudes vigentes pendientes). Haz clic para abrir el historial.'
-                }
-              >
-                <div className="relative">
-                  <Inbox className={`w-4 h-4 ${solicitudesPendientes > 0 ? 'text-white' : 'text-slate-500'}`} />
-                  {solicitudesPendientes > 0 && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                  )}
-                </div>
-                <span>Bandeja de Solicitudes</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-black flex items-center justify-center ${
-                    solicitudesPendientes > 0
-                      ? 'bg-white text-amber-700 shadow-2xs'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {solicitudesPendientes}
-                </span>
-              </button>
-            )}
-
+        {/* Action Button: Nueva Tarea (Exclusivo Admin) con Alerta de Tareas Pendientes y Solicitudes Vigentes vs Solicitar Tarea */}
+        <div className="flex items-center gap-2.5">
+          {/* Alerta de Tareas Pendientes (Visible tanto para Admin como para Docentes/Operativos) */}
+          {onOpenTareasPendientes && (
             <button
-              onClick={onOpenCreateTask}
-              id="btn-header-nueva-tarea"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 cursor-pointer"
-              title="Crear nueva tarea en la plataforma CCV"
+              onClick={onOpenTareasPendientes}
+              id="btn-header-alerta-tareas-pendientes"
+              className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md scale-100 hover:scale-105 active:scale-95 cursor-pointer border ${
+                tareasPendientes > 0
+                  ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-600 ring-2 ring-rose-400/40 animate-pulse'
+                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+              }`}
+              title={
+                tareasPendientes > 0
+                  ? `⚠️ Hay ${tareasPendientes} tarea(s) pendiente(s) por gestionar. Haz clic para abrir el Tablero Kanban.`
+                  : 'Todas las tareas al día (0 tareas pendientes). Haz clic para abrir el Tablero Kanban.'
+              }
             >
-              <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
-              <span>Nueva Tarea</span>
+              <div className="relative">
+                <ListTodo className={`w-4 h-4 ${tareasPendientes > 0 ? 'text-white' : 'text-slate-500'}`} />
+                {tareasPendientes > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white animate-ping" />
+                )}
+              </div>
+              <span>Tareas Pendientes</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-black flex items-center justify-center ${
+                  tareasPendientes > 0
+                    ? 'bg-white text-rose-700 shadow-2xs'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {tareasPendientes}
+              </span>
             </button>
-          </div>
-        ) : onOpenTaskRequest ? (
-          <button
-            onClick={onOpenTaskRequest}
-            id="btn-header-solicitar-tarea"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
-            title="Solicitar nueva tarea o requerimiento al CCV"
-          >
-            <FilePlus className="w-4 h-4 stroke-[2.5] text-sky-400" />
-            <span>Solicitar Tarea</span>
-          </button>
-        ) : null}
+          )}
+
+          {isAdmin() ? (
+            <>
+              {/* Alerta de Bandeja de Solicitudes (Visible siempre al lado de Nueva Tarea para saber solicitudes vigentes) */}
+              {onOpenSolicitudes && (
+                <button
+                  onClick={onOpenSolicitudes}
+                  id="btn-header-alerta-solicitudes"
+                  className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md scale-100 hover:scale-105 active:scale-95 cursor-pointer border ${
+                    solicitudesPendientes > 0
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 ring-2 ring-amber-400/40 animate-pulse'
+                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+                  }`}
+                  title={
+                    solicitudesPendientes > 0
+                      ? `⚠️ Hay ${solicitudesPendientes} solicitud(es) vigente(s) pendiente(s) por revisar. Haz clic para abrir la Bandeja.`
+                      : 'Bandeja de Solicitudes al día (0 solicitudes vigentes pendientes). Haz clic para abrir el historial.'
+                  }
+                >
+                  <div className="relative">
+                    <Inbox className={`w-4 h-4 ${solicitudesPendientes > 0 ? 'text-white' : 'text-slate-500'}`} />
+                    {solicitudesPendientes > 0 && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                    )}
+                  </div>
+                  <span>Bandeja de Solicitudes</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-black flex items-center justify-center ${
+                      solicitudesPendientes > 0
+                        ? 'bg-white text-amber-700 shadow-2xs'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {solicitudesPendientes}
+                  </span>
+                </button>
+              )}
+
+              <button
+                onClick={onOpenCreateTask}
+                id="btn-header-nueva-tarea"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 cursor-pointer"
+                title="Crear nueva tarea en la plataforma CCV"
+              >
+                <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
+                <span>Nueva Tarea</span>
+              </button>
+            </>
+          ) : onOpenTaskRequest ? (
+            <button
+              onClick={onOpenTaskRequest}
+              id="btn-header-solicitar-tarea"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
+              title="Solicitar nueva tarea o requerimiento al CCV"
+            >
+              <FilePlus className="w-4 h-4 stroke-[2.5] text-sky-400" />
+              <span>Solicitar Tarea</span>
+            </button>
+          ) : null}
+        </div>
       </div>
     </header>
   );

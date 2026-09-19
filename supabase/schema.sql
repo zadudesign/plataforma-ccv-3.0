@@ -565,6 +565,17 @@ CREATE INDEX IF NOT EXISTS idx_plantilla_dep_tarea ON public.plantilla_tareas_de
 CREATE INDEX IF NOT EXISTS idx_plantilla_dep_depende ON public.plantilla_tareas_dependencias(depende_de_id);
 
 -- Campos adicionales en la tabla operativa de tareas
+DO $$
+BEGIN
+    ALTER TABLE public.tareas DROP CONSTRAINT IF EXISTS tareas_rol_destino_fkey;
+    ALTER TABLE public.tareas DROP CONSTRAINT IF EXISTS fk_tareas_roles;
+    ALTER TABLE public.tareas ALTER COLUMN rol_destino TYPE TEXT USING rol_destino::text;
+    ALTER TABLE public.tareas DROP CONSTRAINT IF EXISTS tareas_rol_destino_secundario_fkey;
+    ALTER TABLE public.tareas ALTER COLUMN rol_destino_secundario TYPE TEXT USING rol_destino_secundario::text;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
 ALTER TABLE public.tareas
     ADD COLUMN IF NOT EXISTS plantilla_origen_id UUID REFERENCES public.plantilla_tareas_curso(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS estado_bloqueo TEXT NOT NULL DEFAULT 'DISPONIBLE' 

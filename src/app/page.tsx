@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { WelcomeBanner } from '@/components/layout/WelcomeBanner';
@@ -467,11 +467,19 @@ export default function Home() {
     return tareasVisiblesPorRol.some(t => t.id === com.tarea_id);
   });
 
+  const tareasPendientesCount = useMemo(() => {
+    return tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente').length;
+  }, [tareasVisiblesPorRol]);
+
   return (
     <TimerProvider>
       <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans relative">
         {/* Floating Left Pill Sidebar */}
-        <Sidebar vistaActual={vistaActual} setVistaActual={setVistaActual} />
+        <Sidebar 
+          vistaActual={vistaActual} 
+          setVistaActual={setVistaActual} 
+          tareasPendientesCount={tareasPendientesCount}
+        />
 
         {/* Main App Container */}
         <main className="flex-1 ml-28 mr-6 my-6 min-w-0">
@@ -486,6 +494,8 @@ export default function Home() {
               setPestanaAdminInicial('solicitudes');
               setVistaActual('admin');
             }}
+            onOpenTareasPendientes={() => setVistaActual('kanban')}
+            tareasPendientesCount={tareasPendientesCount}
             busqueda={busqueda}
             setBusqueda={setBusqueda}
             onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
@@ -576,6 +586,8 @@ export default function Home() {
               facultades={facultades}
               programas={programas}
               pestanaInicial={pestanaAdminInicial}
+              tareasPendientesCount={tareasPendientesCount}
+              onNavigateKanban={() => setVistaActual('kanban')}
             />
           ) : (
             <div className="ccv-card p-12 text-center space-y-4 max-w-lg mx-auto my-12 animate-fadeIn">

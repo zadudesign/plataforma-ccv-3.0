@@ -2063,6 +2063,12 @@ export async function inicializarTareasCursoDB(cursoId: string): Promise<{ succe
 
     if (error) {
       console.warn('Error llamando a RPC inicializar_tareas_curso:', error.message);
+      if (error.message.includes('rol_destino') && error.message.includes('uuid')) {
+        return {
+          success: false,
+          message: 'Error de tipos en Supabase: la columna "rol_destino" de la tabla tareas aún es de tipo UUID. Debes ejecutar el script SQL "supabase/fix_rol_destino_tareas.sql" en el SQL Editor de Supabase para convertirla a TEXT.'
+        };
+      }
       return { success: false, message: error.message };
     }
 
