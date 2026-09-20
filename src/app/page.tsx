@@ -538,6 +538,7 @@ export default function Home() {
             programas={programasVisiblesPorRol}
             cursos={cursosVisiblesPorRol}
             proyectos={proyectosVisiblesPorRol}
+            facultades={facultadesVisiblesPorRol}
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
             onOpenTaskRequest={() => setIsTaskRequestOpen(true)}

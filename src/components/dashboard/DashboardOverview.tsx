@@ -8,6 +8,8 @@ import {
   CheckSquare, 
   Users, 
   UserCheck, 
+  Award,
+  UserCog,
   MessageSquare, 
   TrendingUp, 
   Clock, 
@@ -23,7 +25,7 @@ import {
   Shield,
   FilePlus
 } from 'lucide-react';
-import { TareaCCV, Usuario, CursoVirtual, ProyectoEspecial, Programa, TareaComentario, EstadoTarea } from '@/types';
+import { TareaCCV, Usuario, CursoVirtual, ProyectoEspecial, Programa, Facultad, TareaComentario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { 
   calcularProgresoGlobalCursos, 
@@ -110,6 +112,7 @@ interface DashboardOverviewProps {
   programas: Programa[];
   cursos: CursoVirtual[];
   proyectos: ProyectoEspecial[];
+  facultades?: Facultad[];
   onSelectTask: (tarea: TareaCCV) => void;
   onOpenCreateTask: () => void;
   onOpenTaskRequest?: () => void;
@@ -124,6 +127,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   programas,
   cursos,
   proyectos,
+  facultades = [],
   onSelectTask,
   onOpenCreateTask,
   onOpenTaskRequest,
@@ -135,8 +139,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const numCursos = cursos.length;
   const numProyectos = proyectos.length;
   const numTareas = tareas.length;
-  const numDocentes = usuarios.filter(u => u.rol_nombre === 'Docente').length;
-  const numParesEvaluadores = usuarios.filter(u => u.rol_nombre === 'Par Evaluador').length;
+
+  // Decanos: Conteo por rol con fallback a asignaciones directas en facultades
+  const decanosPorRol = usuarios.filter(u => (u.rol_nombre || '').toLowerCase().includes('decano')).length;
+  const decanosAsignados = new Set(facultades.map(f => f.decano_id).filter(Boolean)).size;
+  const numDecanos = decanosPorRol > 0 ? decanosPorRol : decanosAsignados;
+
+  // Coordinadores de Programa: Conteo por rol con fallback a asignaciones directas en programas
+  const coordsPorRol = usuarios.filter(u => (u.rol_nombre || '').toLowerCase().includes('coordinador')).length;
+  const coordsAsignados = new Set(programas.map(p => p.coordinador_id).filter(Boolean)).size;
+  const numCoordinadores = coordsPorRol > 0 ? coordsPorRol : coordsAsignados;
+
+  const numDocentes = usuarios.filter(u => (u.rol_nombre || '').toLowerCase().includes('docente')).length;
+  const numParesEvaluadores = usuarios.filter(u => {
+    const r = (u.rol_nombre || '').toLowerCase();
+    return r.includes('evaluador') || r === 'par evaluador';
+  }).length;
 
   // 2. CÁLCULO DE PROGRESO GLOBAL DE CURSOS Y TAREAS ASIGNADAS
   const tareasCursos = tareas.filter(t => t.curso_id);
@@ -166,7 +184,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* ==================================================================== */}
-      {/* 1. SECCIÓN: MÉTRICAS INSTITUCIONALES (6 RECUADROS)                    */}
+      {/* 1. SECCIÓN: MÉTRICAS INSTITUCIONALES (8 RECUADROS)                    */}
       {/* ==================================================================== */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -179,129 +197,195 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4">
           {/* Card 1: Programas */}
-          <div className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
             numProgramas === 0
               ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
               : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-slate-800'
           }`}>
-            <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                 numProgramas === 0 ? 'bg-slate-100 text-slate-400' : 'bg-slate-100 text-slate-800'
               }`}>
                 <GraduationCap className="w-4 h-4" />
               </div>
-              <span className={`text-sm truncate ${numProgramas === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}>
+              <span 
+                title="Programas Académicos"
+                className={`text-xs sm:text-sm truncate ${numProgramas === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
                 Programas
               </span>
             </div>
-            <h4 className={`text-3xl leading-none ${numProgramas === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numProgramas === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
               {numProgramas}
             </h4>
           </div>
 
           {/* Card 2: Cursos */}
-          <div className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
             numCursos === 0
               ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
               : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-sky-600'
           }`}>
-            <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                 numCursos === 0 ? 'bg-slate-100 text-slate-400' : 'bg-sky-50 text-sky-600'
               }`}>
                 <BookOpen className="w-4 h-4" />
               </div>
-              <span className={`text-sm truncate ${numCursos === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}>
+              <span 
+                title="Cursos Virtuales"
+                className={`text-xs sm:text-sm truncate ${numCursos === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
                 Cursos
               </span>
             </div>
-            <h4 className={`text-3xl leading-none ${numCursos === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numCursos === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
               {numCursos}
             </h4>
           </div>
 
           {/* Card 3: Proyectos */}
-          <div className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
             numProyectos === 0
               ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
               : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-amber-500'
           }`}>
-            <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                 numProyectos === 0 ? 'bg-slate-100 text-slate-400' : 'bg-amber-50 text-amber-600'
               }`}>
                 <FolderKanban className="w-4 h-4" />
               </div>
-              <span className={`text-sm truncate ${numProyectos === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}>
+              <span 
+                title="Proyectos Especiales"
+                className={`text-xs sm:text-sm truncate ${numProyectos === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
                 Proyectos
               </span>
             </div>
-            <h4 className={`text-3xl leading-none ${numProyectos === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numProyectos === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
               {numProyectos}
             </h4>
           </div>
 
           {/* Card 4: Tareas */}
-          <div className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
             numTareas === 0
               ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
               : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-sky-500'
           }`}>
-            <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                 numTareas === 0 ? 'bg-slate-100 text-slate-400' : 'bg-sky-50 text-sky-600'
               }`}>
                 <CheckSquare className="w-4 h-4" />
               </div>
-              <span className={`text-sm truncate ${numTareas === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}>
+              <span 
+                title="Tareas Monitoreadas"
+                className={`text-xs sm:text-sm truncate ${numTareas === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
                 Tareas
               </span>
             </div>
-            <h4 className={`text-3xl leading-none ${numTareas === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numTareas === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
               {numTareas}
             </h4>
           </div>
 
-          {/* Card 5: Docentes */}
-          <div className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
+          {/* Card 5: Decanos */}
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
+            numDecanos === 0
+              ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
+              : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-indigo-600'
+          }`}>
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                numDecanos === 0 ? 'bg-slate-100 text-slate-400' : 'bg-indigo-50 text-indigo-700'
+              }`}>
+                <Award className="w-4 h-4" />
+              </div>
+              <span 
+                title="Decanos de Facultad"
+                className={`text-xs sm:text-sm truncate ${numDecanos === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
+                Decanos
+              </span>
+            </div>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numDecanos === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+              {numDecanos}
+            </h4>
+          </div>
+
+          {/* Card 6: Coordinadores */}
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
+            numCoordinadores === 0
+              ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
+              : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-teal-600'
+          }`}>
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                numCoordinadores === 0 ? 'bg-slate-100 text-slate-400' : 'bg-teal-50 text-teal-700'
+              }`}>
+                <UserCog className="w-4 h-4" />
+              </div>
+              <span 
+                title="Coordinadores de Programa"
+                className={`text-xs sm:text-sm truncate ${numCoordinadores === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
+                Coordinadores
+              </span>
+            </div>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numCoordinadores === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+              {numCoordinadores}
+            </h4>
+          </div>
+
+          {/* Card 7: Docentes */}
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
             numDocentes === 0
               ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
               : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-violet-500'
           }`}>
-            <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                 numDocentes === 0 ? 'bg-slate-100 text-slate-400' : 'bg-violet-50 text-violet-600'
               }`}>
                 <Users className="w-4 h-4" />
               </div>
-              <span className={`text-sm truncate ${numDocentes === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}>
+              <span 
+                title="Docentes de Curso"
+                className={`text-xs sm:text-sm truncate ${numDocentes === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
                 Docentes
               </span>
             </div>
-            <h4 className={`text-3xl leading-none ${numDocentes === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numDocentes === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
               {numDocentes}
             </h4>
           </div>
 
-          {/* Card 6: Pares Evaluadores */}
-          <div className={`p-4 rounded-2xl flex items-center justify-between transition-all ${
+          {/* Card 8: Pares Evaluadores */}
+          <div className={`p-3.5 2xl:p-4 rounded-2xl flex items-center justify-between transition-all ${
             numParesEvaluadores === 0
               ? 'bg-slate-50/60 border border-slate-200/60 border-l-4 border-l-slate-300 opacity-50 hover:opacity-75'
               : 'ccv-card hover:shadow-md hover:-translate-y-0.5 border-l-4 border-l-emerald-600'
           }`}>
-            <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                 numParesEvaluadores === 0 ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-600'
               }`}>
                 <UserCheck className="w-4 h-4" />
               </div>
-              <span className={`text-sm truncate ${numParesEvaluadores === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}>
+              <span 
+                title="Pares Evaluadores"
+                className={`text-xs sm:text-sm truncate ${numParesEvaluadores === 0 ? 'font-semibold text-slate-400' : 'font-black text-slate-800'}`}
+              >
                 Evaluadores
               </span>
             </div>
-            <h4 className={`text-3xl leading-none ${numParesEvaluadores === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
+            <h4 className={`text-2xl sm:text-3xl leading-none ${numParesEvaluadores === 0 ? 'font-bold text-slate-300' : 'font-black text-slate-900'}`}>
               {numParesEvaluadores}
             </h4>
           </div>

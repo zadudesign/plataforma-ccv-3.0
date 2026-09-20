@@ -8,6 +8,8 @@ import {
   CheckSquare, 
   Users, 
   UserCheck, 
+  Award,
+  UserCog,
   TrendingUp, 
   Activity 
 } from 'lucide-react';
@@ -27,7 +29,7 @@ interface StatConfig {
 }
 
 export const HomeStats: React.FC = () => {
-  const { programas, cursos, proyectos, usuarios } = useAuth();
+  const { programas, cursos, proyectos, usuarios, facultades } = useAuth();
   const [tareasCount, setTareasCount] = useState<number>(0);
   const [hasAnimated, setHasAnimated] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -56,8 +58,22 @@ export const HomeStats: React.FC = () => {
   const numCursos = cursos.length;
   const numProyectos = proyectos.length;
   const numTareas = tareasCount;
-  const numDocentes = usuarios.filter(u => u.rol_nombre === 'Docente').length;
-  const numParesEvaluadores = usuarios.filter(u => u.rol_nombre === 'Par Evaluador').length;
+
+  // Decanos: Conteo por rol con fallback a facultades
+  const decanosPorRol = usuarios.filter(u => (u.rol_nombre || '').toLowerCase().includes('decano')).length;
+  const decanosAsignados = new Set((facultades || []).map(f => f.decano_id).filter(Boolean)).size;
+  const numDecanos = decanosPorRol > 0 ? decanosPorRol : decanosAsignados;
+
+  // Coordinadores: Conteo por rol con fallback a programas
+  const coordsPorRol = usuarios.filter(u => (u.rol_nombre || '').toLowerCase().includes('coordinador')).length;
+  const coordsAsignados = new Set((programas || []).map(p => p.coordinador_id).filter(Boolean)).size;
+  const numCoordinadores = coordsPorRol > 0 ? coordsPorRol : coordsAsignados;
+
+  const numDocentes = usuarios.filter(u => (u.rol_nombre || '').toLowerCase().includes('docente')).length;
+  const numParesEvaluadores = usuarios.filter(u => {
+    const r = (u.rol_nombre || '').toLowerCase();
+    return r.includes('evaluador') || r === 'par evaluador';
+  }).length;
 
   const statsList: StatConfig[] = [
     {
@@ -103,6 +119,28 @@ export const HomeStats: React.FC = () => {
       iconColor: 'text-sky-600',
       badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
       borderColor: 'hover:border-sky-300'
+    },
+    {
+      id: 'decanos',
+      label: 'Decanos de Facultad',
+      sublabel: 'Liderazgo y dirección de facultades',
+      value: numDecanos,
+      icon: <Award className="w-6 h-6" />,
+      iconBg: 'bg-indigo-50',
+      iconColor: 'text-indigo-600',
+      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      borderColor: 'hover:border-indigo-300'
+    },
+    {
+      id: 'coordinadores',
+      label: 'Coordinadores de Programa',
+      sublabel: 'Gestión curricular y académica',
+      value: numCoordinadores,
+      icon: <UserCog className="w-6 h-6" />,
+      iconBg: 'bg-teal-50',
+      iconColor: 'text-teal-600',
+      badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
+      borderColor: 'hover:border-teal-300'
     },
     {
       id: 'docentes',
@@ -179,7 +217,7 @@ export const HomeStats: React.FC = () => {
     }, frameRate);
 
     return () => clearInterval(timer);
-  }, [hasAnimated, numProgramas, numCursos, numProyectos, numTareas, numDocentes, numParesEvaluadores]);
+  }, [hasAnimated, numProgramas, numCursos, numProyectos, numTareas, numDecanos, numCoordinadores, numDocentes, numParesEvaluadores]);
 
   return (
     <section 
@@ -213,8 +251,8 @@ export const HomeStats: React.FC = () => {
           </p>
         </div>
 
-        {/* 6-Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 8-Card Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsList.map((item, index) => {
             const currentCount = hasAnimated ? (counts[index] ?? item.value) : 0;
             const displayValue = currentCount.toLocaleString('es-CO');
