@@ -84,24 +84,44 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     }
 
     if (tipo === 'facultad') {
+      if (!decanoId || !decanoId.trim()) {
+        setErrorMsg('Es obligatorio asignar un Decano para la Facultad.');
+        return;
+      }
       if (isEditing && initialData?.id && onEditarFacultad) {
-        onEditarFacultad(initialData.id, nombre, decanoId || undefined, facultadColor, facultadIcono);
+        onEditarFacultad(initialData.id, nombre, decanoId, facultadColor, facultadIcono);
       } else {
-        onCrearFacultad(nombre, decanoId || undefined, facultadColor, facultadIcono);
+        onCrearFacultad(nombre, decanoId, facultadColor, facultadIcono);
       }
     } else if (tipo === 'programa') {
       if (!facultadId) {
         setErrorMsg('Debes seleccionar una facultad.');
         return;
       }
+      if (!coordinadorId || !coordinadorId.trim()) {
+        setErrorMsg('Es obligatorio asignar un Coordinador para el Programa.');
+        return;
+      }
       if (isEditing && initialData?.id && onEditarPrograma) {
-        onEditarPrograma(initialData.id, nombre, facultadId, coordinadorId || undefined);
+        onEditarPrograma(initialData.id, nombre, facultadId, coordinadorId);
       } else {
-        onCrearPrograma(nombre, facultadId, coordinadorId || undefined);
+        onCrearPrograma(nombre, facultadId, coordinadorId);
       }
     } else if (tipo === 'curso') {
       if (!codigo.trim() || !programaId) {
         setErrorMsg('El código y el programa son requeridos.');
+        return;
+      }
+      if (!docenteId || !docenteId.trim()) {
+        setErrorMsg('Es obligatorio asignar un Docente responsable para el curso.');
+        return;
+      }
+      if (!evaluadorId || !evaluadorId.trim()) {
+        setErrorMsg('Es obligatorio asignar un Par Evaluador para el curso.');
+        return;
+      }
+      if (docenteId === evaluadorId) {
+        setErrorMsg('El Docente y el Par Evaluador deben ser personas distintas.');
         return;
       }
       const prog = programas.find(p => p.id === programaId);
@@ -113,8 +133,8 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           programa_nombre: prog?.nombre,
           facultad_nombre: prog?.facultad_nombre,
           periodo,
-          docente_id: docenteId || undefined,
-          evaluador_id: evaluadorId || undefined,
+          docente_id: docenteId,
+          evaluador_id: evaluadorId,
         });
       } else {
         onCrearCurso({
@@ -124,8 +144,8 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           programa_nombre: prog?.nombre,
           facultad_nombre: prog?.facultad_nombre,
           periodo,
-          docente_id: docenteId || undefined,
-          evaluador_id: evaluadorId || undefined,
+          docente_id: docenteId,
+          evaluador_id: evaluadorId,
           estado: 'En Diseño',
         });
       }
@@ -247,14 +267,15 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           {tipo === 'facultad' && (
             <div>
               <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
-                Decano Asignado
+                Decano Asignado *
               </label>
               <select
                 value={decanoId}
                 onChange={e => setDecanoId(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                required
               >
-                <option value="">-- Asignar Decano después --</option>
+                <option value="">-- Seleccionar Decano (Obligatorio) --</option>
                 {usuarios.map(u => (
                   <option key={u.id} value={u.id}>
                     {u.nombre_completo} ({u.rol_nombre || 'Usuario'})
@@ -287,14 +308,15 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1">
-                  Coordinador de Programa
+                  Coordinador de Programa *
                 </label>
                 <select
                   value={coordinadorId}
                   onChange={e => setCoordinadorId(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                  required
                 >
-                  <option value="">-- Asignar Coordinador después --</option>
+                  <option value="">-- Seleccionar Coordinador (Obligatorio) --</option>
                   {usuarios.map(u => (
                     <option key={u.id} value={u.id}>
                       {u.nombre_completo} ({u.rol_nombre || 'Usuario'})
@@ -358,13 +380,14 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Docente Asignado</label>
+                  <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Docente Asignado *</label>
                   <select
                     value={docenteId}
                     onChange={e => setDocenteId(e.target.value)}
                     className="w-full px-2.5 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900"
+                    required
                   >
-                    <option value="">-- Sin Asignar --</option>
+                    <option value="">-- Seleccionar Docente (Obligatorio) --</option>
                     {usuarios.map(u => (
                       <option key={u.id} value={u.id}>{u.nombre_completo}</option>
                     ))}
@@ -372,13 +395,14 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Par Evaluador</label>
+                  <label className="block text-[10px] font-bold uppercase text-charcoal-600 mb-1">Par Evaluador *</label>
                   <select
                     value={evaluadorId}
                     onChange={e => setEvaluadorId(e.target.value)}
                     className="w-full px-2.5 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-medium text-charcoal-900"
+                    required
                   >
-                    <option value="">-- Sin Asignar --</option>
+                    <option value="">-- Seleccionar Evaluador (Obligatorio) --</option>
                     {usuarios.map(u => (
                       <option key={u.id} value={u.id}>{u.nombre_completo}</option>
                     ))}

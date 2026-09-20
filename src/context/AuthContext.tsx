@@ -702,6 +702,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const crearFacultad = async (nombre: string, decanoId?: string, color: string = 'emerald', icono: string = 'Building2') => {
+    if (!decanoId || !decanoId.trim()) {
+      throw new Error('Es obligatorio asignar un Decano para la Facultad.');
+    }
     const dbItem = await createFacultadDB(nombre, decanoId, color, icono);
     const decano = usuarios.find(u => u.id === decanoId);
     const nueva: Facultad = {
@@ -742,10 +745,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const eliminarFacultad = async (id: string) => {
     setFacultades(prev => prev.filter(f => f.id !== id));
+    setProgramas(prev => prev.filter(p => p.facultad_id !== id));
+    setCursos(prev => {
+      const progIdsToRemove = new Set(programas.filter(p => p.facultad_id === id).map(p => p.id));
+      return prev.filter(c => !progIdsToRemove.has(c.programa_id));
+    });
     await deleteFacultadDB(id);
   };
 
   const crearPrograma = async (nombre: string, facultadId: string, coordinadorId?: string) => {
+    if (!facultadId) {
+      throw new Error('Debes seleccionar una facultad.');
+    }
+    if (!coordinadorId || !coordinadorId.trim()) {
+      throw new Error('Es obligatorio asignar un Coordinador para el Programa.');
+    }
     const dbItem = await createProgramaDB(nombre, facultadId, coordinadorId);
     const facultad = facultades.find(f => f.id === facultadId);
     const coord = usuarios.find(u => u.id === coordinadorId);
@@ -762,6 +776,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const crearCurso = async (datos: Omit<CursoVirtual, 'id'>) => {
+    if (!datos.docente_id || !datos.docente_id.trim()) {
+      throw new Error('Es obligatorio asignar un Docente responsable para el curso.');
+    }
+    if (!datos.evaluador_id || !datos.evaluador_id.trim()) {
+      throw new Error('Es obligatorio asignar un Par Evaluador para el curso.');
+    }
+    if (datos.docente_id === datos.evaluador_id) {
+      throw new Error('El Docente y el Par Evaluador deben ser personas distintas.');
+    }
     const dbItem = await createCursoDB(datos);
     const prog = programas.find(p => p.id === datos.programa_id);
     const doc = usuarios.find(u => u.id === datos.docente_id);
@@ -794,6 +817,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const eliminarPrograma = async (id: string) => {
     setProgramas(prev => prev.filter(p => p.id !== id));
+    setCursos(prev => prev.filter(c => c.programa_id !== id));
     await deleteProgramaDB(id);
   };
 

@@ -627,10 +627,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleAssignCursoDocente = (cursoId: string, docenteId: string) => {
+    if (!docenteId) return;
+    const cur = cursos.find(c => c.id === cursoId);
+    if (cur && cur.evaluador_id && cur.evaluador_id === docenteId) {
+      alert('El Docente y el Par Evaluador deben ser personas distintas.');
+      return;
+    }
     asignarDocenteCurso(cursoId, docenteId);
   };
 
   const handleAssignCursoEvaluador = (cursoId: string, evaluadorId: string) => {
+    if (!evaluadorId) return;
+    const cur = cursos.find(c => c.id === cursoId);
+    if (cur && cur.docente_id && cur.docente_id === evaluadorId) {
+      alert('El Docente y el Par Evaluador deben ser personas distintas.');
+      return;
+    }
     asignarEvaluadorCurso(cursoId, evaluadorId);
   };
 

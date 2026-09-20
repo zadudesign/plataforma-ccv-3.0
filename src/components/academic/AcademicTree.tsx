@@ -17,7 +17,8 @@ import {
   Sparkles,
   Palette,
   DollarSign,
-  Timer
+  Timer,
+  Trash2
 } from 'lucide-react';
 import { Facultad, Programa, CursoVirtual, ProyectoEspecial, TareaCCV, Area } from '@/types';
 import { getFacultyTheme } from '@/lib/facultyThemes';
@@ -49,7 +50,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   onSelectCurso,
   onOpenProgreso,
 }) => {
-  const { actualizarIdentidadFacultad, actualizarIdentidadArea, isAdmin } = useAuth();
+  const { actualizarIdentidadFacultad, actualizarIdentidadArea, isAdmin, eliminarCurso, eliminarPrograma } = useAuth();
   const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
   const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
   const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({});
@@ -556,6 +557,21 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                 <span className={`text-xs font-black px-3 py-1 rounded-full border shadow-2xs ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
                                   {cursosProg.length} Cursos
                                 </span>
+                                {isAdmin() && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (window.confirm(`¿Estás seguro de eliminar el programa "${prog.nombre}"? Esta acción también eliminará sus cursos asociados.`)) {
+                                        eliminarPrograma(prog.id);
+                                      }
+                                    }}
+                                    className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all border border-stone-200 hover:border-rose-200 shadow-2xs"
+                                    title={`Eliminar Programa ${prog.nombre}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </div>
 
@@ -578,11 +594,28 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                       className={`p-4 bg-white rounded-2xl border border-stone-200 ${theme.hoverBorder} hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 group`}
                                     >
                                       <div>
-                                        <div className="flex justify-between items-start mb-2">
+                                        <div className="flex justify-between items-start mb-2 gap-2">
                                           <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
                                             {curso.codigo}
                                           </span>
-                                          {getEstadoBadge(curso.estado)}
+                                          <div className="flex items-center gap-1.5">
+                                            {getEstadoBadge(curso.estado)}
+                                            {isAdmin() && (
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (window.confirm(`¿Estás seguro de eliminar el curso "${curso.nombre}" (${curso.codigo})?`)) {
+                                                    eliminarCurso(curso.id);
+                                                  }
+                                                }}
+                                                className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200"
+                                                title={`Eliminar Curso ${curso.nombre}`}
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </button>
+                                            )}
+                                          </div>
                                         </div>
                                         <h5 className={`font-extrabold text-charcoal-900 text-sm line-clamp-2 group-hover:${theme.textPrimary} transition-colors`}>{curso.nombre}</h5>
                                       </div>

@@ -25,7 +25,8 @@ import {
   Lock,
   Unlock,
   ShieldAlert,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -61,7 +62,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onAddHours,
   onRefreshTareas,
 }) => {
-  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, forzarDesbloqueoAdmin } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, forzarDesbloqueoAdmin, eliminarCurso } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
@@ -307,12 +308,29 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
       <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col relative overflow-hidden">
         {/* Modal Top Banner */}
         <div className={`p-6 bg-gradient-to-r ${theme.bgLight} via-white to-stone-50/50 border-b ${theme.borderLight} relative shrink-0`}>
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 p-2 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-200/60 transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="absolute top-5 right-5 flex items-center gap-2">
+            {isAdmin() && esCurso && curso && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el curso "${curso.nombre}" (${curso.codigo})?`)) {
+                    eliminarCurso(curso.id);
+                    onClose();
+                  }
+                }}
+                className="p-2 rounded-full text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-all border border-transparent hover:border-rose-200"
+                title={`Eliminar curso ${curso.nombre}`}
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-200/60 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
           <div className="flex items-start gap-4 pr-8">
             <div className={`w-12 h-12 rounded-2xl ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-md shrink-0 border ${theme.badgeBorder}`}>

@@ -108,6 +108,30 @@ export default function Home() {
     loadTareas();
   }, []);
 
+  // Sincronizar y purgar tareas en memoria si un curso o proyecto es eliminado
+  useEffect(() => {
+    if (cursos.length > 0 || proyectos.length > 0) {
+      const activeCursoIds = new Set(cursos.map(c => c.id));
+      const activeProyIds = new Set(proyectos.map(p => p.id));
+      setTareas(prev => prev.filter(t => {
+        if (t.tipo_tarea === 'Curso Virtual' && t.curso_id && !activeCursoIds.has(t.curso_id)) {
+          return false;
+        }
+        if (t.tipo_tarea === 'Proyecto' && t.proyecto_id && !activeProyIds.has(t.proyecto_id)) {
+          return false;
+        }
+        return true;
+      }));
+      if (entidadProgresoSeleccionada) {
+        if (entidadProgresoSeleccionada.tipo === 'curso' && !activeCursoIds.has(entidadProgresoSeleccionada.entidad.id)) {
+          setEntidadProgresoSeleccionada(null);
+        } else if (entidadProgresoSeleccionada.tipo === 'proyecto' && !activeProyIds.has(entidadProgresoSeleccionada.entidad.id)) {
+          setEntidadProgresoSeleccionada(null);
+        }
+      }
+    }
+  }, [cursos, proyectos, entidadProgresoSeleccionada]);
+
   // Cargar comentarios al seleccionar una tarea
   useEffect(() => {
     if (tareaSeleccionada) {
