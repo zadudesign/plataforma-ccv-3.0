@@ -517,24 +517,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    const freshUsers = await fetchUsuarios();
-    if (freshUsers.length > 0) {
-      setUsuarios(freshUsers);
-    } else {
-      const rol = roles.find(r => r.id === nuevo.rol_id);
-      const usuarioCompleto: Usuario = {
-        nombre_completo: nuevo.nombre_completo,
-        email: nuevo.email,
-        rol_id: nuevo.rol_id,
-        telefono: nuevo.telefono,
-        activo: nuevo.activo !== false,
-        id: newUserId,
-        rol_nombre: rol?.nombre || 'Docente',
-        area_nombre: rol?.area_nombre || 'CURSO',
-        avatar_url: nuevo.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-      };
-      setUsuarios(prev => [usuarioCompleto, ...prev]);
+    const rol = roles.find(r => r.id === nuevo.rol_id || r.nombre.toLowerCase() === (nuevo.rol_nombre || '').toLowerCase());
+    const usuarioCompleto: Usuario = {
+      id: newUserId,
+      nombre_completo: nuevo.nombre_completo,
+      email: nuevo.email,
+      rol_id: nuevo.rol_id,
+      rol_nombre: rol?.nombre || nuevo.rol_nombre || 'Docente',
+      area_nombre: rol?.area_nombre || 'CURSO',
+      telefono: nuevo.telefono,
+      activo: nuevo.activo !== false,
+      avatar_url: nuevo.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      firma_digital: nuevo.firma_digital,
+      ultima_conexion: new Date().toISOString(),
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      const freshUsers = await fetchUsuarios();
+      if (freshUsers.length > 0) {
+        const found = freshUsers.find(u => u.id === newUserId || u.email?.toLowerCase() === nuevo.email.toLowerCase());
+        if (found) {
+          setUsuarios(freshUsers);
+        } else {
+          setUsuarios([usuarioCompleto, ...freshUsers]);
+        }
+      } else {
+        setUsuarios(prev => [usuarioCompleto, ...prev.filter(u => u.email?.toLowerCase() !== nuevo.email.toLowerCase())]);
+      }
+    } catch {
+      setUsuarios(prev => [usuarioCompleto, ...prev.filter(u => u.email?.toLowerCase() !== nuevo.email.toLowerCase())]);
     }
+
     return { success: true };
   };
 

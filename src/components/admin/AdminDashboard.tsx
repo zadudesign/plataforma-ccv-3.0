@@ -656,11 +656,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setIsUserModalOpen(true);
   };
 
-  const handleSaveUser = (datos: Omit<Usuario, 'id'> | Partial<Usuario>) => {
+  const handleSaveUser = async (datos: Omit<Usuario, 'id'> | Partial<Usuario>) => {
     if (usuarioEditar) {
-      actualizarUsuario(usuarioEditar.id, datos);
+      await actualizarUsuario(usuarioEditar.id, datos);
     } else {
-      crearUsuario(datos as Omit<Usuario, 'id'>);
+      const res = await crearUsuario(datos as Omit<Usuario, 'id'>);
+      if (res && !res.success && res.error) {
+        alert(`Error al registrar usuario: ${res.error}`);
+      }
     }
   };
 
@@ -1805,7 +1808,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 >
                                   <option value="">-- Docente --</option>
                                   {usuarios.map(u => (
-                                    <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                                    <option key={u.id} value={u.id}>
+                                      {u.nombre_completo} ({u.rol_nombre || 'Usuario'})
+                                    </option>
                                   ))}
                                 </select>
                               </div>
@@ -1819,7 +1824,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 >
                                   <option value="">-- Evaluador --</option>
                                   {usuarios.map(u => (
-                                    <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                                    <option key={u.id} value={u.id}>
+                                      {u.nombre_completo} ({u.rol_nombre || 'Usuario'})
+                                    </option>
                                   ))}
                                 </select>
                               </div>

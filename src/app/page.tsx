@@ -416,14 +416,14 @@ export default function Home() {
       }
     }
 
-    // 8. Docente / Evaluador asignado al curso de la tarea
+    // 8. Docente / Par Evaluador asignado al curso de la tarea (incluso si el usuario tiene rol principal de Decano, Coordinador u otro)
     if (t.curso_id) {
       const cursoDeTarea = cursos.find(c => c.id === t.curso_id);
       if (cursoDeTarea) {
-        if (cursoDeTarea.docente_id === usuarioActual.id && (rolNombre === 'Docente' || !t.rol_destino || t.rol_destino === 'Docente')) {
+        if (cursoDeTarea.docente_id === usuarioActual.id && (!t.rol_destino || t.rol_destino === 'Docente' || t.responsable_id === usuarioActual.id || rolNombre === 'Docente')) {
           return true;
         }
-        if (cursoDeTarea.evaluador_id === usuarioActual.id && (rolNombre === 'Par Evaluador' || !t.rol_destino || t.rol_destino === 'Par Evaluador')) {
+        if (cursoDeTarea.evaluador_id === usuarioActual.id && (!t.rol_destino || t.rol_destino === 'Par Evaluador' || t.responsable_id === usuarioActual.id || rolNombre === 'Par Evaluador')) {
           return true;
         }
       }

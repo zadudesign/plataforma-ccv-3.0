@@ -389,7 +389,9 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                   >
                     <option value="">-- Seleccionar Docente (Obligatorio) --</option>
                     {usuarios.map(u => (
-                      <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                      <option key={u.id} value={u.id}>
+                        {u.nombre_completo} ({u.rol_nombre || 'Usuario'})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -404,7 +406,9 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                   >
                     <option value="">-- Seleccionar Evaluador (Obligatorio) --</option>
                     {usuarios.map(u => (
-                      <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+                      <option key={u.id} value={u.id}>
+                        {u.nombre_completo} ({u.rol_nombre || 'Usuario'})
+                      </option>
                     ))}
                   </select>
                 </div>
