@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { X, ShieldCheck, UserCheck, Sparkles, Layers } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, ShieldCheck, UserCheck, Sparkles, Layers, Search, UserX, Mail } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface DevRoleSimulatorModalProps {
@@ -10,8 +10,21 @@ interface DevRoleSimulatorModalProps {
 
 export const DevRoleSimulatorModal: React.FC<DevRoleSimulatorModalProps> = ({ onClose }) => {
   const { usuarios, usuarioActual, cambiarUsuarioSimulado, isRealAdmin } = useAuth();
+  const [busqueda, setBusqueda] = useState('');
 
   if (!isRealAdmin()) return null;
+
+  const usuariosFiltrados = useMemo(() => {
+    const q = busqueda.toLowerCase().trim();
+    if (!q) return usuarios;
+    return usuarios.filter((usr) => {
+      const matchNombre = usr.nombre_completo.toLowerCase().includes(q);
+      const matchEmail = usr.email?.toLowerCase().includes(q);
+      const matchRol = usr.rol_nombre?.toLowerCase().includes(q);
+      const matchArea = usr.area_nombre?.toLowerCase().includes(q);
+      return matchNombre || matchEmail || matchRol || matchArea;
+    });
+  }, [usuarios, busqueda]);
 
   const handleSelect = (id: string) => {
     cambiarUsuarioSimulado(id);
@@ -20,15 +33,18 @@ export const DevRoleSimulatorModal: React.FC<DevRoleSimulatorModalProps> = ({ on
 
   return (
     <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 relative">
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 relative flex flex-col max-h-[90vh]">
+        {/* Botón de Cierre */}
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all"
+          title="Cerrar modal"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
+        {/* Encabezado */}
+        <div className="flex items-center gap-3 mb-4 shrink-0">
           <div className="w-10 h-10 rounded-2xl bg-coral-50 text-coral-600 flex items-center justify-center shadow-sm">
             <Sparkles className="w-6 h-6" />
           </div>
@@ -40,52 +56,108 @@ export const DevRoleSimulatorModal: React.FC<DevRoleSimulatorModalProps> = ({ on
           </div>
         </div>
 
-        <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-          {usuarios.map((usr) => {
-            const isSelected = usuarioActual?.id === usr.id;
-            return (
+        {/* Barra de Búsqueda Rápida */}
+        <div className="shrink-0 space-y-2 mb-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-3 pointer-events-none" />
+            <input
+              type="text"
+              autoFocus
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por nombre, correo, rol o área..."
+              className="w-full pl-10 pr-9 py-2.5 bg-cream-50/80 border border-stone-200 rounded-2xl text-xs font-semibold text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:bg-white transition-all shadow-2xs"
+            />
+            {busqueda && (
               <button
-                key={usr.id}
-                onClick={() => handleSelect(usr.id)}
-                className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between text-left ${
-                  isSelected
-                    ? 'bg-sage-50 border-sage-500 shadow-sm'
-                    : 'bg-cream-50 hover:bg-cream-100 border-stone-200/80'
-                }`}
+                onClick={() => setBusqueda('')}
+                className="absolute right-3 top-2.5 p-0.5 text-charcoal-400 hover:text-charcoal-700 rounded-full hover:bg-stone-200/60 transition-colors"
+                title="Limpiar búsqueda"
               >
-                <div className="flex items-center gap-3">
-                  <img
-                    src={usr.avatar_url}
-                    alt={usr.nombre_completo}
-                    className="w-10 h-10 rounded-full object-cover border border-stone-200"
-                  />
-                  <div>
-                    <h4 className="text-xs font-black text-charcoal-900 flex items-center gap-2">
-                      {usr.nombre_completo}
-                      {isSelected && (
-                        <span className="text-[10px] bg-sage-600 text-white px-2 py-0.5 rounded-full font-bold">
-                          ACTIVO
-                        </span>
-                      )}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-bold bg-sage-100 text-sage-800 px-2 py-0.5 rounded-full border border-sage-200">
-                        {usr.rol_nombre}
-                      </span>
-                      <span className="text-[10px] font-mono text-charcoal-500 flex items-center gap-1">
-                        <Layers className="w-3 h-3" /> Area: {usr.area_nombre || 'CURSO'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <UserCheck className={`w-5 h-5 ${isSelected ? 'text-sage-600' : 'text-stone-300'}`} />
+                <X className="w-4 h-4" />
               </button>
-            );
-          })}
+            )}
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-charcoal-500 px-1 font-medium">
+            <span>
+              Mostrando <strong className="text-sage-700 font-bold">{usuariosFiltrados.length}</strong> de {usuarios.length} usuarios
+            </span>
+            {busqueda && (
+              <button
+                onClick={() => setBusqueda('')}
+                className="text-sage-600 hover:text-sage-800 font-bold hover:underline"
+              >
+                Limpiar filtro
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="mt-5 pt-3 border-t border-stone-100 text-right">
+        {/* Listado de Usuarios */}
+        <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+          {usuariosFiltrados.length === 0 ? (
+            <div className="p-8 text-center bg-cream-50/50 rounded-2xl border border-dashed border-stone-200 space-y-2 my-2 animate-fadeIn">
+              <UserX className="w-8 h-8 text-charcoal-300 mx-auto" />
+              <p className="text-xs font-bold text-charcoal-700">
+                No se encontraron usuarios para "{busqueda}"
+              </p>
+              <p className="text-[11px] text-charcoal-400">
+                Intenta buscar por otro nombre, rol o correo institucional.
+              </p>
+            </div>
+          ) : (
+            usuariosFiltrados.map((usr) => {
+              const isSelected = usuarioActual?.id === usr.id;
+              return (
+                <button
+                  key={usr.id}
+                  onClick={() => handleSelect(usr.id)}
+                  className={`w-full p-3 rounded-2xl border transition-all flex items-center justify-between text-left group ${
+                    isSelected
+                      ? 'bg-sage-50/90 border-sage-500 shadow-sm ring-1 ring-sage-400/50'
+                      : 'bg-cream-50/70 hover:bg-cream-100/90 border-stone-200/80 hover:border-stone-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={usr.avatar_url}
+                      alt={usr.nombre_completo}
+                      className="w-10 h-10 rounded-full object-cover border border-stone-200 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black text-charcoal-900 flex items-center gap-2 truncate">
+                        <span className="truncate">{usr.nombre_completo}</span>
+                        {isSelected && (
+                          <span className="text-[9px] bg-sage-600 text-white px-2 py-0.5 rounded-full font-extrabold shrink-0">
+                            ACTIVO
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-[11px] text-charcoal-500 truncate flex items-center gap-1 mt-0.5">
+                        <Mail className="w-3 h-3 shrink-0 text-charcoal-400" />
+                        <span className="truncate">{usr.email}</span>
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        <span className="text-[9px] font-bold bg-sage-100 text-sage-800 px-2 py-0.5 rounded-full border border-sage-200">
+                          {usr.rol_nombre}
+                        </span>
+                        <span className="text-[9px] font-mono text-charcoal-500 flex items-center gap-1 bg-white px-2 py-0.5 rounded-full border border-stone-200">
+                          <Layers className="w-2.5 h-2.5 text-charcoal-400" /> {usr.area_nombre || 'CURSO'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <UserCheck className={`w-5 h-5 shrink-0 ml-2 ${isSelected ? 'text-sage-600' : 'text-stone-300 group-hover:text-stone-400'}`} />
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-4 pt-3 border-t border-stone-100 text-right shrink-0">
           <button
             onClick={onClose}
             className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-charcoal-800 text-xs font-bold rounded-full transition-all"
