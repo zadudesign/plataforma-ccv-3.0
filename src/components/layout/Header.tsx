@@ -173,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={onOpenCreateTask}
                 id="btn-header-nueva-tarea"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 cursor-pointer"
-                title="Crear nueva tarea en la plataforma CCV"
+                title="Crear nueva tarea en la plataforma"
               >
                 <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
                 <span>Nueva Tarea</span>
@@ -184,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onOpenTaskRequest}
               id="btn-header-solicitar-tarea"
               className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
-              title="Solicitar nueva tarea o requerimiento al CCV"
+              title="Solicitar nueva tarea o requerimiento institucional"
             >
               <FilePlus className="w-4 h-4 stroke-[2.5] text-sky-400" />
               <span>Solicitar Tarea</span>

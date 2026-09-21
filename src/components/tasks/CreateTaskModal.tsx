@@ -102,9 +102,9 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-cream-50/60">
           <div>
             <h3 className="text-xl font-extrabold text-charcoal-900 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-sage-600" /> Nueva Tarea de Producción CCV
+              <Plus className="w-5 h-5 text-sage-600" /> Nueva Tarea de Producción
             </h3>
-            <p className="text-xs text-charcoal-500 mt-0.5">Asignación de entregables pedagógicos y proyectos CCV con vinculación de responsables.</p>
+            <p className="text-xs text-charcoal-500 mt-0.5">Asignación de entregables pedagógicos y proyectos con vinculación de responsables.</p>
           </div>
           <button
             onClick={onClose}
@@ -380,7 +380,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               type="submit"
               className="px-6 py-2.5 rounded-full bg-slate-800 text-white font-bold hover:bg-slate-900 shadow-md transition-all scale-100 hover:scale-105 active:scale-95"
             >
-              Crear Tarea CCV
+              Crear Tarea
             </button>
           </div>
         </form>

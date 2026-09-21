@@ -192,7 +192,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
         <div>
           <h2 className="text-2xl font-extrabold text-charcoal-900 flex items-center gap-2">
             <Building2 className="w-7 h-7 text-sage-600" />
-            Estructura Académica e Institucional CCV
+            Estructura Académica e Institucional
           </h2>
           <p className="text-sm text-charcoal-500 mt-1">
             Organización jerárquica de Facultades, Programas y Proyectos clasificados por sus Departamentos asignados.
@@ -370,7 +370,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                         <DynamicLucideIcon name={deptIcono} className="w-4 h-4" />
                                       </div>
                                       <span className={`text-[10px] font-mono font-black border px-2.5 py-0.5 rounded-md ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
-                                        PROYECTO CCV
+                                        PROYECTO
                                       </span>
                                     </div>
                                     {getEstadoBadge(proy.estado)}

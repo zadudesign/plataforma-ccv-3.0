@@ -20,7 +20,7 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ usuarioActual }) =
           <span>Work Management Platform</span>
         </div>
         <h2 className="text-2xl md:text-3xl font-black text-white">
-          ¡Hola, {usuarioActual?.nombre_completo || 'Usuario CCV'}!
+          ¡Hola, {usuarioActual?.nombre_completo || 'Usuario'}!
         </h2>
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
           Resumen en tiempo real del desarrollo académico, producción de contenidos virtuales y tareas colaborativas del equipo.
@@ -31,7 +31,7 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ usuarioActual }) =
       <div className="hidden sm:flex items-center justify-center shrink-0 pr-2 z-10">
         <img 
           src="/logo-white.svg" 
-          alt="Plataforma CCV" 
+          alt="PrismaLab" 
           className="h-16 md:h-20 w-auto max-w-[240px] md:max-w-[300px] object-contain opacity-95 drop-shadow-md transition-transform hover:scale-105 duration-200" 
         />
       </div>

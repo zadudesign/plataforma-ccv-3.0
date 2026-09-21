@@ -53,12 +53,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual, t
     requiresCmuOrAdmin?: boolean;
   }[] = [
     { id: 'dashboard', label: 'Métricas Institucionales', icon: <LayoutGrid className="w-5 h-5" /> },
-    { id: 'calendar', label: 'Calendario de Entregas & Vencimientos CCV', icon: <Calendar className="w-5 h-5" /> },
-    { id: 'kanban', label: 'Tablero Kanban de Producción CCV', icon: <Kanban className="w-5 h-5" /> },
+    { id: 'calendar', label: 'Calendario de Entregas & Vencimientos', icon: <Calendar className="w-5 h-5" /> },
+    { id: 'kanban', label: 'Tablero Kanban de Producción', icon: <Kanban className="w-5 h-5" /> },
     { id: 'parrilla', label: 'Parrilla de Contenidos & Calendario Editorial (CMU)', icon: <CalendarDays className="w-5 h-5" />, requiresCmuOrAdmin: true },
     { id: 'productivity', label: 'Panel de Productividad y Control de Entregas', icon: <TrendingUp className="w-5 h-5" /> },
-    { id: 'academic', label: 'Estructura Académica e Institucional CCV', icon: <FolderTree className="w-5 h-5" /> },
-    { id: 'admin', label: 'Panel de Administración RBAC & Asignaciones CCV', icon: <ShieldCheck className="w-5 h-5" />, requiresAdmin: true },
+    { id: 'academic', label: 'Estructura Académica e Institucional', icon: <FolderTree className="w-5 h-5" /> },
+    { id: 'admin', label: 'Panel de Administración RBAC & Asignaciones', icon: <ShieldCheck className="w-5 h-5" />, requiresAdmin: true },
   ];
 
   // Filter items based on user role (Admin section is exclusive to Admin; Parrilla is exclusive to Admin & CMU)
@@ -69,15 +69,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual, t
   });
 
   return (
-    <aside className="fixed left-6 top-6 bottom-6 w-20 flex flex-col items-center justify-between py-6 ccv-pill-sidebar z-40 bg-white">
-      {/* Top Logo */}
-      <div className="flex flex-col items-center space-y-2">
+    <aside className="fixed left-6 top-6 bottom-6 w-18 bg-white rounded-3xl border border-stone-200/80 shadow-xl flex flex-col items-center py-6 justify-between z-30 font-sans">
+      {/* Top Logo / Isotipo */}
+      <div className="flex flex-col items-center gap-6">
         <button 
           onClick={() => setVistaActual('dashboard')}
-          className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center p-2 text-sky-600 hover:bg-sky-50 transition-all shadow-2xs border border-slate-200/80 hover:scale-105 active:scale-95"
-          title="Plataforma CCV 3.0"
+          className="p-2 rounded-2xl bg-cream-100/80 hover:bg-cream-200/80 transition-colors shadow-2xs group cursor-pointer"
+          title="PrismaLab v3.0"
         >
-          <img src="/isotipo.svg" alt="CCV" className="w-9 h-9 object-contain drop-shadow-xs" />
+          <img src="/isotipo.svg" alt="PrismaLab" className="w-9 h-9 object-contain drop-shadow-xs" />
         </button>
       </div>
 

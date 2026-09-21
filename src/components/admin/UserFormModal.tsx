@@ -184,7 +184,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
           </div>
           <div>
             <h3 className="text-lg font-black text-charcoal-900">
-              {usuarioEditar ? 'Editar Perfil de Usuario' : 'Registrar Nuevo Usuario CCV'}
+              {usuarioEditar ? 'Editar Perfil de Usuario' : 'Registrar Nuevo Usuario'}
             </h3>
             <p className="text-xs text-charcoal-500">
               {usuarioEditar

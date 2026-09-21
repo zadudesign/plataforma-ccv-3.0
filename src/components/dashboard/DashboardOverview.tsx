@@ -587,7 +587,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-sky-600 transition-colors"
               >
                 <FilePlus className="w-3.5 h-3.5 text-sky-600" />
-                <span>+ Solicitar tarea al CCV</span>
+                <span>+ Solicitar tarea</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : null}

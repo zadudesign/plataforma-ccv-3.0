@@ -84,11 +84,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onGoToLog
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center mb-3">
-            <img src="/logo.svg" alt="Plataforma CCV 3.0" className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm" />
+            <img src="/logo.svg" alt="PrismaLab" className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Registro de Usuario</h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Crea tu cuenta institucional en Plataforma CCV 3.0
+            Crea tu cuenta institucional en PrismaLab
           </p>
         </div>
 
@@ -159,7 +159,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onGoToLog
                 <option value="" disabled>-- Selecciona el Rol Requerido --</option>
                 {roles.map(rol => (
                   <option key={rol.id} value={rol.id}>
-                    {rol.nombre} (Área: {rol.area_nombre || 'CCV'})
+                    {rol.nombre} (Área: {rol.area_nombre || 'General'})
                   </option>
                 ))}
               </select>
@@ -243,7 +243,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onGoToLog
           )}
 
           <span className="text-[11px] text-charcoal-400 font-medium">
-            CCV • Universidad
+            PrismaLab • Work Management Platform
           </span>
         </div>
       </div>

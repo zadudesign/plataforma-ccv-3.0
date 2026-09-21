@@ -61,7 +61,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onClos
           <div>
             <h3 className="text-lg font-black text-charcoal-900">Recuperar Contraseña</h3>
             <p className="text-xs text-charcoal-500 font-medium">
-              Plataforma Institucional CCV 3.0
+              PrismaLab v3.0
             </p>
           </div>
         </div>
@@ -128,7 +128,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onClos
             <div>
               <h4 className="text-base font-extrabold text-charcoal-900">¡Instrucciones Enviadas!</h4>
               <p className="text-xs text-charcoal-500 mt-1">
-                Hemos procesado la solicitud para <strong className="text-charcoal-800">{email}</strong>. Revisa tu bandeja de entrada o contáctate con el Administrador CCV si requieres asistencia directa.
+                Hemos procesado la solicitud para <strong className="text-charcoal-800">{email}</strong>. Revisa tu bandeja de entrada o contáctate con el Administrador si requieres asistencia directa.
               </p>
             </div>
 

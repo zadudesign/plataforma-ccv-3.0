@@ -47,7 +47,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center mb-3">
-            <img src="/logo.svg" alt="Plataforma CCV 3.0" className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm" />
+            <img src="/logo.svg" alt="PrismaLab" className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm" />
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
             Sistema de Gestión de Cursos Virtuales & Control RBAC
@@ -127,7 +127,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         {/* Footer */}
         <div className="mt-6 pt-4 border-t border-stone-100 text-center">
           <p className="text-[11px] text-charcoal-400 font-medium">
-            Centro de Educación Virtual (CCV) • Universidad
+            PrismaLab • Work Management Platform
           </p>
         </div>
       </div>

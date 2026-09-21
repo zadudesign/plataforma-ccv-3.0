@@ -1,18 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, 
-  Users, 
-  Layers, 
-  Key, 
+import {
+  ShieldCheck,
+  Users,
+  Layers,
+  Key,
   KeyRound,
-  Plus, 
-  Edit, 
-  Trash2, 
-  CheckCircle, 
-  Search, 
-  UserCheck, 
+  Plus,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Search,
+  UserCheck,
   UserX,
   Sparkles,
   GraduationCap,
@@ -75,8 +75,8 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
 }) => {
   const subareas = allAreas.filter(a => a.parent_id === area.id);
   const rolesArea = roles.filter(r => r.area_id === area.id || r.area_nombre === area.nombre);
-  const usuariosArea = usuarios.filter(u => 
-    rolesArea.some(r => r.id === u.rol_id) || 
+  const usuariosArea = usuarios.filter(u =>
+    rolesArea.some(r => r.id === u.rol_id) ||
     u.area_nombre === area.nombre
   );
   const proyectosArea = proyectos.filter(p => p.area_id === area.id);
@@ -503,7 +503,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroArea, setFiltroArea] = useState<string>('todos');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
-  
+
   // Ordenamiento dinámico de usuarios por columna
   const [ordenCampo, setOrdenCampo] = useState<'nombre' | 'email' | 'rol' | 'area' | 'conexion' | 'estado'>('conexion');
   const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('desc');
@@ -565,7 +565,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         matchArea = areaObj?.nivel === nivel;
       } else {
         matchArea = u.area_nombre?.toLowerCase() === filtroArea.toLowerCase() ||
-                    areas.some(a => a.id === filtroArea && a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
+          areas.some(a => a.id === filtroArea && a.nombre.toLowerCase() === u.area_nombre?.toLowerCase());
       }
     }
 
@@ -843,11 +843,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div
               key={cat.id}
               onClick={() => handleSelectCategoria(cat.id)}
-              className={`cursor-pointer text-left p-4 rounded-3xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${
-                isActiva
+              className={`cursor-pointer text-left p-4 rounded-3xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${isActiva
                   ? 'bg-white border-charcoal-900 shadow-md ring-2 ring-charcoal-900/10'
                   : 'bg-cream-50/70 border-stone-200/90 hover:bg-white hover:border-stone-300 hover:shadow-xs'
-              }`}
+                }`}
             >
               {/* Indicador de acento superior activo */}
               {isActiva && (
@@ -857,17 +856,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
-                      isActiva
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${isActiva
                         ? 'bg-charcoal-900 text-white shadow-xs'
                         : 'bg-white text-charcoal-700 border border-stone-200 group-hover:bg-cream-100'
-                    }`}>
+                      }`}>
                       <Icono className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className={`text-sm font-black tracking-tight ${
-                        isActiva ? 'text-charcoal-900' : 'text-charcoal-800'
-                      }`}>
+                      <h3 className={`text-sm font-black tracking-tight ${isActiva ? 'text-charcoal-900' : 'text-charcoal-800'
+                        }`}>
                         {cat.titulo}
                       </h3>
                       <p className="text-[11px] text-charcoal-500 mt-0.5 line-clamp-1">
@@ -882,11 +879,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       {cat.alertaCount} pendientes
                     </span>
                   ) : cat.badge ? (
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${
-                      isActiva
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${isActiva
                         ? 'bg-sage-50 text-sage-800 border-sage-200'
                         : 'bg-white text-charcoal-600 border-stone-200'
-                    }`}>
+                      }`}>
                       {cat.badge}
                     </span>
                   ) : null}
@@ -906,13 +902,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           setCategoriaActiva(cat.id);
                           setPestana(sp.id);
                         }}
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 ${
-                          isEstaPestanaActiva
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 ${isEstaPestanaActiva
                             ? 'bg-charcoal-900 text-white shadow-xs font-black'
                             : isActiva
                               ? 'bg-cream-100 hover:bg-stone-200 text-charcoal-700'
                               : 'bg-white hover:bg-cream-100 text-charcoal-600 border border-stone-200/80'
-                        }`}
+                          }`}
                       >
                         <SpIcon className={`w-3 h-3 ${isEstaPestanaActiva ? 'text-sage-300' : 'text-charcoal-500'}`} />
                         <span>{sp.titulo}</span>
@@ -942,20 +937,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   key={sub.id}
                   onClick={() => setPestana(sub.id)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${
-                    isSubActiva
+                  className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 ${isSubActiva
                       ? 'bg-charcoal-900 text-white shadow-sm ring-1 ring-charcoal-950'
                       : 'bg-cream-50 hover:bg-cream-100 text-charcoal-700 border border-stone-200/80 hover:text-charcoal-900'
-                  }`}
+                    }`}
                 >
                   <SubIcono className={`w-4 h-4 ${isSubActiva ? 'text-sage-300' : 'text-sage-600'}`} />
                   <span>{sub.titulo}</span>
                   {sub.badge !== undefined && (
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                      isSubActiva
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isSubActiva
                         ? 'bg-charcoal-800 text-cream-200'
                         : sub.badgeClass || 'bg-stone-200/70 text-charcoal-700'
-                    }`}>
+                      }`}>
                       {sub.badge}
                     </span>
                   )}
@@ -1189,8 +1182,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-cream-100/70 border-b border-stone-200 text-charcoal-600 font-extrabold uppercase tracking-wider">
-                  <th 
-                    onClick={() => handleToggleOrden('nombre')} 
+                  <th
+                    onClick={() => handleToggleOrden('nombre')}
                     className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
                     title="Ordenar por nombre alfabético"
                   >
@@ -1203,8 +1196,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       )}
                     </div>
                   </th>
-                  <th 
-                    onClick={() => handleToggleOrden('email')} 
+                  <th
+                    onClick={() => handleToggleOrden('email')}
                     className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
                     title="Ordenar por correo electrónico"
                   >
@@ -1217,8 +1210,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       )}
                     </div>
                   </th>
-                  <th 
-                    onClick={() => handleToggleOrden('rol')} 
+                  <th
+                    onClick={() => handleToggleOrden('rol')}
                     className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
                     title="Ordenar por rol asignado"
                   >
@@ -1231,8 +1224,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       )}
                     </div>
                   </th>
-                  <th 
-                    onClick={() => handleToggleOrden('area')} 
+                  <th
+                    onClick={() => handleToggleOrden('area')}
                     className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
                     title="Ordenar por área asignada"
                   >
@@ -1245,8 +1238,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       )}
                     </div>
                   </th>
-                  <th 
-                    onClick={() => handleToggleOrden('conexion')} 
+                  <th
+                    onClick={() => handleToggleOrden('conexion')}
                     className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
                     title="Ordenar por fecha de última conexión"
                   >
@@ -1260,8 +1253,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       )}
                     </div>
                   </th>
-                  <th 
-                    onClick={() => handleToggleOrden('estado')} 
+                  <th
+                    onClick={() => handleToggleOrden('estado')}
                     className="py-3.5 px-4 cursor-pointer hover:bg-cream-200/80 transition-colors select-none group"
                     title="Ordenar por estado activo/inactivo"
                   >
@@ -1333,7 +1326,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </td>
                         {/* Columna: Última Conexión con Sombrado por Inactividad (>8d naranja, >15d rojo) */}
                         <td className={`py-3 px-4 transition-colors ${infoConexion.cellClass || ''}`}>
-                          <div 
+                          <div
                             className="flex items-center gap-2"
                             title={infoConexion.fechaCompleta ? `Último ingreso: ${infoConexion.fechaCompleta}` : undefined}
                           >
@@ -1449,11 +1442,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-stone-200/60">
               <button
                 onClick={() => setFiltroAreaAsignaciones('todas')}
-                className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-all ${
-                  filtroAreaAsignaciones === 'todas'
+                className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-all ${filtroAreaAsignaciones === 'todas'
                     ? 'bg-charcoal-900 text-white shadow-xs'
                     : 'bg-white text-charcoal-700 hover:bg-cream-100 border border-stone-200'
-                }`}
+                  }`}
               >
                 Todas ({facultades.length} Fac. / {programas.length} Prog. / {cursos.length} Cur. / {proyectos.length} Proy.)
               </button>
@@ -1463,11 +1455,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <button
                     key={a.id}
                     onClick={() => setFiltroAreaAsignaciones(a.nombre)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 ${
-                      isSelected
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 ${isSelected
                         ? 'bg-sage-700 text-white shadow-xs'
                         : 'bg-white text-charcoal-700 hover:bg-cream-100 border border-stone-200'
-                    }`}
+                      }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-sage-500"></span>
                     <span>{a.nombre}</span>

@@ -22,25 +22,25 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[84px] sm:min-h-[92px] py-2 flex items-center justify-between">
         
-        {/* Left: Brand / Isotipo + Logotipo Oficial de la Plataforma CCV & PrismaLab */}
+        {/* Left: Brand / Isotipo + Logotipo Oficial de PrismaLab */}
         <div 
           onClick={() => scrollToSection('inicio')} 
           className="flex items-center gap-3.5 cursor-pointer group select-none"
         >
-          {/* Isotipo oficial CCV */}
+          {/* Isotipo oficial */}
           <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-white border border-slate-200/90 p-2 flex items-center justify-center shadow-2xs group-hover:scale-105 group-hover:border-sky-300 transition-all duration-200">
             <img 
               src="/isotipo.svg" 
-              alt="Isotipo Plataforma CCV" 
+              alt="Isotipo PrismaLab" 
               className="w-full h-full object-contain drop-shadow-xs" 
             />
           </div>
           
-          {/* Logotipo institucional CCV */}
+          {/* Logotipo institucional */}
           <div className="flex items-center gap-3">
             <img 
               src="/logo.svg" 
-              alt="Logo Plataforma CCV" 
+              alt="Logo PrismaLab" 
               className="h-10 sm:h-12 w-auto object-contain drop-shadow-2xs group-hover:opacity-95 transition-opacity" 
             />
 

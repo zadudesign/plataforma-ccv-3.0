@@ -433,8 +433,8 @@ export const ContentModal: React.FC<ContentModalProps> = ({
             <label htmlFor="chk-vincular-tarea" className="cursor-pointer select-none">
               <span className="font-extrabold text-sky-950 block">
                 {publicacionAEditar?.tarea_vinculada_id 
-                  ? '✅ Vinculada con Tarea de Producción CCV' 
-                  : 'Crear automáticamente una Tarea CCV vinculada'}
+                  ? '✅ Vinculada con Tarea de Producción' 
+                  : 'Crear automáticamente una Tarea vinculada'}
               </span>
               <span className="text-[11px] text-sky-700 block mt-0.5">
                 Genera una tarjeta en el Tablero Kanban del área de {formato.includes('Video') || canal === 'YouTube' ? 'Multimedia' : 'Diseño'} para coordinar las horas y entregas de este post.

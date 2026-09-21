@@ -4,7 +4,7 @@ import { AppProviders } from '@/components/providers/AppProviders';
 
 export const metadata: Metadata = {
   title: 'Prisma LAB - Ecosistema Integral de Gestión de Flujos de Trabajo y Operaciones',
-  description: 'Sistema integral full-stack para la gestión, control, producción y supervisión de cursos virtuales y diseño instruccional del Centro de Educación Virtual.',
+  description: 'Sistema integral full-stack para la gestión, control, producción y supervisión de cursos virtuales, iniciativas institucionales y diseño instruccional.',
   icons: {
     icon: '/isotipo.svg',
     shortcut: '/isotipo.svg',

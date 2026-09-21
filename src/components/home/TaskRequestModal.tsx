@@ -52,13 +52,13 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
     a.nombre.toLowerCase() === (usuarioActual?.area_nombre || '').toLowerCase() || 
     (usuarioRol?.area_id && a.id === usuarioRol.area_id)
   );
-  const areaNombre = usuarioArea?.nombre || usuarioActual?.area_nombre || 'Centro de Educación Virtual CCV';
+  const areaNombre = usuarioArea?.nombre || usuarioActual?.area_nombre || 'PrismaLab';
   
   const getNivelJerarquia = () => {
     if (!usuarioArea) return 'Área Institucional';
     switch (usuarioArea.nivel) {
       case 6: return 'Nivel 6 • Dirección / Admin';
-      case 5: return 'Nivel 5 • Unidad CCV';
+      case 5: return 'Nivel 5 • Unidad Institucional';
       case 4: return 'Nivel 4 • Departamento';
       case 3: return 'Nivel 3 • Facultad';
       case 2: return 'Nivel 2 • Programa';
@@ -138,7 +138,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
         solicitante_nombre: usuarioActual.nombre_completo.trim(),
         solicitante_email: usuarioActual.email || null,
         solicitante_rol: rolNombre,
-        solicitante_contacto: usuarioActual.telefono || usuarioActual.email || 'Plataforma CCV',
+        solicitante_contacto: usuarioActual.telefono || usuarioActual.email || 'PrismaLab',
         enlace_recurso: null,
         prioridad,
         estado: 'Pendiente' as const
@@ -147,7 +147,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
       const result = await enviarSolicitudTarea(payload);
 
       if (result.success && result.data) {
-        const radicadoCode = `RAD-CCV-${result.data.id.slice(0, 8).toUpperCase()}`;
+        const radicadoCode = `RAD-${result.data.id.slice(0, 8).toUpperCase()}`;
         setRadicadoExitoso(radicadoCode);
       } else {
         setErrorMsg(result.error || 'Ocurrió un error al registrar la solicitud en la base de datos.');
@@ -183,13 +183,13 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
-                  <span>Solicitud de Tarea CCV</span>
+                  <span>Solicitud de Tarea</span>
                   <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-extrabold text-[10px] border border-sky-400/30">
                     Institucional
                   </span>
                 </h2>
                 <p className="text-xs text-slate-300 font-medium">
-                  Radica tu requerimiento al Centro de Educación Virtual
+                  Radica tu requerimiento en la plataforma institucional
                 </p>
               </div>
             </div>
@@ -221,7 +221,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
                   ¡Solicitud Radicada con Éxito!
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                  Tu requerimiento ha sido registrado en la base de datos de la plataforma para la revisión y asignación del Administrador del CCV.
+                  Tu requerimiento ha sido registrado en la base de datos de la plataforma para la revisión y asignación del Administrador.
                 </p>
               </div>
 
@@ -371,7 +371,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
                     rows={4}
                     value={descripcion}
                     onChange={(e) => setDescripcion(e.target.value)}
-                    placeholder="Describe los objetivos, entregables esperados, recursos disponibles o especificaciones técnicas para el CCV..."
+                    placeholder="Describe los objetivos, entregables esperados, recursos disponibles o especificaciones técnicas para el equipo..."
                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white shadow-2xs resize-none transition-all placeholder:text-slate-400"
                   />
                 </div>
@@ -467,7 +467,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
                   ) : (
                     <>
                       <Send className="w-3.5 h-3.5 text-sky-400" />
-                      <span>Radicar Solicitud al CCV</span>
+                      <span>Radicar Solicitud</span>
                     </>
                   )}
                 </button>

@@ -167,7 +167,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
     const ok = await actualizarEstadoSolicitud(
       solicitudSeleccionada.id,
       'Rechazada',
-      motivoRechazo.trim() || 'No viable o fuera del alcance del CCV'
+      motivoRechazo.trim() || 'No viable o fuera del alcance institucional'
     );
 
     setIsProcessing(false);
@@ -238,7 +238,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   // Helper para enlace de WhatsApp
   const getWhatsAppLink = (contacto: string, nombre: string, titulo: string) => {
     const cleaned = contacto.replace(/[^0-9]/g, '');
-    const text = encodeURIComponent(`Hola ${nombre}, te saludamos desde el Centro de Educación Virtual (CCV) con respecto a tu solicitud "${titulo}".`);
+    const text = encodeURIComponent(`Hola ${nombre}, te saludamos desde PrismaLab con respecto a tu solicitud "${titulo}".`);
     return `https://wa.me/${cleaned}?text=${text}`;
   };
 
@@ -565,7 +565,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black tracking-tight">Aprobar y Asignar Tarea CCV</h3>
+                  <h3 className="text-base font-black tracking-tight">Aprobar y Asignar Tarea</h3>
                   <p className="text-[11px] text-white/80">Convierte esta solicitud en una tarea formal</p>
                 </div>
               </div>

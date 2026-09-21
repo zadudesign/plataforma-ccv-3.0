@@ -25,20 +25,20 @@ export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
           {/* Brand & Slogan Column */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3.5">
-              {/* Isotipo CCV */}
+              {/* Isotipo */}
               <div className="w-11 h-11 rounded-2xl bg-slate-800 border border-slate-700 p-2 flex items-center justify-center shadow-sm">
                 <img 
                   src="/isotipo.svg" 
-                  alt="Isotipo Plataforma CCV" 
+                  alt="Isotipo PrismaLab" 
                   className="w-full h-full object-contain" 
                 />
               </div>
 
-              {/* Logo Blanco CCV */}
+              {/* Logo Blanco */}
               <div className="flex items-center gap-2.5">
                 <img 
                   src="/logo-white.svg" 
-                  alt="Logo Plataforma CCV" 
+                  alt="Logo PrismaLab" 
                   className="h-9 sm:h-10 w-auto object-contain drop-shadow-sm" 
                 />
                 <span className="px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 font-extrabold text-[10px] border border-sky-800">
@@ -119,7 +119,7 @@ export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
               </li>
               <li className="flex items-center gap-2.5">
                 <Globe className="w-4 h-4 text-sky-400 shrink-0" />
-                <span>Centro de Educación Virtual (CCV)</span>
+                <span>PrismaLab - Work Management Platform</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -137,7 +137,7 @@ export const HomeFooter: React.FC<HomeFooterProps> = ({ onOpenLogin }) => {
         {/* Bottom Credits Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500 font-medium">
           <p>
-            © {new Date().getFullYear()} PrismaLab • Centro de Educación Virtual (CCV). Todos los derechos reservados.
+            © {new Date().getFullYear()} PrismaLab • Work Management Platform. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-2 text-slate-400">
             <span>Diseñado con rigor metodológico para la excelencia académica y técnica</span>

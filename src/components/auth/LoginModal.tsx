@@ -83,7 +83,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
           <div className="inline-flex items-center justify-center mb-3">
             <img 
               src="/logo.svg" 
-              alt="Plataforma CCV 3.0" 
+              alt="PrismaLab" 
               className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm" 
             />
           </div>
@@ -185,7 +185,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
         {/* Footer */}
         <div className="mt-6 pt-4 border-t border-slate-100 text-center flex flex-col items-center gap-1">
           <p className="text-[11px] text-slate-500 font-medium">
-            Centro de Educación Virtual (CCV) • Universidad
+            PrismaLab • Work Management Platform
           </p>
           <span className="text-[10px] text-slate-400 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-sky-500" /> Sistema seguro con autenticación Supabase y cifrado SSL

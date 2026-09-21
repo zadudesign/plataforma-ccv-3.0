@@ -98,7 +98,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       tareaId: tarea.id,
       tareaTitulo: tarea.titulo,
       tipoTarea: tarea.tipo_tarea,
-      proyectoNombre: tarea.proyecto_nombre || tarea.curso_nombre || 'Proyecto CCV',
+      proyectoNombre: tarea.proyecto_nombre || tarea.curso_nombre || 'Proyecto',
       startTime: Date.now(),
       esResponsableSecundario,
       responsableId: esResponsableSecundario ? tarea.responsable_secundario_id : (tarea.responsable_id || usuarioActual?.id),

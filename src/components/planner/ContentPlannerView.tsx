@@ -282,7 +282,7 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Planifica, programa y monitorea la producción de contenidos multicanal sincronizados con proyectos y cursos CCV.
+            Planifica, programa y monitorea la producción de contenidos multicanal sincronizados con proyectos y cursos.
           </p>
         </div>
 

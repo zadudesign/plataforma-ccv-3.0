@@ -121,7 +121,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-charcoal-900 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-sage-600" />
-            Tablero Kanban de Producción CCV
+            Tablero Kanban de Producción
           </h2>
           <p className="text-xs text-charcoal-500 mt-0.5">
             Tareas ordenadas cronológicamente de la más próxima a vencer a la última en vencer, agrupadas por día y por estados del flujo.

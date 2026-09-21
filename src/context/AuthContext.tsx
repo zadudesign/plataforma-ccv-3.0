@@ -316,7 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (dbUser) {
             const parsedUser: Usuario = {
               id: dbUser.id,
-              nombre_completo: dbUser.nombre_completo || data.user.email || 'Usuario CCV',
+              nombre_completo: dbUser.nombre_completo || data.user.email || 'Usuario',
               email: dbUser.email || email,
               rol_id: dbUser.rol_id,
               rol_nombre: dbUser.roles?.nombre || 'Docente',
@@ -335,7 +335,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             establecerUsuarioAutenticado({
               id: data.user.id,
-              nombre_completo: data.user.user_metadata?.nombre_completo || data.user.email || 'Usuario CCV',
+              nombre_completo: data.user.user_metadata?.nombre_completo || data.user.email || 'Usuario',
               email: data.user.email || email,
               rol_id: data.user.user_metadata?.rol_id || '',
               rol_nombre: 'Docente',

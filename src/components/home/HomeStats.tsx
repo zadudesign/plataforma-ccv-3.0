@@ -247,7 +247,7 @@ export const HomeStats: React.FC = () => {
             Estadísticas en Tiempo Real
           </h2>
           <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
-            Métricas institucionales consolidadas y sincronizadas en tiempo real con el panel general del Centro de Educación Virtual (CCV).
+            Métricas institucionales consolidadas y sincronizadas en tiempo real con la plataforma de gestión operativa.
           </p>
         </div>
 
@@ -298,7 +298,7 @@ export const HomeStats: React.FC = () => {
                   <span className="flex items-center gap-1 text-slate-500">
                     <TrendingUp className="w-3.5 h-3.5 text-sky-500" /> Sincronización DB
                   </span>
-                  <span className="font-semibold text-slate-600">CCV 3.0</span>
+                  <span className="font-semibold text-slate-600">PrismaLab</span>
                 </div>
               </div>
             );

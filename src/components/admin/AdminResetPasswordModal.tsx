@@ -95,7 +95,7 @@ export const AdminResetPasswordModal: React.FC<AdminResetPasswordModalProps> = (
             <p className="text-[11px] text-charcoal-500">Rol: {usuario.rol_nombre || 'Docente'}</p>
           </div>
           <span className="px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 text-[10px] font-extrabold border border-sage-200">
-            {usuario.area_nombre || 'CCV'}
+            {usuario.area_nombre || 'General'}
           </span>
         </div>
 

@@ -137,7 +137,7 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
                           <DynamicLucideIcon name={displayIconName} className="w-3.5 h-3.5" />
                         </div>
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText} border ${currentTheme.badgeBorder}`}>
-                          PROYECTO CCV
+                          PROYECTO
                         </span>
                       </div>
                       <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">En Proceso</span>
@@ -163,7 +163,7 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
                           <DynamicLucideIcon name={displayIconName} className="w-3.5 h-3.5" />
                         </div>
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${currentTheme.badgeBg} ${currentTheme.badgeText} border ${currentTheme.badgeBorder}`}>
-                          PROYECTO CCV
+                          PROYECTO
                         </span>
                       </div>
                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Completado</span>
@@ -199,7 +199,7 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
                   <div className={`p-3 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2`}>
                     <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${currentTheme.badgeBg} ${currentTheme.badgeText}`}>
-                        CCV-CUR-101
+                        CUR-101
                       </span>
                       <span className="text-[10px] font-bold text-charcoal-400">En Producción</span>
                     </div>

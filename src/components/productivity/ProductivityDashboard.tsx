@@ -52,7 +52,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     const uFound = usuarios.find(u => u.rol_id === rolDestinoOrId || u.rol_nombre?.toLowerCase() === rolDestinoOrId.toLowerCase());
     if (uFound?.rol_nombre) return uFound.rol_nombre;
     if (rolDestinoOrId.length > 20 && rolDestinoOrId.includes('-')) {
-      return 'Especialidad / CCV';
+      return 'Especialidad / General';
     }
     return rolDestinoOrId;
   };
@@ -533,7 +533,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
               Panel de Productividad y Control de Entregas
             </h2>
             <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 border border-sage-200">
-              Métricas CCV
+              Métricas
             </span>
           </div>
           <p className="text-sm text-charcoal-500 mt-1">
@@ -905,7 +905,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                             {tarea.titulo}
                           </div>
                           <div className="text-[11px] text-charcoal-500 truncate">
-                            {tarea.curso_nombre || tarea.proyecto_nombre || 'General CCV'}
+                            {tarea.curso_nombre || tarea.proyecto_nombre || 'General'}
                           </div>
                           {tarea.responsable_secundario_nombre && (
                             <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
@@ -1221,7 +1221,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                               </span>
                             </div>
                             <p className="text-[11px] text-charcoal-500">
-                              {tarea.curso_nombre || tarea.proyecto_nombre || 'General CCV'} • Responsable{tarea.responsable_secundario_nombre ? 's' : ''}: <strong className="text-charcoal-700">{tarea.responsable_nombre || 'Sin Asignar'}</strong>
+                              {tarea.curso_nombre || tarea.proyecto_nombre || 'General'} • Responsable{tarea.responsable_secundario_nombre ? 's' : ''}: <strong className="text-charcoal-700">{tarea.responsable_nombre || 'Sin Asignar'}</strong>
                               {tarea.responsable_secundario_nombre && (
                                 <span className="text-blue-700 font-bold"> & {tarea.responsable_secundario_nombre}</span>
                               )}

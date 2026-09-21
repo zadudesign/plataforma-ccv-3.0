@@ -206,7 +206,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           title: isEditing ? 'Editar Proyecto' : 'Registrar Nuevo Proyecto',
           subtitle: isEditing
             ? 'Modifica la información del proyecto institucional.'
-            : 'Añade una iniciativa institucional estratégica del CCV.',
+            : 'Añade una iniciativa institucional estratégica.',
         };
     }
   };
@@ -339,7 +339,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     type="text"
                     value={codigo}
                     onChange={e => setCodigo(e.target.value)}
-                    placeholder="CCV-ED-101"
+                    placeholder="PR-ED-101"
                     className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-mono font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
                     required
                   />
@@ -478,7 +478,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     <option value="">-- Sin Asignar --</option>
                     {usuarios.map(u => (
                       <option key={u.id} value={u.id}>
-                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'CCV'})
+                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'General'})
                       </option>
                     ))}
                   </select>
@@ -496,7 +496,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     <option value="">-- Sin Segundo Responsable --</option>
                     {usuarios.filter(u => u.id !== liderId).map(u => (
                       <option key={u.id} value={u.id}>
-                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'CCV'})
+                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'General'})
                       </option>
                     ))}
                   </select>

@@ -37,7 +37,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
     const uFound = usuarios.find(u => u.rol_id === rolDestinoOrId || u.rol_nombre?.toLowerCase() === rolDestinoOrId.toLowerCase());
     if (uFound?.rol_nombre) return uFound.rol_nombre;
     if (rolDestinoOrId.length > 20 && rolDestinoOrId.includes('-')) {
-      return 'Especialidad / CCV';
+      return 'Especialidad / General';
     }
     return rolDestinoOrId;
   };

@@ -36,7 +36,7 @@ export default function NotFound() {
 
         <div className="pt-4 border-t border-stone-100 text-[11px] text-charcoal-400 flex items-center justify-center gap-1">
           <Sparkles className="w-3 h-3 text-accent-500" />
-          <span>Plataforma CCV 3.0 • Centro de Educación Virtual</span>
+          <span>PrismaLab v3.0 • Work Management Platform</span>
         </div>
       </div>
     </div>

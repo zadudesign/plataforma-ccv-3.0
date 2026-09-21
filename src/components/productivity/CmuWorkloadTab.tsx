@@ -812,7 +812,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
 
                                   <div className="text-[11px] text-charcoal-500 flex items-center gap-2 flex-wrap">
                                     <span className="font-semibold text-charcoal-700">
-                                      {t.curso_nombre || t.proyecto_nombre || 'Asignación General CCV'}
+                                      {t.curso_nombre || t.proyecto_nombre || 'Asignación General'}
                                     </span>
                                     {remision.subtexto && (
                                       <span className="text-[10px] text-charcoal-500 font-medium">

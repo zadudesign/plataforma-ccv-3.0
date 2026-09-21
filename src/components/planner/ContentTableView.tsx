@@ -118,7 +118,7 @@ export const ContentTableView: React.FC<ContentTableViewProps> = ({
               <th className="p-3.5">Entidad Académica</th>
               <th className="p-3.5">Estado</th>
               <th className="p-3.5">Recursos</th>
-              <th className="p-3.5">Tarea CCV</th>
+              <th className="p-3.5">Tarea Vinculada</th>
               <th className="p-3.5 text-right">Acciones</th>
             </tr>
           </thead>
@@ -210,7 +210,7 @@ export const ContentTableView: React.FC<ContentTableViewProps> = ({
                           <span className="truncate">{post.proyecto_nombre}</span>
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">General CCV</span>
+                        <span className="text-[11px] text-slate-400 font-medium">General</span>
                       )}
                     </td>
 

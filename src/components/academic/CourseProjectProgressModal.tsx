@@ -345,7 +345,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
             <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
-                  {esCurso ? `Curso Virtual • ${curso?.codigo}` : `PROYECTO CCV • ${areaProyecto?.nombre || 'Departamento'}`}
+                  {esCurso ? `Curso Virtual • ${curso?.codigo}` : `PROYECTO • ${areaProyecto?.nombre || 'Departamento'}`}
                 </span>
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-200 text-charcoal-700">
                   {entidad.estado}
@@ -379,7 +379,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 {!esCurso && (
                   <>
                     {areaProyecto && <span><strong className="text-charcoal-700">Departamento:</strong> {areaProyecto.nombre}</span>}
-                    <span>{proyecto?.descripcion || 'Iniciativa institucional y proyecto especial CCV'}</span>
+                    <span>{proyecto?.descripcion || 'Iniciativa institucional y proyecto especial'}</span>
                   </>
                 )}
               </p>
@@ -484,7 +484,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                         <span className="text-xl font-black text-emerald-950 mt-1">
                           ${costoTotalProyecto.toLocaleString('es-CO')} <span className="text-xs font-bold text-emerald-700">COP</span>
                         </span>
-                        <span className="text-[10px] text-emerald-700 font-medium">Tarifas estimadas CCV</span>
+                        <span className="text-[10px] text-emerald-700 font-medium">Tarifas estimadas</span>
                       </div>
 
                       {/* KPI Proyecto 2: Costo Ejecutado */}
@@ -521,7 +521,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                           <span className="text-xl font-black text-charcoal-900">{completadas}</span>
                           <span className="text-xs font-semibold text-charcoal-500">/ {totalTareas} completadas</span>
                         </div>
-                        <span className="text-[10px] text-charcoal-400 font-medium">Flujo de trabajo CCV</span>
+                        <span className="text-[10px] text-charcoal-400 font-medium">Flujo de trabajo</span>
                       </div>
                     </>
                   ) : (
@@ -532,7 +532,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                           <CheckSquare className="w-4 h-4 text-sage-600" />
                         </div>
                         <span className="text-2xl font-black text-charcoal-900 mt-2">{totalTareas}</span>
-                        <span className="text-[10px] text-charcoal-400 font-medium">Registradas en CCV</span>
+                        <span className="text-[10px] text-charcoal-400 font-medium">Registradas</span>
                       </div>
 
                       <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 shadow-xs flex flex-col justify-between">
@@ -573,7 +573,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 <div className="flex items-center justify-between text-xs font-bold text-charcoal-800">
                   <span className="flex items-center gap-1.5 text-sage-800">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    Ponderación de Avance por Estado de Tarea (Modelo Oficial CCV)
+                    Ponderación de Avance por Estado de Tarea (Modelo Oficial)
                   </span>
                   <span className="text-[11px] text-charcoal-500 font-medium">Total: 100%</span>
                 </div>

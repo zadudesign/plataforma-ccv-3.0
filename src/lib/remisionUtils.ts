@@ -176,10 +176,10 @@ export function resolverRemisionTarea(tarea: TareaCCV, ctx: RemisionContext): In
       };
     }
 
-    // Si el proyecto no tiene área definida, remitir al Centro CCV o al nombre del proyecto
+    // Si el proyecto no tiene área definida, remitir al Centro institucional o al nombre del proyecto
     return {
       tipo: 'Departamento',
-      nombre: tarea.proyecto_nombre || 'Centro de Educación Virtual (CCV)',
+      nombre: tarea.proyecto_nombre || 'Gestión Institucional',
       subtexto: 'Proyecto Estratégico Especial',
       color: ESTILO_DEPARTAMENTO,
     };
@@ -208,7 +208,7 @@ export function resolverRemisionTarea(tarea: TareaCCV, ctx: RemisionContext): In
   // 5. Fallback por defecto
   return {
     tipo: 'Departamento',
-    nombre: 'Centro de Educación Virtual (CCV)',
+    nombre: 'Gestión Institucional',
     subtexto: 'Operación y Gestión Interna',
     color: ESTILO_DEPARTAMENTO,
   };
