@@ -324,7 +324,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 return (
                   <div
                     key={`prev-offset-${idx}`}
-                    className="min-h-[42px] sm:min-h-[48px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
+                    className="min-h-[46px] sm:min-h-[52px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
                   >
                     <span className="text-[11px] font-bold text-stone-400">{diaAnt}</span>
                   </div>
@@ -342,7 +342,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <div
                     key={`dia-${dia}`}
                     onClick={() => setFechaSeleccionada(fechaStr)}
-                    className={`min-h-[42px] sm:min-h-[48px] p-1 sm:p-1.5 rounded-xl border flex flex-col justify-between transition-all cursor-pointer group relative ${
+                    className={`min-h-[46px] sm:min-h-[52px] p-1 sm:p-1.5 rounded-xl border flex flex-col justify-between transition-all cursor-pointer group relative ${
                       esSeleccionado
                         ? 'bg-primary-50/95 border-primary-600 ring-2 ring-primary-500 shadow-sm scale-[1.02] z-10'
                         : esHoy
@@ -358,26 +358,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           esSeleccionado
                             ? 'bg-primary-700 text-white shadow-2xs'
                             : esHoy
-                            ? 'bg-amber-500 text-white font-black'
+                            ? 'bg-amber-500 text-white font-black shadow-2xs'
                             : 'text-charcoal-800 group-hover:text-primary-700'
                         }`}
                       >
                         {dia}
                       </span>
                       {esHoy && (
-                        <span className="text-[8px] font-black text-amber-800 uppercase tracking-tighter bg-amber-100 px-1 py-0.2 rounded leading-none">
+                        <span className="text-[8px] font-black text-amber-800 uppercase tracking-tighter bg-amber-100 px-1 py-0.2 rounded leading-none border border-amber-200">
                           Hoy
                         </span>
                       )}
                     </div>
 
-                    {/* Bottom Row: Puntos de Color de Tareas + Contador Separado */}
-                    <div className="flex items-center justify-between gap-1 mt-0.5 min-h-[14px]">
+                    {/* Bottom Row: Puntos de Color Grandes + Contador Naranja con TAREAS */}
+                    <div className="flex items-center justify-between gap-1 mt-1 min-h-[16px]">
                       {tareasDelDia.length > 0 ? (
                         <>
-                          {/* Puntos circulares de color según estado de la tarea */}
+                          {/* Puntos circulares de color más grandes según estado */}
                           <div className="flex items-center gap-1 flex-wrap overflow-hidden">
-                            {tareasDelDia.slice(0, 4).map((t, idx) => {
+                            {tareasDelDia.slice(0, 3).map((t, idx) => {
                               const dotColor =
                                 t.estado === 'Completada' ? 'bg-emerald-500' :
                                 t.estado === 'En Revisión' ? 'bg-amber-500' :
@@ -387,32 +387,35 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               return (
                                 <span
                                   key={idx}
-                                  className={`w-1.5 h-1.5 rounded-full ${dotColor} shadow-2xs shrink-0`}
+                                  className={`w-2.5 h-2.5 rounded-full ${dotColor} shadow-2xs shrink-0 ring-1 ring-white`}
                                   title={`${t.titulo} (${t.estado})`}
                                 />
                               );
                             })}
-                            {tareasDelDia.length > 4 && (
-                              <span className="text-[7.5px] font-black text-charcoal-400 leading-none">
-                                +{tareasDelDia.length - 4}
+                            {tareasDelDia.length > 3 && (
+                              <span className="text-[8px] font-black text-charcoal-500 leading-none">
+                                +{tareasDelDia.length - 3}
                               </span>
                             )}
                           </div>
 
-                          {/* Contador numérico sutil ubicado abajo a la derecha */}
+                          {/* Contador Naranja Destacado con palabra TAREAS */}
                           <span
-                            className={`text-[9px] font-extrabold px-1 py-0.2 rounded-md leading-none ${
+                            className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-md leading-none flex items-center gap-0.5 border shadow-2xs ${
                               esSeleccionado
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-stone-100 text-charcoal-600 border border-stone-200/80 group-hover:bg-primary-100 group-hover:text-primary-800'
+                                ? 'bg-amber-500 text-white border-amber-600'
+                                : 'bg-amber-100 text-amber-900 border-amber-300'
                             }`}
-                            title={`${tareasDelDia.length} entregas`}
+                            title={`${tareasDelDia.length} ${tareasDelDia.length === 1 ? 'tarea' : 'tareas'}`}
                           >
-                            {tareasDelDia.length}
+                            <span className="font-extrabold text-[10px]">{tareasDelDia.length}</span>
+                            <span className="text-[7.5px] font-black tracking-tighter uppercase opacity-90">
+                              {tareasDelDia.length === 1 ? 'TAREA' : 'TAREAS'}
+                            </span>
                           </span>
                         </>
                       ) : (
-                        <span className="h-1.5" />
+                        <span className="h-2" />
                       )}
                     </div>
                   </div>
@@ -425,7 +428,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 return (
                   <div
                     key={`next-offset-${idx}`}
-                    className="min-h-[42px] sm:min-h-[48px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
+                    className="min-h-[46px] sm:min-h-[52px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
                   >
                     <span className="text-[11px] font-bold text-stone-400">{diaSig}</span>
                   </div>
