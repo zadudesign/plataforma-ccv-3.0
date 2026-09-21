@@ -132,7 +132,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       {/* 4 Columns Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {columnas.map((col) => {
-          const tareasCol = ordenarTareasPorVencimiento(tareas.filter(t => t.estado === col.estado));
+          const tareasCol = ordenarTareasPorVencimiento(
+            tareas.filter(t => t.estado === col.estado && t.estado_bloqueo !== 'BLOQUEADA')
+          );
 
           // Agrupación por día clasificada de la fecha más próxima a la más lejana
           const gruposPorFecha: Record<string, TareaCCV[]> = {};

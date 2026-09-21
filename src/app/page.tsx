@@ -491,7 +491,7 @@ export default function Home() {
     return tareasVisiblesPorRol.some(t => t.id === com.tarea_id);
   });
 
-  const tareasPendientesCount = tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente').length;
+  const tareasPendientesCount = tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente' && t.estado_bloqueo !== 'BLOQUEADA').length;
 
   return (
     <TimerProvider>
