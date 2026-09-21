@@ -17,7 +17,7 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ usuarioActual }) =
       <div className="z-10 space-y-1.5 flex-1">
         <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider">
           <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span>Centro de Educación Virtual CCV 3.0</span>
+          <span>Work Management Platform</span>
         </div>
         <h2 className="text-2xl md:text-3xl font-black text-white">
           ¡Hola, {usuarioActual?.nombre_completo || 'Usuario CCV'}!

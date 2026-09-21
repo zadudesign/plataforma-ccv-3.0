@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { AppProviders } from '@/components/providers/AppProviders';
 
 export const metadata: Metadata = {
-  title: 'Plataforma CCV 3.0 — Ecosistema de Cursos Virtuales y Educación Continua',
+  title: 'Prisma LAB - Ecosistema Integral de Gestión de Flujos de Trabajo y Operaciones',
   description: 'Sistema integral full-stack para la gestión, control, producción y supervisión de cursos virtuales y diseño instruccional del Centro de Educación Virtual.',
   icons: {
     icon: '/isotipo.svg',
