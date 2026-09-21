@@ -22,7 +22,7 @@ export const HomeHero: React.FC<HomeHeroProps> = () => {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200/90 shadow-2xs">
             <Sparkles className="w-4 h-4 text-sky-600 animate-pulse" />
             <span className="text-xs font-extrabold text-slate-800 tracking-wide">
-              Ecosistema de Gestión, Veeduría y Producción
+              Ecosistema Integral de Gestión de Flujos de Trabajo y Operaciones
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping" />
           </div>

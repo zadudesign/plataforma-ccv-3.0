@@ -55,7 +55,7 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({ onOpenLogin }) => {
                 </span>
               </div>
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                Centro de Educación Virtual
+                WORK MANAGEMENT PLATFORM
               </span>
             </div>
           </div>
