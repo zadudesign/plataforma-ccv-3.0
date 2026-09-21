@@ -109,7 +109,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const tareasPorFecha = useMemo(() => {
     const map: Record<string, TareaCCV[]> = {};
     tareas.forEach(tarea => {
-      if (!tarea.fecha_vencimiento) return;
+      if (!tarea.fecha_vencimiento || tarea.estado_bloqueo === 'BLOQUEADA') return;
       const fecha = tarea.fecha_vencimiento.trim();
       if (!map[fecha]) {
         map[fecha] = [];

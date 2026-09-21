@@ -369,6 +369,12 @@ export default function Home() {
   // - Roles operativos (Diseño, Multimedia, Soporte, Docente, Par Evaluador):
   //   Ven las tareas asignadas específicamente a su ROL o a su usuario (responsable principal/secundario).
   const tareasVisiblesPorRol = tareas.filter(t => {
+    // 0. REGLA ESTRICTA DE SEGURIDAD & SECUENCIA:
+    // Las tareas bloqueadas quedan estrictamente ocultas para TODOS los roles, excepto para el Administrador
+    if (t.estado_bloqueo === 'BLOQUEADA' && !isSupervisorGlobal) {
+      return false;
+    }
+
     // 1. Administrador (Nivel 6) ve todas las tareas
     if (isSupervisorGlobal) return true;
 

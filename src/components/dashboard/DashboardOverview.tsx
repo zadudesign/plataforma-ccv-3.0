@@ -176,8 +176,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   };
   const progresoProyectosPorcentaje = calcularProgresoGlobalProyectos(proyectos, tareas);
 
-  // 4. ACTIVIDAD RECIENTE (Excluyendo tareas completadas)
-  const tareasActivas = tareas.filter(t => t.estado !== 'Completada');
+  // 4. ACTIVIDAD RECIENTE (Excluyendo tareas completadas y tareas bloqueadas)
+  const tareasActivas = tareas.filter(t => t.estado !== 'Completada' && t.estado_bloqueo !== 'BLOQUEADA');
   const ultimasTareas = [...tareasActivas].slice(-5).reverse();
   const ultimosComentarios = [...comentarios].slice(-5).reverse();
 

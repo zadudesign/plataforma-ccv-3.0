@@ -110,9 +110,14 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const themeIcono = !esCurso ? (areaProyecto?.icono || 'FolderKanban') : (facultadCurso?.icono || 'BookOpen');
   const theme = getFacultyTheme(themeColor);
 
-  // Filtrar tareas pertenecientes a este curso o proyecto
-  const tareasEntidad = tareas.filter(t => 
+  // Filtrar todas las tareas pertenecientes a este curso o proyecto (para cálculo de avance global)
+  const todasTareasEntidad = tareas.filter(t => 
     esCurso ? t.curso_id === entidad.id : t.proyecto_id === entidad.id
+  );
+
+  // Las tareas bloqueadas SOLO deben aparecer en el desglose para el rol de Administrador
+  const tareasEntidad = todasTareasEntidad.filter(t => 
+    t.estado_bloqueo !== 'BLOQUEADA' || isAdmin()
   );
 
   const totalTareas = tareasEntidad.length;
@@ -121,7 +126,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const enProceso = tareasEntidad.filter(t => t.estado === 'En Proceso').length;
   const pendientes = tareasEntidad.filter(t => t.estado === 'Pendiente').length;
 
-  const porcentaje = calcularProgresoTareas(tareasEntidad);
+  const porcentaje = calcularProgresoTareas(todasTareasEntidad);
 
   const horasInvertidas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
 

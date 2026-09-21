@@ -118,6 +118,11 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   // Filtrado de tareas general
   const tareasFiltradas = useMemo(() => {
     return tareas.filter(t => {
+      // Las tareas bloqueadas no se computan ni se muestran en tableros de productividad
+      if (t.estado_bloqueo === 'BLOQUEADA') {
+        return false;
+      }
+
       // Filtro por Rol Destino: incluye tareas donde el rol principal O el rol secundario coincidan
       if (filtroRol !== 'todos') {
         const rolP = getNombreRol(t.rol_destino);
