@@ -51,7 +51,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   onOpenProgreso,
 }) => {
   const { actualizarIdentidadFacultad, actualizarIdentidadArea, isAdmin, eliminarCurso, eliminarPrograma } = useAuth();
-  const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
+  const [proyectosAbiertos, setProyectosAbiertos] = useState(false);
   const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
   const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({});
 
@@ -62,14 +62,14 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   const toggleFacultad = (id: string) => {
     setFacultadesAbiertas(prev => ({ 
       ...prev, 
-      [id]: prev[id] === false ? true : false 
+      [id]: !prev[id] 
     }));
   };
 
   const toggleAreaProyecto = (areaId: string) => {
     setAreasProyectosAbiertas(prev => ({ 
       ...prev, 
-      [areaId]: prev[areaId] === false ? true : false 
+      [areaId]: !prev[areaId] 
     }));
   };
 
@@ -264,7 +264,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
               </div>
             ) : (
               proyectosPorDepartamento.map(grupo => {
-                const isAreaOpen = areasProyectosAbiertas[grupo.departamentoId] !== false; // Abierto por defecto
+                const isAreaOpen = areasProyectosAbiertas[grupo.departamentoId] === true; // Plegado por defecto
                 const deptColor = grupo.areaObj?.color || 'amber';
                 const deptIcono = grupo.areaObj?.icono || 'FolderKanban';
                 const theme = getFacultyTheme(deptColor);
@@ -456,7 +456,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
         ) : (
           facultades.map((facultad) => {
             const progsFacultad = programas.filter(p => p.facultad_id === facultad.id);
-            const isOpen = facultadesAbiertas[facultad.id] !== false;
+            const isOpen = facultadesAbiertas[facultad.id] === true; // Plegado por defecto
             const theme = getFacultyTheme(facultad.color);
             const iconoFacultad = facultad.icono || 'Building2';
 
