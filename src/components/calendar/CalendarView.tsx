@@ -300,13 +300,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
 
-      {/* Grid Principal: Calendario a la izquierda (6 cols) + Paneles a la derecha (6 cols) */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-        {/* Columna Calendario (6/12) - Celdas Ultra-Compactas */}
-        <div className="xl:col-span-6 flex flex-col">
-          <div className="ccv-card p-3 sm:p-3.5 shadow-card flex flex-col justify-between">
+      {/* Grid Principal: Calendario a la izquierda + Paneles a la derecha (Misma Altura) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+        {/* Columna Calendario (8/12) */}
+        <div className="xl:col-span-8 flex flex-col h-full">
+          <div className="ccv-card p-5 sm:p-6 shadow-card h-full flex flex-col justify-between">
             {/* Encabezado Días de la semana */}
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-charcoal-500 uppercase tracking-wider pb-1.5 border-b border-stone-200">
+            <div className="grid grid-cols-7 gap-2 text-center text-xs font-black text-charcoal-500 uppercase tracking-wider pb-3 border-b border-stone-200">
               <div className="text-rose-600">Dom</div>
               <div>Lun</div>
               <div>Mar</div>
@@ -316,17 +316,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <div className="text-charcoal-700">Sáb</div>
             </div>
 
-            {/* Cuadrícula de Días Ultra-Compacta */}
-            <div className="grid grid-cols-7 gap-1 pt-1.5 flex-1">
+            {/* Cuadrícula de Días Compacta */}
+            <div className="grid grid-cols-7 gap-2 pt-3 flex-1">
               {/* Días del mes anterior (Relleno) */}
               {Array.from({ length: offsetInicial }).map((_, idx) => {
                 const diaAnt = diasMesAnterior - offsetInicial + idx + 1;
                 return (
                   <div
                     key={`prev-offset-${idx}`}
-                    className="h-[30px] sm:h-[34px] p-0.5 sm:p-1 rounded-md bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
+                    className="min-h-[46px] sm:min-h-[52px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
                   >
-                    <span className="text-[9px] font-bold text-stone-400">{diaAnt}</span>
+                    <span className="text-[11px] font-bold text-stone-400">{diaAnt}</span>
                   </div>
                 );
               })}
@@ -342,19 +342,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <div
                     key={`dia-${dia}`}
                     onClick={() => setFechaSeleccionada(fechaStr)}
-                    className={`h-[30px] sm:h-[34px] p-0.5 sm:p-1 rounded-md border flex flex-col justify-between transition-all cursor-pointer group relative ${
+                    className={`min-h-[46px] sm:min-h-[52px] p-1 sm:p-1.5 rounded-xl border flex flex-col justify-between transition-all cursor-pointer group relative ${
                       esSeleccionado
                         ? 'bg-primary-50/95 border-primary-600 ring-2 ring-primary-500 shadow-sm scale-[1.02] z-10'
                         : esHoy
                         ? 'bg-amber-50/50 border-amber-400 ring-1 ring-amber-400 hover:border-amber-500'
-                        : 'bg-white border-stone-200/90 hover:border-primary-300 hover:bg-stone-50/60 hover:shadow-2xs'
+                        : 'bg-white border-stone-200/90 hover:border-primary-300 hover:bg-stone-50/60 hover:shadow-xs'
                     }`}
                     title={`Día ${dia} - ${tareasDelDia.length} ${tareasDelDia.length === 1 ? 'entrega' : 'entregas'} (Clic para ver en el panel derecho)`}
                   >
                     {/* Top Row: Solo el Número de Día */}
-                    <div className="flex items-center justify-between leading-none">
+                    <div className="flex items-center justify-between">
                       <span
-                        className={`text-[10px] font-black w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center transition-colors ${
+                        className={`text-xs font-black w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
                           esSeleccionado
                             ? 'bg-primary-700 text-white shadow-2xs'
                             : esHoy
@@ -365,19 +365,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         {dia}
                       </span>
                       {esHoy && (
-                        <span className="text-[6.5px] font-black text-amber-800 uppercase tracking-tighter bg-amber-100 px-0.5 py-0.1 rounded leading-none border border-amber-200">
+                        <span className="text-[8px] font-black text-amber-800 uppercase tracking-tighter bg-amber-100 px-1 py-0.2 rounded leading-none border border-amber-200">
                           Hoy
                         </span>
                       )}
                     </div>
 
-                    {/* Bottom Row: Puntos de Color + Contador Naranja con TAREAS */}
-                    <div className="flex items-center justify-between gap-0.5 leading-none">
+                    {/* Bottom Row: Puntos de Color Grandes + Contador Naranja con TAREAS */}
+                    <div className="flex items-center justify-between gap-1 mt-1 min-h-[16px]">
                       {tareasDelDia.length > 0 ? (
                         <>
-                          {/* Puntos circulares de color según estado */}
-                          <div className="flex items-center gap-0.5 overflow-hidden">
-                            {tareasDelDia.slice(0, 2).map((t, idx) => {
+                          {/* Puntos circulares de color más grandes según estado */}
+                          <div className="flex items-center gap-1 flex-wrap overflow-hidden">
+                            {tareasDelDia.slice(0, 3).map((t, idx) => {
                               const dotColor =
                                 t.estado === 'Completada' ? 'bg-emerald-500' :
                                 t.estado === 'En Revisión' ? 'bg-amber-500' :
@@ -387,35 +387,35 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               return (
                                 <span
                                   key={idx}
-                                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${dotColor} shadow-2xs shrink-0 ring-1 ring-white`}
+                                  className={`w-2.5 h-2.5 rounded-full ${dotColor} shadow-2xs shrink-0 ring-1 ring-white`}
                                   title={`${t.titulo} (${t.estado})`}
                                 />
                               );
                             })}
-                            {tareasDelDia.length > 2 && (
-                              <span className="text-[6.5px] font-black text-charcoal-500 leading-none">
-                                +{tareasDelDia.length - 2}
+                            {tareasDelDia.length > 3 && (
+                              <span className="text-[8px] font-black text-charcoal-500 leading-none">
+                                +{tareasDelDia.length - 3}
                               </span>
                             )}
                           </div>
 
                           {/* Contador Naranja Destacado con palabra TAREAS */}
                           <span
-                            className={`text-[7.5px] sm:text-[8px] font-black px-0.5 sm:px-1 py-0.1 rounded leading-none flex items-center gap-0.5 border shadow-2xs ${
+                            className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-md leading-none flex items-center gap-0.5 border shadow-2xs ${
                               esSeleccionado
                                 ? 'bg-amber-500 text-white border-amber-600'
                                 : 'bg-amber-100 text-amber-900 border-amber-300'
                             }`}
                             title={`${tareasDelDia.length} ${tareasDelDia.length === 1 ? 'tarea' : 'tareas'}`}
                           >
-                            <span className="font-extrabold">{tareasDelDia.length}</span>
-                            <span className="text-[6.5px] font-black tracking-tighter uppercase opacity-90 hidden sm:inline">
-                              TAR
+                            <span className="font-extrabold text-[10px]">{tareasDelDia.length}</span>
+                            <span className="text-[7.5px] font-black tracking-tighter uppercase opacity-90">
+                              {tareasDelDia.length === 1 ? 'TAREA' : 'TAREAS'}
                             </span>
                           </span>
                         </>
                       ) : (
-                        <span className="h-1" />
+                        <span className="h-2" />
                       )}
                     </div>
                   </div>
@@ -428,50 +428,50 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 return (
                   <div
                     key={`next-offset-${idx}`}
-                    className="h-[30px] sm:h-[34px] p-0.5 sm:p-1 rounded-md bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
+                    className="min-h-[46px] sm:min-h-[52px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
                   >
-                    <span className="text-[9px] font-bold text-stone-400">{diaSig}</span>
+                    <span className="text-[11px] font-bold text-stone-400">{diaSig}</span>
                   </div>
                 );
               })}
             </div>
 
             {/* Leyenda de estados */}
-            <div className="mt-2.5 pt-2 border-t border-stone-200 flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="mt-4 pt-3 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="font-bold text-charcoal-600">Convenciones:</span>
-                <span className="flex items-center gap-1 text-charcoal-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                <span className="flex items-center gap-1.5 text-charcoal-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
                   Completada
                 </span>
-                <span className="flex items-center gap-1 text-charcoal-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                <span className="flex items-center gap-1.5 text-charcoal-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                   En Revisión
                 </span>
-                <span className="flex items-center gap-1 text-charcoal-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                <span className="flex items-center gap-1.5 text-charcoal-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                   En Proceso
                 </span>
-                <span className="flex items-center gap-1 text-charcoal-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                <span className="flex items-center gap-1.5 text-charcoal-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
                   Pendiente
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[9.5px] text-charcoal-500">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              <div className="flex items-center gap-2 text-[11px] text-charcoal-500">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                 <span>Hoy</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Columna Derecha (6/12) - Adaptada con scroll interno fluido */}
-        <div className="xl:col-span-6 flex flex-col gap-3.5">
-          {/* Panel Superior: Entregas del Día Seleccionado con scroll interno */}
-          <div className="ccv-card p-3.5 sm:p-4 flex flex-col justify-between border-t-4 border-t-primary-600 shadow-card h-[240px] overflow-hidden">
+        {/* Columna Derecha: 2 Paneles Divididos Equitativamente (4/12) */}
+        <div className="xl:col-span-4 grid grid-rows-2 gap-4 h-full min-h-[600px] xl:min-h-0">
+          {/* Panel Superior: Entregas del Día Seleccionado (50% Altura) */}
+          <div className="ccv-card p-4 sm:p-5 flex flex-col justify-between border-t-4 border-t-primary-600 shadow-card h-full overflow-hidden">
             <div className="flex flex-col min-h-0 flex-1">
               {/* Header del Panel Lateral */}
-              <div className="pb-1.5 border-b border-stone-200 shrink-0">
+              <div className="pb-2 border-b border-stone-200 shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <CalendarDays className="w-4 h-4 text-primary-600" />
@@ -479,13 +479,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       Entregas del Día
                     </span>
                     {esHoySeleccionado && (
-                      <span className="bg-amber-500 text-white text-[8.5px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">
+                      <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-2xs">
                         HOY
                       </span>
                     )}
                   </div>
-                  <span className="text-[9.5px] font-black px-2 py-0.2 rounded-full bg-primary-100 text-primary-900 border border-primary-200">
-                    {tareasDelDiaSeleccionado.length} {tareasDelDiaSeleccionado.length === 1 ? 'tarea' : 'tareas'}
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-primary-100 text-primary-900 border border-primary-200">
+                    {tareasDelDiaSeleccionado.length}
                   </span>
                 </div>
                 <h3 className="text-xs sm:text-sm font-extrabold text-charcoal-900 mt-0.5 truncate">
@@ -494,8 +494,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               </div>
 
               {/* Filtro rápido */}
-              <div className="flex items-center gap-1 overflow-x-auto py-1 shrink-0 text-xs">
-                <Filter className="w-2.5 h-2.5 text-charcoal-400 shrink-0" />
+              <div className="flex items-center gap-1 overflow-x-auto py-1.5 shrink-0 text-xs">
+                <Filter className="w-3 h-3 text-charcoal-400 shrink-0" />
                 {[
                   { id: 'todos', label: 'Todas' },
                   { id: 'Pendiente', label: 'Pendientes' },
@@ -505,7 +505,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <button
                     key={opc.id}
                     onClick={() => setFiltroEstado(opc.id)}
-                    className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold transition-all whitespace-nowrap ${
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${
                       filtroEstado === opc.id
                         ? 'bg-charcoal-800 text-white shadow-2xs'
                         : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
@@ -516,8 +516,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 ))}
               </div>
 
-              {/* Listado de Tareas con scroll interno */}
-              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-1.5 mt-1">
+              {/* Listado de Tareas (Ordenadas en orden cronológico por hora) */}
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-2 mt-1">
                 {tareasDelDiaSeleccionado.length > 0 ? (
                   tareasDelDiaSeleccionado.map((tarea) => {
                     const badgeClass =
@@ -530,55 +530,55 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       <div
                         key={tarea.id}
                         onClick={() => onSelectTask(tarea)}
-                        className="p-2 sm:p-2.5 rounded-lg border border-stone-200 bg-white hover:border-primary-400 hover:shadow-2xs transition-all cursor-pointer group space-y-1"
+                        className="p-2.5 sm:p-3 rounded-xl border border-stone-200 bg-white hover:border-primary-400 hover:shadow-sm transition-all cursor-pointer group space-y-1.5"
                       >
                         <div className="flex items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded border ${badgeClass}`}>
+                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md border ${badgeClass}`}>
                               {tarea.estado}
                             </span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-stone-100 text-charcoal-800 border border-stone-200 font-mono">
+                            <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-charcoal-800 border border-stone-200 font-mono">
                               ⏰ {tarea.hora_vencimiento || '18:00'}
                             </span>
                           </div>
-                          <span className="text-[9.5px] font-bold text-charcoal-400">
+                          <span className="text-[10px] font-bold text-charcoal-400">
                             {tarea.tipo_tarea}
                           </span>
                         </div>
                         <h4 className="text-xs font-bold text-charcoal-900 group-hover:text-primary-700 transition-colors line-clamp-1 leading-tight">
                           {tarea.titulo}
                         </h4>
-                        <div className="pt-1 border-t border-stone-100 flex items-center justify-between text-[9.5px] text-charcoal-600">
-                          <span className="truncate max-w-[150px] text-charcoal-500 font-medium">
+                        <div className="pt-1 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-600">
+                          <span className="truncate max-w-[140px] text-charcoal-500 font-medium">
                             {tarea.curso_nombre || tarea.proyecto_nombre || 'General'}
                           </span>
                           <span className="text-primary-700 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
-                            Ver <ArrowRight className="w-2.5 h-2.5" />
+                            Ver <ArrowRight className="w-3 h-3" />
                           </span>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="py-4 px-2 text-center rounded-lg border border-dashed border-stone-200 bg-cream-50/50 space-y-1">
-                    <Clock className="w-4 h-4 text-primary-600 mx-auto" />
+                  <div className="py-6 px-3 text-center rounded-xl border border-dashed border-stone-200 bg-cream-50/50 space-y-1.5">
+                    <Clock className="w-5 h-5 text-primary-600 mx-auto" />
                     <p className="text-xs font-bold text-charcoal-800">Sin entregas</p>
-                    <p className="text-[9.5px] text-charcoal-500">No se registran vencimientos para la fecha seleccionada.</p>
+                    <p className="text-[10px] text-charcoal-500">No se registran vencimientos para la fecha.</p>
                   </div>
                 )}
               </div>
             </div>
-            <div className="mt-1.5 pt-1.5 border-t border-stone-100 flex items-center justify-between text-[9.5px] text-charcoal-500 shrink-0">
-              <span>{tareasDelDiaSeleccionado.length} entregas registradas</span>
+            <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-500 shrink-0">
+              <span>{tareasDelDiaSeleccionado.length} entregas</span>
               <span className="text-primary-600 font-bold">PrismaLab</span>
             </div>
           </div>
 
-          {/* Panel Inferior: Próximas Tareas con scroll interno */}
-          <div className="ccv-card p-3.5 sm:p-4 flex flex-col justify-between border-t-4 border-t-accent-500 shadow-card h-[240px] overflow-hidden">
+          {/* Panel Inferior: Próximas Tareas (50% Altura) */}
+          <div className="ccv-card p-4 sm:p-5 flex flex-col justify-between border-t-4 border-t-accent-500 shadow-card h-full overflow-hidden">
             <div className="flex flex-col min-h-0 flex-1">
               {/* Header */}
-              <div className="pb-1.5 border-b border-stone-200 flex items-center justify-between shrink-0">
+              <div className="pb-2 border-b border-stone-200 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-1.5">
                   <CalendarClock className="w-4 h-4 text-accent-600" />
                   <div>
@@ -590,13 +590,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     </h3>
                   </div>
                 </div>
-                <span className="text-[9.5px] font-black px-2 py-0.2 rounded-full bg-accent-100 text-accent-900 border border-accent-200">
-                  {proximasTareas.length} pendientes
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-accent-100 text-accent-900 border border-accent-200">
+                  {proximasTareas.length}
                 </span>
               </div>
 
-              {/* Lista con scroll interno */}
-              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-1.5 mt-1.5">
+              {/* Lista */}
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-2 mt-2">
                 {proximasTareas.length > 0 ? (
                   proximasTareas.map((tarea) => {
                     const badgeClass =
@@ -608,18 +608,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       <div
                         key={tarea.id}
                         onClick={() => onSelectTask(tarea)}
-                        className="p-2 sm:p-2.5 rounded-lg border border-stone-200 bg-white hover:border-accent-400 hover:shadow-2xs transition-all cursor-pointer group space-y-1"
+                        className="p-2.5 sm:p-3 rounded-xl border border-stone-200 bg-white hover:border-accent-400 hover:shadow-sm transition-all cursor-pointer group space-y-1.5"
                       >
                         <div className="flex items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1 flex-wrap">
-                            <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded border ${badgeClass}`}>
+                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md border ${badgeClass}`}>
                               {tarea.estado}
                             </span>
-                            <span className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-stone-100 text-charcoal-700 border border-stone-200 font-mono">
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-stone-100 text-charcoal-700 border border-stone-200 font-mono">
                               📅 {tarea.fecha_vencimiento} • ⏰ {tarea.hora_vencimiento || '18:00'}
                             </span>
                           </div>
-                          <span className={`text-[9.5px] font-extrabold ${
+                          <span className={`text-[10px] font-extrabold ${
                             tiempoRestante.includes('hoy') ? 'text-rose-600 animate-pulse font-black' :
                             tiempoRestante.includes('Mañana') ? 'text-amber-600 font-black' : 'text-charcoal-500'
                           }`}>
@@ -629,24 +629,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         <h4 className="text-xs font-bold text-charcoal-900 group-hover:text-accent-700 transition-colors line-clamp-1 leading-tight">
                           {tarea.titulo}
                         </h4>
-                        <div className="flex items-center justify-between text-[9.5px] text-charcoal-500 pt-1 border-t border-stone-100">
-                          <span className="truncate max-w-[150px] font-medium">{tarea.curso_nombre || tarea.proyecto_nombre || 'General'}</span>
+                        <div className="flex items-center justify-between text-[10px] text-charcoal-500 pt-1 border-t border-stone-100">
+                          <span className="truncate max-w-[140px] font-medium">{tarea.curso_nombre || tarea.proyecto_nombre || 'General'}</span>
                           <span className="text-accent-700 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
-                            Ver <ArrowRight className="w-2.5 h-2.5" />
+                            Ver <ArrowRight className="w-3 h-3" />
                           </span>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="py-4 px-2 text-center rounded-lg border border-dashed border-stone-200 bg-cream-50/50 space-y-1">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
+                  <div className="py-6 px-3 text-center rounded-xl border border-dashed border-stone-200 bg-cream-50/50 space-y-1.5">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto" />
                     <p className="text-xs font-bold text-charcoal-800">¡Al día!</p>
                   </div>
                 )}
               </div>
             </div>
-            <div className="mt-1.5 pt-1.5 border-t border-stone-100 flex items-center justify-between text-[9.5px] text-charcoal-400 font-medium shrink-0">
+            <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-charcoal-400 font-medium shrink-0">
               <span>Cronológico (Hora Desc.)</span>
               <span className="text-accent-700 font-bold">Producción</span>
             </div>
