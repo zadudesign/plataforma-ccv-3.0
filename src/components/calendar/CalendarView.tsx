@@ -324,9 +324,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 return (
                   <div
                     key={`prev-offset-${idx}`}
-                    className="min-h-[54px] sm:min-h-[60px] p-1.5 sm:p-2 rounded-2xl bg-stone-50/50 border border-dashed border-stone-200/60 opacity-30 select-none flex flex-col justify-between"
+                    className="min-h-[42px] sm:min-h-[48px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
                   >
-                    <span className="text-xs font-bold text-stone-400">{diaAnt}</span>
+                    <span className="text-[11px] font-bold text-stone-400">{diaAnt}</span>
                   </div>
                 );
               })}
@@ -338,86 +338,79 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 const esHoy = (currentYear === hoyYear && currentMonth === hoyMonth && dia === hoyDay);
                 const esSeleccionado = (fechaStr === fechaSeleccionada);
 
-                const countCompletadas = tareasDelDia.filter(t => t.estado === 'Completada').length;
-                const countRevision = tareasDelDia.filter(t => t.estado === 'En Revisión').length;
-                const countProceso = tareasDelDia.filter(t => t.estado === 'En Proceso').length;
-                const countPendientes = tareasDelDia.filter(t => t.estado === 'Pendiente').length;
-
                 return (
                   <div
                     key={`dia-${dia}`}
                     onClick={() => setFechaSeleccionada(fechaStr)}
-                    className={`min-h-[54px] sm:min-h-[60px] p-1.5 sm:p-2 rounded-2xl border flex flex-col justify-between transition-all cursor-pointer group relative ${
+                    className={`min-h-[42px] sm:min-h-[48px] p-1 sm:p-1.5 rounded-xl border flex flex-col justify-between transition-all cursor-pointer group relative ${
                       esSeleccionado
-                        ? 'bg-primary-50/90 border-primary-600 ring-2 ring-primary-500 shadow-md scale-[1.02] z-10'
+                        ? 'bg-primary-50/95 border-primary-600 ring-2 ring-primary-500 shadow-sm scale-[1.02] z-10'
                         : esHoy
-                        ? 'bg-amber-50/40 border-amber-400 shadow-xs ring-1 ring-amber-400 hover:border-amber-500'
+                        ? 'bg-amber-50/50 border-amber-400 ring-1 ring-amber-400 hover:border-amber-500'
                         : 'bg-white border-stone-200/90 hover:border-primary-300 hover:bg-stone-50/60 hover:shadow-xs'
                     }`}
-                    title={`Día ${dia} - ${tareasDelDia.length} ${tareasDelDia.length === 1 ? 'entrega' : 'entregas'} (Clic para ver tareas en el panel lateral)`}
+                    title={`Día ${dia} - ${tareasDelDia.length} ${tareasDelDia.length === 1 ? 'entrega' : 'entregas'} (Clic para ver en el panel derecho)`}
                   >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1">
-                        <span
-                          className={`text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                            esSeleccionado
-                              ? 'bg-primary-700 text-white shadow-2xs'
-                              : esHoy
-                              ? 'bg-amber-500 text-white shadow-2xs font-black'
-                              : 'text-charcoal-800 group-hover:text-primary-700'
-                          }`}
-                        >
-                          {dia}
-                        </span>
-                        {esHoy && (
-                          <span className="hidden sm:inline-block text-[8px] font-black text-amber-800 uppercase tracking-tighter bg-amber-100 px-1 py-0.2 rounded">
-                            Hoy
-                          </span>
-                        )}
-                      </div>
-
-                      {tareasDelDia.length > 0 && (
-                        <span
-                          className={`text-[10px] font-black px-1.5 py-0.2 rounded-full border ${
-                            esSeleccionado
-                              ? 'bg-primary-600 text-white border-primary-600'
-                              : 'bg-stone-100 text-charcoal-800 border-stone-200 group-hover:bg-primary-100 group-hover:text-primary-800'
-                          }`}
-                        >
-                          {tareasDelDia.length}
+                    {/* Top Row: Solo el Número de Día */}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-xs font-black w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                          esSeleccionado
+                            ? 'bg-primary-700 text-white shadow-2xs'
+                            : esHoy
+                            ? 'bg-amber-500 text-white font-black'
+                            : 'text-charcoal-800 group-hover:text-primary-700'
+                        }`}
+                      >
+                        {dia}
+                      </span>
+                      {esHoy && (
+                        <span className="text-[8px] font-black text-amber-800 uppercase tracking-tighter bg-amber-100 px-1 py-0.2 rounded leading-none">
+                          Hoy
                         </span>
                       )}
                     </div>
 
-                    {/* Indicadores visuales compactos de estado (Puntos / Barras) */}
-                    <div className="flex items-center gap-1 mt-1 pt-0.5">
+                    {/* Bottom Row: Puntos de Color de Tareas + Contador Separado */}
+                    <div className="flex items-center justify-between gap-1 mt-0.5 min-h-[14px]">
                       {tareasDelDia.length > 0 ? (
-                        <div className="flex items-center gap-1 w-full">
-                          {countPendientes > 0 && (
-                            <span 
-                              className="h-1.5 min-w-[5px] flex-1 rounded-full bg-rose-500 shadow-2xs" 
-                              title={`${countPendientes} pendiente${countPendientes > 1 ? 's' : ''}`} 
-                            />
-                          )}
-                          {countProceso > 0 && (
-                            <span 
-                              className="h-1.5 min-w-[5px] flex-1 rounded-full bg-blue-500 shadow-2xs" 
-                              title={`${countProceso} en proceso`} 
-                            />
-                          )}
-                          {countRevision > 0 && (
-                            <span 
-                              className="h-1.5 min-w-[5px] flex-1 rounded-full bg-amber-500 shadow-2xs" 
-                              title={`${countRevision} en revisión`} 
-                            />
-                          )}
-                          {countCompletadas > 0 && (
-                            <span 
-                              className="h-1.5 min-w-[5px] flex-1 rounded-full bg-emerald-500 shadow-2xs" 
-                              title={`${countCompletadas} completada${countCompletadas > 1 ? 's' : ''}`} 
-                            />
-                          )}
-                        </div>
+                        <>
+                          {/* Puntos circulares de color según estado de la tarea */}
+                          <div className="flex items-center gap-1 flex-wrap overflow-hidden">
+                            {tareasDelDia.slice(0, 4).map((t, idx) => {
+                              const dotColor =
+                                t.estado === 'Completada' ? 'bg-emerald-500' :
+                                t.estado === 'En Revisión' ? 'bg-amber-500' :
+                                t.estado === 'En Proceso' ? 'bg-blue-500' :
+                                'bg-rose-500';
+
+                              return (
+                                <span
+                                  key={idx}
+                                  className={`w-1.5 h-1.5 rounded-full ${dotColor} shadow-2xs shrink-0`}
+                                  title={`${t.titulo} (${t.estado})`}
+                                />
+                              );
+                            })}
+                            {tareasDelDia.length > 4 && (
+                              <span className="text-[7.5px] font-black text-charcoal-400 leading-none">
+                                +{tareasDelDia.length - 4}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Contador numérico sutil ubicado abajo a la derecha */}
+                          <span
+                            className={`text-[9px] font-extrabold px-1 py-0.2 rounded-md leading-none ${
+                              esSeleccionado
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-stone-100 text-charcoal-600 border border-stone-200/80 group-hover:bg-primary-100 group-hover:text-primary-800'
+                            }`}
+                            title={`${tareasDelDia.length} entregas`}
+                          >
+                            {tareasDelDia.length}
+                          </span>
+                        </>
                       ) : (
                         <span className="h-1.5" />
                       )}
@@ -432,9 +425,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 return (
                   <div
                     key={`next-offset-${idx}`}
-                    className="min-h-[54px] sm:min-h-[60px] p-1.5 sm:p-2 rounded-2xl bg-stone-50/50 border border-dashed border-stone-200/60 opacity-30 select-none flex flex-col justify-between"
+                    className="min-h-[42px] sm:min-h-[48px] p-1 sm:p-1.5 rounded-xl bg-stone-50/40 border border-dashed border-stone-200/50 opacity-25 select-none flex flex-col justify-between"
                   >
-                    <span className="text-xs font-bold text-stone-400">{diaSig}</span>
+                    <span className="text-[11px] font-bold text-stone-400">{diaSig}</span>
                   </div>
                 );
               })}
