@@ -510,7 +510,7 @@ export default function Home() {
         />
 
         {/* Main App Container */}
-        <main className="flex-1 ml-28 mr-6 my-6 min-w-0">
+        <main className="flex-1 ml-0 px-3.5 pt-16 pb-6 md:pt-0 md:px-0 md:ml-28 md:mr-6 md:my-6 min-w-0 transition-all">
           {/* Top Hero Blue Banner */}
           <WelcomeBanner usuarioActual={usuarioActual} />
 
