@@ -190,7 +190,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-sage-600" />
-            <h3 className="text-lg font-extrabold text-charcoal-900">Métricas Institucionales CCV</h3>
+            <h3 className="text-lg font-extrabold text-charcoal-900">Métricas Institucionales</h3>
           </div>
           <span className="text-xs text-charcoal-500 font-semibold bg-cream-100 px-3 py-1 rounded-full border border-stone-200">
             Actualizado en tiempo real
@@ -418,23 +418,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <SemicircleProgressGauge porcentaje={progresoCursosPorcentaje} color="#22C55E" />
           </div>
 
-          {/* Desglose de estados de Tareas en Cursos (4 Fases: 10%, 40%, 25%, 25%) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-cream-200/60 text-center">
-            <div className="p-2 bg-rose-50/70 rounded-xl border border-rose-200/40">
-              <p className="text-[10px] font-extrabold text-rose-700 uppercase">Pendientes (10%)</p>
-              <p className="text-sm font-black text-rose-800">{tareasCursosDesglose.pendientes}</p>
+          {/* Desglose de estados de Tareas en Cursos */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-cream-200/60">
+            <div className="p-2.5 bg-rose-50/70 rounded-xl border border-rose-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-rose-700 uppercase tracking-wide">Pendientes</p>
+              <p className="text-lg sm:text-xl font-black text-rose-900 leading-none">{tareasCursosDesglose.pendientes}</p>
             </div>
-            <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-200/40">
-              <p className="text-[10px] font-extrabold text-blue-700 uppercase">En Proceso (+40%)</p>
-              <p className="text-sm font-black text-blue-800">{tareasCursosDesglose.enProceso}</p>
+            <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-blue-700 uppercase tracking-wide">En Proceso</p>
+              <p className="text-lg sm:text-xl font-black text-blue-900 leading-none">{tareasCursosDesglose.enProceso}</p>
             </div>
-            <div className="p-2 bg-amber-50/70 rounded-xl border border-amber-200/40">
-              <p className="text-[10px] font-extrabold text-amber-700 uppercase">En Revisión (+25%)</p>
-              <p className="text-sm font-black text-amber-800">{tareasCursosDesglose.enRevision}</p>
+            <div className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-amber-700 uppercase tracking-wide">En Revisión</p>
+              <p className="text-lg sm:text-xl font-black text-amber-900 leading-none">{tareasCursosDesglose.enRevision}</p>
             </div>
-            <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-200/40">
-              <p className="text-[10px] font-extrabold text-emerald-700 uppercase">Completadas (+25%)</p>
-              <p className="text-sm font-black text-emerald-800">{tareasCursosDesglose.completadas}</p>
+            <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wide">Completadas</p>
+              <p className="text-lg sm:text-xl font-black text-emerald-900 leading-none">{tareasCursosDesglose.completadas}</p>
             </div>
           </div>
         </div>
@@ -461,23 +461,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <SemicircleProgressGauge porcentaje={progresoProyectosPorcentaje} color="#22C55E" />
           </div>
 
-          {/* Desglose de estados de Tareas en Proyectos (4 Fases: 10%, 40%, 25%, 25%) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-cream-200/60 text-center">
-            <div className="p-2 bg-rose-50/70 rounded-xl border border-rose-200/40">
-              <p className="text-[10px] font-extrabold text-rose-700 uppercase">Pendientes (10%)</p>
-              <p className="text-sm font-black text-rose-800">{tareasProyectosDesglose.pendientes}</p>
+          {/* Desglose de estados de Tareas en Proyectos */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-cream-200/60">
+            <div className="p-2.5 bg-rose-50/70 rounded-xl border border-rose-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-rose-700 uppercase tracking-wide">Pendientes</p>
+              <p className="text-lg sm:text-xl font-black text-rose-900 leading-none">{tareasProyectosDesglose.pendientes}</p>
             </div>
-            <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-200/40">
-              <p className="text-[10px] font-extrabold text-blue-700 uppercase">En Proceso (+40%)</p>
-              <p className="text-sm font-black text-blue-800">{tareasProyectosDesglose.enProceso}</p>
+            <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-blue-700 uppercase tracking-wide">En Proceso</p>
+              <p className="text-lg sm:text-xl font-black text-blue-900 leading-none">{tareasProyectosDesglose.enProceso}</p>
             </div>
-            <div className="p-2 bg-amber-50/70 rounded-xl border border-amber-200/40">
-              <p className="text-[10px] font-extrabold text-amber-700 uppercase">En Revisión (+25%)</p>
-              <p className="text-sm font-black text-amber-800">{tareasProyectosDesglose.enRevision}</p>
+            <div className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-amber-700 uppercase tracking-wide">En Revisión</p>
+              <p className="text-lg sm:text-xl font-black text-amber-900 leading-none">{tareasProyectosDesglose.enRevision}</p>
             </div>
-            <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-200/40">
-              <p className="text-[10px] font-extrabold text-emerald-700 uppercase">Completadas (+25%)</p>
-              <p className="text-sm font-black text-emerald-800">{tareasProyectosDesglose.completadas}</p>
+            <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/50 flex items-center justify-between gap-2 shadow-2xs">
+              <p className="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wide">Completadas</p>
+              <p className="text-lg sm:text-xl font-black text-emerald-900 leading-none">{tareasProyectosDesglose.completadas}</p>
             </div>
           </div>
         </div>

@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual, t
     requiresAdmin?: boolean;
     requiresCmuOrAdmin?: boolean;
   }[] = [
-    { id: 'dashboard', label: 'Métricas Institucionales CCV', icon: <LayoutGrid className="w-5 h-5" /> },
+    { id: 'dashboard', label: 'Métricas Institucionales', icon: <LayoutGrid className="w-5 h-5" /> },
     { id: 'calendar', label: 'Calendario de Entregas & Vencimientos CCV', icon: <Calendar className="w-5 h-5" /> },
     { id: 'kanban', label: 'Tablero Kanban de Producción CCV', icon: <Kanban className="w-5 h-5" /> },
     { id: 'parrilla', label: 'Parrilla de Contenidos & Calendario Editorial (CMU)', icon: <CalendarDays className="w-5 h-5" />, requiresCmuOrAdmin: true },
