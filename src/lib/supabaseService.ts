@@ -843,6 +843,8 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
         areas(nombre),
         usuarios!responsable_id(nombre_completo, avatar_url)
       `)
+      .order('orden_tarea', { ascending: true, nullsFirst: false })
+      .order('numero_unidad', { ascending: true, nullsFirst: false })
       .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
       .order('hora_vencimiento', { ascending: true, nullsFirst: false });
 
@@ -851,6 +853,8 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       const { data: rawData, error: rawError } = await supabase
         .from('tareas')
         .select('*')
+        .order('orden_tarea', { ascending: true, nullsFirst: false })
+        .order('numero_unidad', { ascending: true, nullsFirst: false })
         .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
         .order('hora_vencimiento', { ascending: true, nullsFirst: false });
 

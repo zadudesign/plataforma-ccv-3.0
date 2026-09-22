@@ -34,7 +34,7 @@ import { getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
 import { calcularProgresoTareas, PESOS_ESTADO_TAREA } from '@/lib/progressUtils';
 import { TaskTimeTracker } from '@/components/tasks/TaskTimeTracker';
-import { validarRequisitosCargaPlantilla, obtenerTareasBloqueantes } from '@/lib/courseTemplateUtils';
+import { validarRequisitosCargaPlantilla, obtenerTareasBloqueantes, ordenarTareasSegunCatalogo } from '@/lib/courseTemplateUtils';
 import { ConfirmCompleteTaskModal } from '@/components/tasks/ConfirmCompleteTaskModal';
 
 interface CourseProjectProgressModalProps {
@@ -111,9 +111,9 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const themeIcono = !esCurso ? (areaProyecto?.icono || 'FolderKanban') : (facultadCurso?.icono || 'BookOpen');
   const theme = getFacultyTheme(themeColor);
 
-  // Filtrar todas las tareas pertenecientes a este curso o proyecto (para cálculo de avance global)
-  const todasTareasEntidad = tareas.filter(t => 
-    esCurso ? t.curso_id === entidad.id : t.proyecto_id === entidad.id
+  // Filtrar y ordenar todas las tareas pertenecientes a este curso o proyecto según el catálogo maestro
+  const todasTareasEntidad = ordenarTareasSegunCatalogo(
+    tareas.filter(t => esCurso ? t.curso_id === entidad.id : t.proyecto_id === entidad.id)
   );
 
   // Las tareas bloqueadas SOLO deben aparecer en el desglose para el rol de Administrador
@@ -144,18 +144,20 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
     return sum + (tarifaHora * ((t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0)));
   }, 0);
 
-  // Filtrar según pestaña seleccionada y filtro de unidades
-  const tareasMostrar = tareasEntidad.filter(t => {
-    if (filtroEstado === 'completadas' && t.estado !== 'Completada') return false;
-    if (filtroEstado === 'pendientes' && t.estado === 'Completada') return false;
+  // Filtrar y ordenar según pestaña seleccionada y filtro de unidades
+  const tareasMostrar = ordenarTareasSegunCatalogo(
+    tareasEntidad.filter(t => {
+      if (filtroEstado === 'completadas' && t.estado !== 'Completada') return false;
+      if (filtroEstado === 'pendientes' && t.estado === 'Completada') return false;
 
-    if (esCurso) {
-      if (filtroUnidad === 'transversal' && (t.numero_unidad !== null && t.numero_unidad !== undefined)) return false;
-      if (typeof filtroUnidad === 'number' && t.numero_unidad !== filtroUnidad) return false;
-    }
+      if (esCurso) {
+        if (filtroUnidad === 'transversal' && (t.numero_unidad !== null && t.numero_unidad !== undefined)) return false;
+        if (typeof filtroUnidad === 'number' && t.numero_unidad !== filtroUnidad) return false;
+      }
 
-    return true;
-  });
+      return true;
+    })
+  );
 
   const getGaugeColor = (pct: number) => {
     if (pct >= 80) return '#16A34A'; // Verde

@@ -36,6 +36,39 @@ export function validarRequisitosCargaPlantilla(
 }
 
 /**
+ * Ordena una lista de tareas respetando estrictamente el orden oficial del
+ * Catálogo Maestro de Tareas Predeterminadas:
+ * 1. `orden_tarea` ASC (1, 2, 3, 4, 5...)
+ * 2. `numero_unidad` ASC (Unidad 1, Unidad 2, Unidad 3...) para tareas duplicadas
+ * 3. Fecha de creación o vencimiento como desempate secundario
+ */
+export function ordenarTareasSegunCatalogo(tareas: TareaCCV[]): TareaCCV[] {
+  return [...tareas].sort((a, b) => {
+    // 1. Orden oficial de la plantilla maestra
+    const ordenA = a.orden_tarea !== undefined && a.orden_tarea !== null ? a.orden_tarea : 9999;
+    const ordenB = b.orden_tarea !== undefined && b.orden_tarea !== null ? b.orden_tarea : 9999;
+
+    if (ordenA !== ordenB) {
+      return ordenA - ordenB;
+    }
+
+    // 2. Si tienen el mismo orden_tarea (ej. tareas repetidas por unidad), ordenar por numero_unidad
+    const unidadA = a.numero_unidad !== undefined && a.numero_unidad !== null ? a.numero_unidad : 0;
+    const unidadB = b.numero_unidad !== undefined && b.numero_unidad !== null ? b.numero_unidad : 0;
+    if (unidadA !== unidadB) {
+      return unidadA - unidadB;
+    }
+
+    // 3. Desempate por fecha de creación o título
+    if (a.created_at && b.created_at) {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    }
+    return (a.titulo || '').localeCompare(b.titulo || '');
+  });
+}
+
+
+/**
  * Obtiene la lista de tareas pendientes que están bloqueando a la tarea indicada.
  */
 export function obtenerTareasBloqueantes(
