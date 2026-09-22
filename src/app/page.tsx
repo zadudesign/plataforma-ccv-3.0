@@ -32,6 +32,7 @@ import { ProductivityDashboard } from '@/components/productivity/ProductivityDas
 import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
 import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
+import { getEntitiesVisibleByRole } from '@/lib/roleVisibilityUtils';
 import { ShieldAlert } from 'lucide-react';
 
 export default function Home() {
@@ -328,115 +329,33 @@ export default function Home() {
   // REGLAS DE SEGURIDAD Y VISIBILIDAD DE TAREAS POR ROL & JERARQUÍA
   // ---------------------------------------------------------------------------
 
-  const rolNombre = usuarioActual?.rol_nombre || roles.find(r => r.id === usuarioActual?.rol_id)?.nombre || '';
-  const isSupervisorGlobal = nivelArea === 6 || rolNombre === 'Administrador';
-
-  // Detección de Áreas/Departamentos donde el usuario actual es Jefe asignado
-  const usuarioRolObj = roles.find(r => r.id === usuarioActual?.rol_id);
-  const areasDondeEsJefe = areas.filter(a => 
-    (usuarioActual && a.jefe_id === usuarioActual.id) || 
-    (rolNombre === 'Jefe' && (a.id === usuarioRolObj?.area_id || a.nombre === usuarioRolObj?.area_nombre))
-  );
-
-  // Conjunto de IDs de áreas supervisadas por el Jefe (el departamento y todas sus subáreas hijas)
-  const areaIdsSupervisadasPorJefe = React.useMemo(() => {
-    const ids = new Set<string>();
-    const agregarAreaYSubareas = (areaId: string) => {
-      if (!areaId || ids.has(areaId)) return;
-      ids.add(areaId);
-      areas
-        .filter(sub => sub.parent_id === areaId && sub.id && sub.id !== areaId && !ids.has(sub.id))
-        .forEach(sub => agregarAreaYSubareas(sub.id));
-    };
-    areasDondeEsJefe.forEach(a => {
-      if (a.id) agregarAreaYSubareas(a.id);
+  const {
+    isSupervisorGlobal,
+    tareasVisibles: tareasVisiblesPorRol,
+    cursosVisibles: cursosVisiblesPorRol,
+    proyectosVisibles: proyectosVisiblesPorRol,
+    programasVisibles: programasVisiblesPorRol,
+    facultadesVisibles: facultadesVisiblesPorRol,
+    comentariosVisibles: comentariosVisiblesPorRol,
+  } = React.useMemo(() => {
+    return getEntitiesVisibleByRole({
+      usuarioActual,
+      nivelArea,
+      roles,
+      areas,
+      facultades,
+      programas,
+      cursos,
+      proyectos,
+      tareas,
+      comentarios,
     });
-    return ids;
-  }, [areasDondeEsJefe, areas]);
+  }, [usuarioActual, nivelArea, roles, areas, facultades, programas, cursos, proyectos, tareas, comentarios]);
 
   // Si no hay sesión iniciada, mostrar la Landing Institucional CCV con acceso al Login
   if (!usuarioActual) {
     return <LandingHome />;
   }
-
-  const esJefeDeArea = areaIdsSupervisadasPorJefe.size > 0;
-
-  // 1. Tareas Visibles por Rol:
-  // - Administrador (Nivel 6): Visión global de toda la plataforma.
-  // - Jefe de Departamento: Tareas adscritas a su departamento o a proyectos de su departamento.
-  // - Decano: Tareas asociadas a cursos/proyectos de su facultad o asignadas a él/su rol.
-  // - Coordinador: Tareas asociadas a cursos de su programa o asignadas a él/su rol.
-  // - Roles operativos (Diseño, Multimedia, Soporte, Docente, Par Evaluador):
-  //   Ven las tareas asignadas específicamente a su ROL o a su usuario (responsable principal/secundario).
-  const tareasVisiblesPorRol = tareas.filter(t => {
-    // 0. REGLA ESTRICTA DE SEGURIDAD & SECUENCIA:
-    // Las tareas bloqueadas quedan estrictamente ocultas para TODOS los roles, excepto para el Administrador
-    if (t.estado_bloqueo === 'BLOQUEADA' && !isSupervisorGlobal) {
-      return false;
-    }
-
-    // 1. Administrador (Nivel 6) ve todas las tareas
-    if (isSupervisorGlobal) return true;
-
-    // 2. Asignado directamente al usuario actual (Principal o Secundario)
-    if (t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id) return true;
-
-    // 3. Jefe de Departamento: Tareas de su departamento o de proyectos pertenecientes a su departamento
-    if (esJefeDeArea) {
-      if (t.area_id && areaIdsSupervisadasPorJefe.has(t.area_id)) return true;
-      if (t.proyecto_id) {
-        const proy = proyectos.find(p => p.id === t.proyecto_id);
-        if (proy && proy.area_id && areaIdsSupervisadasPorJefe.has(proy.area_id)) return true;
-      }
-    }
-
-    // 4. Coincidencia de Rol Destino con el Rol del usuario (Principal o Secundario)
-    if (t.rol_destino && rolNombre && t.rol_destino.toLowerCase().trim() === rolNombre.toLowerCase().trim()) {
-      return true;
-    }
-    if (t.rol_destino_secundario && rolNombre && t.rol_destino_secundario.toLowerCase().trim() === rolNombre.toLowerCase().trim()) {
-      return true;
-    }
-
-    // 5. Líder o Co-Líder de Proyecto asignado ve las tareas de su proyecto
-    if (t.proyecto_id && proyectos.some(p => p.id === t.proyecto_id && (p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id))) {
-      return true;
-    }
-
-    // 6. Decano: Tareas asociadas a cursos o proyectos de su facultad
-    const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
-    if (decanoFacultad) {
-      if (t.curso_id && cursos.some(c => c.id === t.curso_id && c.facultad_nombre === decanoFacultad.nombre)) {
-        return true;
-      }
-      if (t.proyecto_id && proyectos.some(p => p.id === t.proyecto_id)) {
-        return true;
-      }
-    }
-
-    // 7. Coordinador: Tareas asociadas a cursos de su programa
-    const coordPrograma = programas.find(p => p.coordinador_id === usuarioActual.id);
-    if (coordPrograma) {
-      if (t.curso_id && cursos.some(c => c.id === t.curso_id && c.programa_id === coordPrograma.id)) {
-        return true;
-      }
-    }
-
-    // 8. Docente / Par Evaluador asignado al curso de la tarea (incluso si el usuario tiene rol principal de Decano, Coordinador u otro)
-    if (t.curso_id) {
-      const cursoDeTarea = cursos.find(c => c.id === t.curso_id);
-      if (cursoDeTarea) {
-        if (cursoDeTarea.docente_id === usuarioActual.id && (!t.rol_destino || t.rol_destino === 'Docente' || t.responsable_id === usuarioActual.id || rolNombre === 'Docente')) {
-          return true;
-        }
-        if (cursoDeTarea.evaluador_id === usuarioActual.id && (!t.rol_destino || t.rol_destino === 'Par Evaluador' || t.responsable_id === usuarioActual.id || rolNombre === 'Par Evaluador')) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  });
 
   // Filter tasks by search query
   const tareasFiltradas = tareasVisiblesPorRol.filter(t => 
@@ -446,56 +365,6 @@ export default function Home() {
     t.curso_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
     t.proyecto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
   );
-
-  // 2. Cursos Visibles por Rol (Docente/Evaluador ven solo sus cursos asignados)
-  const cursosVisiblesPorRol = cursos.filter(c => {
-    if (isSupervisorGlobal) return true;
-    // Decano: Cursos de su facultad
-    const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
-    if (decanoFacultad && c.facultad_nombre === decanoFacultad.nombre) return true;
-    // Coordinador: Cursos de su programa
-    const coordPrograma = programas.find(p => p.coordinador_id === usuarioActual.id);
-    if (coordPrograma && c.programa_id === coordPrograma.id) return true;
-    // Docente o Par Evaluador
-    if (c.docente_id === usuarioActual.id || c.evaluador_id === usuarioActual.id) return true;
-    // O si tiene tareas visibles en ese curso
-    if (tareasVisiblesPorRol.some(t => t.curso_id === c.id)) return true;
-
-    return false;
-  });
-
-  // 3. Proyectos Visibles por Rol
-  const proyectosVisiblesPorRol = proyectos.filter(p => {
-    if (isSupervisorGlobal) return true;
-    // Jefe de Departamento: Proyectos adscritos a su departamento
-    if (esJefeDeArea && p.area_id && areaIdsSupervisadasPorJefe.has(p.area_id)) return true;
-    // Líder o Co-Líder
-    if (p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id) return true;
-    // O tareas asignadas en ese proyecto
-    return tareasVisiblesPorRol.some(t => t.proyecto_id === p.id);
-  });
-
-  // 4. Programas Visibles por Rol
-  const programasVisiblesPorRol = programas.filter(p => {
-    if (isSupervisorGlobal) return true;
-    const decanoFacultad = facultades.find(f => f.decano_id === usuarioActual.id);
-    if (decanoFacultad && (p.facultad_id === decanoFacultad.id || p.facultad_nombre === decanoFacultad.nombre)) return true;
-    if (p.coordinador_id === usuarioActual.id) return true;
-    return cursosVisiblesPorRol.some(c => c.programa_id === p.id || c.programa_nombre === p.nombre);
-  });
-
-  // 5. Facultades Visibles por Rol
-  const facultadesVisiblesPorRol = facultades.filter(f => {
-    if (isSupervisorGlobal) return true;
-    if (f.decano_id === usuarioActual.id) return true;
-    return programasVisiblesPorRol.some(p => p.facultad_id === f.id || p.facultad_nombre === f.nombre);
-  });
-
-  // 6. Comentarios Visibles por Rol
-  const comentariosVisiblesPorRol = comentarios.filter(com => {
-    if (isSupervisorGlobal) return true;
-    return tareasVisiblesPorRol.some(t => t.id === com.tarea_id);
-  });
 
   const tareasPendientesCount = tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente' && t.estado_bloqueo !== 'BLOQUEADA').length;
 
@@ -674,8 +543,8 @@ export default function Home() {
         {isCreateTaskOpen && (
           <CreateTaskModal
             areas={areas}
-            cursos={cursos}
-            proyectos={proyectos}
+            cursos={cursosVisiblesPorRol}
+            proyectos={proyectosVisiblesPorRol}
             usuarios={usuarios}
             onClose={() => setIsCreateTaskOpen(false)}
             onCreateTask={handleCreateTask}

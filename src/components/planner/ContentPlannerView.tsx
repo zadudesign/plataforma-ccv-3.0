@@ -122,9 +122,24 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
     return new Date(pub.fecha_publicacion).getTime() < Date.now();
   };
 
-  // Filtrado de publicaciones
-  const publicacionesFiltradas = useMemo(() => {
+  const isSupervisor = (usuarioActual?.rol_nombre || '').toLowerCase().includes('admin') || usuarioActual?.rol_id === 'r-1';
+  const visibleCursosIds = useMemo(() => new Set(cursos.map(c => c.id)), [cursos]);
+  const visibleProyectosIds = useMemo(() => new Set(proyectos.map(p => p.id)), [proyectos]);
+
+  // Filtrado de publicaciones base por rol y responsabilidad
+  const publicacionesPorRol = useMemo(() => {
+    if (isSupervisor) return publicaciones;
     return publicaciones.filter(p => {
+      if (usuarioActual && p.responsable_id === usuarioActual.id) return true;
+      if (p.curso_id && visibleCursosIds.has(p.curso_id)) return true;
+      if (p.proyecto_id && visibleProyectosIds.has(p.proyecto_id)) return true;
+      return false;
+    });
+  }, [publicaciones, isSupervisor, usuarioActual, visibleCursosIds, visibleProyectosIds]);
+
+  // Filtrado de publicaciones por UI controls
+  const publicacionesFiltradas = useMemo(() => {
+    return publicacionesPorRol.filter(p => {
       // Búsqueda por texto
       if (busqueda.trim()) {
         const query = busqueda.toLowerCase().trim();
@@ -167,7 +182,7 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
 
       return true;
     });
-  }, [publicaciones, busqueda, filtroCanal, filtroEstado, filtroResponsable, filtroEntidad, soloAtrasados]);
+  }, [publicacionesPorRol, busqueda, filtroCanal, filtroEstado, filtroResponsable, filtroEntidad, soloAtrasados]);
 
   // Publicaciones del mes seleccionado
   const publicacionesDelMes = useMemo(() => {
