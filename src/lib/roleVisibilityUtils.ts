@@ -254,44 +254,40 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       return true;
     }
 
-    // B. Jefe de departamento: tareas adscritas a su departamento o proyectos de su departamento
+    // B. Jefe de departamento: Tareas asignadas a la jefatura o directamente a su usuario
     if (esJefeDeArea) {
-      if (t.area_id && areaIdsSupervisadasPorJefe.has(t.area_id)) return true;
-      if (t.proyecto_id) {
-        const proy = proyectos.find(p => p.id === t.proyecto_id);
-        if (proy && proy.area_id && areaIdsSupervisadasPorJefe.has(proy.area_id)) return true;
+      if (isRoleMatch(t.rol_destino, 'Jefe') || isRoleMatch(t.rol_destino_secundario, 'Jefe')) {
+        if (!t.area_id || areaIdsSupervisadasPorJefe.has(t.area_id)) return true;
       }
     }
 
-    // C. Decano: Tareas asociadas a cursos de su facultad o proyectos de su facultad
-    if (facultadesDondeEsDecano.length > 0) {
-      if (t.curso_id) {
-        const c = cursos.find(item => item.id === t.curso_id);
-        if (c && ((c.facultad_nombre && nombresFacultadesDecano.has(c.facultad_nombre)) || (c.programa_id && programas.some(prog => prog.id === c.programa_id && idsFacultadesDecano.has(prog.facultad_id))))) {
-          return true;
-        }
-      }
-      if (t.proyecto_id) {
-        const p = proyectos.find(item => item.id === t.proyecto_id);
-        if (p && ((p.area_id && idsFacultadesDecano.has(p.area_id)) || p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id)) {
-          return true;
-        }
-      }
+    // C. Decano: Tareas con rol destino Decano dentro de su facultad
+    if (facultadesDondeEsDecano.length > 0 || isRoleMatch(rolNombre, 'Decano')) {
       if (isRoleMatch(t.rol_destino, 'Decano') || isRoleMatch(t.rol_destino_secundario, 'Decano')) {
-        return true;
+        if (!t.curso_id && !t.proyecto_id) return true;
+        if (t.curso_id) {
+          const c = cursos.find(item => item.id === t.curso_id);
+          if (c && ((c.facultad_nombre && nombresFacultadesDecano.has(c.facultad_nombre)) || (c.programa_id && programas.some(prog => prog.id === c.programa_id && idsFacultadesDecano.has(prog.facultad_id))))) {
+            return true;
+          }
+        }
+        if (t.proyecto_id) {
+          const p = proyectos.find(item => item.id === t.proyecto_id);
+          if (p && ((p.area_id && idsFacultadesDecano.has(p.area_id)) || p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id)) {
+            return true;
+          }
+        }
       }
     }
 
-    // D. Coordinador: Tareas asociadas a cursos de sus programas coordinados
-    if (programasDondeEsCoordinador.length > 0) {
-      if (t.curso_id) {
+    // D. Coordinador: Tareas con rol destino Coordinador dentro de sus programas coordinados
+    if (programasDondeEsCoordinador.length > 0 || isRoleMatch(rolNombre, 'Coordinador')) {
+      if (isRoleMatch(t.rol_destino, 'Coordinador') || isRoleMatch(t.rol_destino_secundario, 'Coordinador')) {
+        if (!t.curso_id) return true;
         const c = cursos.find(item => item.id === t.curso_id);
         if (c && (idsProgramasCoordinador.has(c.programa_id) || (c.programa_nombre && nombresProgramasCoordinador.has(c.programa_nombre)))) {
           return true;
         }
-      }
-      if (isRoleMatch(t.rol_destino, 'Coordinador') || isRoleMatch(t.rol_destino_secundario, 'Coordinador')) {
-        return true;
       }
     }
 
@@ -302,36 +298,44 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
         const esDocenteDelCurso = cursoDeTarea.docente_id === usuarioActual.id;
         const esEvaluadorDelCurso = cursoDeTarea.evaluador_id === usuarioActual.id;
 
+        // Tarea para el docente asignado al curso (si no tiene responsable asignado o si es el docente)
         if (esDocenteDelCurso && (
-          !t.rol_destino ||
           isRoleMatch(t.rol_destino, 'Docente') ||
           isRoleMatch(t.rol_destino_secundario, 'Docente') ||
-          isRoleMatch(rolNombre, 'Docente')
+          (isRoleMatch(rolNombre, 'Docente') && (!t.rol_destino || t.rol_destino === 'General'))
         )) {
           return true;
         }
 
+        // Tarea para el par evaluador asignado al curso
         if (esEvaluadorDelCurso && (
-          !t.rol_destino ||
           isRoleMatch(t.rol_destino, 'Par Evaluador') ||
           isRoleMatch(t.rol_destino_secundario, 'Par Evaluador') ||
-          isRoleMatch(rolNombre, 'Par Evaluador')
+          (isRoleMatch(rolNombre, 'Par Evaluador') && (!t.rol_destino || t.rol_destino === 'General'))
         )) {
           return true;
         }
       }
     }
 
-    // F. Líder o Co-Líder de Proyecto ve las tareas de su proyecto
+    // F. Líder o Co-Líder de Proyecto ve tareas dirigidas al liderazgo del proyecto o asignadas a él
     if (t.proyecto_id && idsProyectosAsignadosDirectamente.has(t.proyecto_id)) {
-      return true;
+      if (isRoleMatch(t.rol_destino, 'Líder') || isRoleMatch(t.rol_destino, 'Lider') || !t.responsable_id) {
+        return true;
+      }
     }
 
     // G. Roles Operativos CMU (Diseño, Multimedia, Soporte, Producción):
-    // Ven las tareas asignadas específicamente a su especialidad
+    // Ven las tareas asignadas específicamente a su especialidad cuando no tienen otro responsable exclusivo
     if (isOperativoCMU) {
-      if (t.rol_destino && isRoleMatch(t.rol_destino, rolNombre)) return true;
-      if (t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre)) return true;
+      const matchPrincipal = t.rol_destino && isRoleMatch(t.rol_destino, rolNombre);
+      const matchSecundario = t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre);
+      if (matchPrincipal || matchSecundario) {
+        // Si la tarea tiene un responsable_id diferente y específico, sólo la ve ese usuario responsable (o si el usuario actual es el asignado)
+        if (!t.responsable_id || t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id) {
+          return true;
+        }
+      }
     }
 
     return false;
