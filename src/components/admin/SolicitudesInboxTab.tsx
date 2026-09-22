@@ -25,7 +25,12 @@ import {
   Briefcase,
   BookOpen,
   UserCheck,
-  RotateCcw
+  RotateCcw,
+  DollarSign,
+  Timer,
+  FolderKanban,
+  Users,
+  Link as LinkIcon
 } from 'lucide-react';
 import { 
   SolicitudTareaCCV, 
@@ -48,6 +53,8 @@ interface SolicitudesInboxTabProps {
   proyectos: ProyectoEspecial[];
   areas: Area[];
   onSelectTask?: (tarea: TareaCCV) => void;
+  onNavigateKanban?: () => void;
+  onTareaCreada?: (tarea: TareaCCV) => void;
 }
 
 export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
@@ -55,13 +62,17 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   usuarios,
   cursos,
   proyectos,
-  areas
+  areas,
+  onSelectTask,
+  onNavigateKanban,
+  onTareaCreada,
 }) => {
   const { 
     actualizarEstadoSolicitud, 
     aprobarYConvertirSolicitud, 
     solicitudesLoading, 
-    cargarSolicitudesTareas 
+    cargarSolicitudesTareas,
+    tarifasProyecto
   } = useAuth();
 
   // Estados de filtros y búsqueda
@@ -73,22 +84,41 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudTareaCCV | null>(null);
   const [modoAccion, setModoAccion] = useState<'ver' | 'aprobar' | 'rechazar' | null>(null);
 
-  // Estados para formulario de conversión (Aprobar)
+  // Estados para formulario de conversión (Aprobar - Idéntico a CreateTaskModal)
+  const [titulo, setTitulo] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [enlaceRecurso, setEnlaceRecurso] = useState('');
   const [tipoTarea, setTipoTarea] = useState<TipoTarea>('Curso Virtual');
-  const [cursoId, setCursoId] = useState('');
-  const [proyectoId, setProyectoId] = useState('');
-  const [responsableId, setResponsableId] = useState('');
-  const [rolDestino, setRolDestino] = useState('Diseño');
   const [categoriaProyecto, setCategoriaProyecto] = useState<CategoriaTareaProyecto>('Diseño');
-  const [areaId, setAreaId] = useState('');
-  const [tiempoEstimado, setTiempoEstimado] = useState(2);
+  const [cursoId, setCursoId] = useState(cursos[0]?.id || '');
+  const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || '');
+  const [responsableId, setResponsableId] = useState(usuarios[0]?.id || '');
+  const [responsableSecundarioId, setResponsableSecundarioId] = useState('');
+  const [tiempoEstimado, setTiempoEstimado] = useState<number | string>('');
   const [fechaVencimiento, setFechaVencimiento] = useState('');
-  const [horaVencimiento, setHoraVencimiento] = useState('');
+  const [horaVencimiento, setHoraVencimiento] = useState('18:00');
   
-  // Estado para rechazo
+  // Estado para rechazo y feedback
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+
+  // Cálculos dinámicos idénticos a CreateTaskModal
+  const activeCursoId = cursoId || cursos[0]?.id;
+  const activeProyectoId = proyectoId || proyectos[0]?.id;
+  const activeResponsableId = responsableId || usuarios[0]?.id;
+
+  const resp = usuarios.find(u => u.id === activeResponsableId);
+  const respArea = areas.find(a => a.nombre === resp?.area_nombre) 
+    || (resp?.area_id ? areas.find(a => a.id === resp.area_id) : undefined) 
+    || areas[0];
+
+  const resp2 = responsableSecundarioId ? usuarios.find(u => u.id === responsableSecundarioId) : undefined;
+  const resp2Area = resp2 ? (areas.find(a => a.nombre === resp2.area_nombre) || (resp2.area_id ? areas.find(a => a.id === resp2.area_id) : undefined)) : undefined;
+
+  const tarifaConfig = tarifasProyecto.find(t => t.categoria === categoriaProyecto);
+  const tarifaHoraActual = tarifaConfig ? tarifaConfig.tarifa_hora : 35000;
+  const costoTotalCalculado = tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined;
 
   // Métricas
   const total = solicitudes.length;
@@ -124,9 +154,20 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   const handleOpenAprobar = (s: SolicitudTareaCCV) => {
     setSolicitudSeleccionada(s);
     setModoAccion('aprobar');
-    setFechaVencimiento(s.fecha_estimada_entrega || '');
-    setHoraVencimiento(s.hora_estimada || '');
+    setTitulo(s.titulo || '');
+    setDescripcion(s.descripcion || '');
+    setEnlaceRecurso(s.enlace_recurso || '');
+    setFechaVencimiento(s.fecha_estimada_entrega || (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().split('T')[0];
+    })());
+    setHoraVencimiento(s.hora_estimada || '18:00');
+    setTiempoEstimado('');
+    setResponsableSecundarioId('');
     
+    setCategoriaProyecto('Diseño');
+
     if (cursos.length > 0) {
       setTipoTarea('Curso Virtual');
       setCursoId(cursos[0].id);
@@ -134,11 +175,16 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       setTipoTarea('Proyecto');
       setProyectoId(proyectos[0].id);
     }
+
+    if (proyectos.length > 0 && !proyectoId) {
+      setProyectoId(proyectos[0].id);
+    }
+    if (cursos.length > 0 && !cursoId) {
+      setCursoId(cursos[0].id);
+    }
+
     if (usuarios.length > 0) {
       setResponsableId(usuarios[0].id);
-    }
-    if (areas.length > 0) {
-      setAreaId(areas[0].id);
     }
     setFeedbackMsg(null);
   };
@@ -183,53 +229,67 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
     }
   };
 
-  // Ejecutar Aprobación y Conversión en Tarea
+  // Ejecutar Aprobación y Conversión en Tarea (Idéntico a CreateTaskModal)
   const handleConfirmAprobar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!solicitudSeleccionada) return;
+    if (!titulo.trim()) return;
 
     setIsProcessing(true);
     setFeedbackMsg(null);
 
-    const targetCurso = tipoTarea === 'Curso Virtual' ? cursos.find(c => c.id === cursoId) : undefined;
-    const targetProy = (tipoTarea === 'Proyecto' || (tipoTarea as string) === 'Proyecto Especial') ? proyectos.find(p => p.id === proyectoId) : undefined;
-    const targetResp = usuarios.find(u => u.id === responsableId);
-    const targetArea = areas.find(a => a.id === areaId);
+    const cursoObj = cursos.find(c => c.id === activeCursoId);
+    const proyObj = proyectos.find(p => p.id === activeProyectoId);
+
+    const descFinal = [
+      descripcion.trim(),
+      `📌 Solicitado por: ${solicitudSeleccionada.solicitante_nombre} (${solicitudSeleccionada.solicitante_contacto}) - ${solicitudSeleccionada.origen_nombre}`
+    ].filter(Boolean).join('\n\n');
 
     const nuevaTareaPayload: Omit<TareaCCV, 'id'> = {
-      titulo: solicitudSeleccionada.titulo,
-      descripcion: `${solicitudSeleccionada.descripcion}\n\n📌 Solicitado por: ${solicitudSeleccionada.solicitante_nombre} (${solicitudSeleccionada.solicitante_contacto}) - ${solicitudSeleccionada.origen_nombre}`,
+      titulo: titulo.trim(),
+      descripcion: descFinal,
       tipo_tarea: tipoTarea,
-      curso_id: tipoTarea === 'Curso Virtual' ? (targetCurso?.id || null as any) : undefined,
-      curso_nombre: tipoTarea === 'Curso Virtual' ? (targetCurso?.nombre || undefined) : undefined,
-      proyecto_id: (tipoTarea === 'Proyecto' || (tipoTarea as string) === 'Proyecto Especial') ? (targetProy?.id || null as any) : undefined,
-      proyecto_nombre: (tipoTarea === 'Proyecto' || (tipoTarea as string) === 'Proyecto Especial') ? (targetProy?.nombre || undefined) : undefined,
-      area_id: targetArea?.id || undefined,
-      area_nombre: targetArea?.nombre || undefined,
-      responsable_id: targetResp?.id || undefined,
-      responsable_nombre: targetResp?.nombre_completo || undefined,
-      responsable_avatar: targetResp?.avatar_url || undefined,
-      rol_destino: rolDestino || 'Diseño',
-      categoria_proyecto: categoriaProyecto,
-      orden_tarea: 0,
+      categoria_proyecto: tipoTarea === 'Proyecto' ? categoriaProyecto : undefined,
+      area_id: respArea?.id || undefined,
+      area_nombre: respArea?.nombre || resp?.area_nombre || undefined,
+      curso_id: tipoTarea === 'Curso Virtual' ? activeCursoId : undefined,
+      curso_nombre: tipoTarea === 'Curso Virtual' ? cursoObj?.nombre : undefined,
+      proyecto_id: tipoTarea === 'Proyecto' ? activeProyectoId : undefined,
+      proyecto_nombre: tipoTarea === 'Proyecto' ? proyObj?.nombre : undefined,
+      responsable_id: activeResponsableId || undefined,
+      responsable_nombre: resp?.nombre_completo || undefined,
+      responsable_avatar: resp?.avatar_url,
+      rol_destino: resp?.rol_nombre || (tipoTarea === 'Proyecto' ? categoriaProyecto : 'General'),
+      responsable_secundario_id: responsableSecundarioId || undefined,
+      responsable_secundario_nombre: resp2?.nombre_completo || undefined,
+      responsable_secundario_avatar: resp2?.avatar_url,
+      rol_destino_secundario: resp2?.rol_nombre || undefined,
+      orden_tarea: 1,
       estado: 'Pendiente',
-      fecha_vencimiento: fechaVencimiento || solicitudSeleccionada.fecha_estimada_entrega,
-      hora_vencimiento: horaVencimiento || solicitudSeleccionada.hora_estimada || undefined,
+      fecha_vencimiento: fechaVencimiento || solicitudSeleccionada.fecha_estimada_entrega || new Date().toISOString().split('T')[0],
+      hora_vencimiento: horaVencimiento || '18:00',
+      tiempo_estimado: tiempoEstimado !== '' ? Number(tiempoEstimado) : 0,
       tiempo_invertido: 0,
-      tarifa_hora: 0,
-      tarifa_tarea: 0,
-      enlace_recurso: solicitudSeleccionada.enlace_recurso || undefined
+      tiempo_invertido_secundario: responsableSecundarioId ? 0 : undefined,
+      tarifa_hora: tipoTarea === 'Proyecto' ? tarifaHoraActual : undefined,
+      tarifa_tarea: costoTotalCalculado,
+      enlace_recurso: enlaceRecurso.trim() || undefined,
     };
 
     const res = await aprobarYConvertirSolicitud(solicitudSeleccionada.id, nuevaTareaPayload);
     setIsProcessing(false);
 
-    if (res.success) {
-      setFeedbackMsg({ tipo: 'success', texto: '¡Solicitud aprobada y convertida en tarea formal con éxito!' });
+    if (res.success && res.data) {
+      // 1. Notificar inmediatamente a la lista global de tareas de la aplicación
+      if (onTareaCreada) {
+        onTareaCreada(res.data);
+      }
+      setFeedbackMsg({ tipo: 'success', texto: '¡Solicitud aprobada y convertida en tarea de producción formal!' });
       setTimeout(() => {
         setModoAccion(null);
         setSolicitudSeleccionada(null);
-      }, 1200);
+      }, 1500);
     } else {
       setFeedbackMsg({ tipo: 'error', texto: res.error || 'No se pudo crear la tarea formal.' });
     }
@@ -551,175 +611,351 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* MODAL: APROBAR Y CONVERTIR EN TAREA FORMAL                         */}
+      {/* MODAL: APROBAR Y CONVERTIR EN TAREA DE PRODUCCIÓN (Idéntico a CreateTaskModal) */}
       {/* ------------------------------------------------------------------ */}
       {modoAccion === 'aprobar' && solicitudSeleccionada && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={() => !isProcessing && setModoAccion(null)} />
-          
-          <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden z-10 my-auto animate-in zoom-in-95">
-            
-            <div className="px-6 py-4 bg-gradient-to-r from-emerald-800 to-primary-800 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black tracking-tight">Aprobar y Asignar Tarea</h3>
-                  <p className="text-[11px] text-white/80">Convierte esta solicitud en una tarea formal</p>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="ccv-card w-full max-w-2xl bg-white max-h-[90vh] overflow-y-auto shadow-floating border-stone-300">
+            {/* Header */}
+            <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-cream-50/60">
+              <div>
+                <h3 className="text-xl font-extrabold text-charcoal-900 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-sage-600" /> Nueva Tarea de Producción
+                </h3>
+                <p className="text-xs text-charcoal-500 mt-0.5">
+                  Asignación de entregables pedagógicos y proyectos con vinculación de responsables.
+                </p>
               </div>
-              <button onClick={() => !isProcessing && setModoAccion(null)} className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+              <button
+                type="button"
+                onClick={() => !isProcessing && setModoAccion(null)}
+                className="w-9 h-9 rounded-full bg-white border border-stone-200 flex items-center justify-center text-charcoal-600 hover:bg-cream-100 transition-colors shadow-sm cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleConfirmAprobar} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            {/* Contexto de la Solicitud de Origen */}
+            <div className="mx-6 mt-4 p-3.5 bg-sage-50/70 border border-sage-200/80 rounded-2xl flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-sage-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-extrabold text-sage-900 text-[11px] uppercase tracking-wider">Solicitud de Origen</span>
+                  <span className="text-[10px] text-sage-700 bg-sage-100/80 px-2 py-0.5 rounded-full font-bold">
+                    {solicitudSeleccionada.origen_nombre}
+                  </span>
+                </div>
+                <p className="text-charcoal-800 font-bold text-xs truncate mt-0.5">
+                  {solicitudSeleccionada.titulo}
+                </p>
+                <p className="text-[11px] text-charcoal-600 mt-0.5 flex items-center gap-2">
+                  <span>👤 {solicitudSeleccionada.solicitante_nombre}</span>
+                  <span>•</span>
+                  <span>📞 {solicitudSeleccionada.solicitante_contacto}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Formulario */}
+            <form onSubmit={handleConfirmAprobar} className="p-6 space-y-4 text-xs">
               
               {feedbackMsg && (
-                <div className={`p-3 rounded-xl text-xs font-bold ${feedbackMsg.tipo === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
-                  {feedbackMsg.texto}
+                <div className={`p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 ${feedbackMsg.tipo === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                  <span>{feedbackMsg.texto}</span>
+                  {feedbackMsg.tipo === 'success' && onNavigateKanban && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModoAccion(null);
+                        setSolicitudSeleccionada(null);
+                        onNavigateKanban();
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black shrink-0 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      Ir a Kanban →
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* Título de la tarea */}
+              {/* Selector Tipo de Tarea */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTipoTarea('Curso Virtual')}
+                  className={`p-3 rounded-2xl border flex items-center gap-2 font-bold transition-all cursor-pointer ${
+                    tipoTarea === 'Curso Virtual'
+                      ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 text-sky-400" /> Tarea de Curso Virtual
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTipoTarea('Proyecto')}
+                  className={`p-3 rounded-2xl border flex items-center gap-2 font-bold transition-all cursor-pointer ${
+                    tipoTarea === 'Proyecto'
+                      ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto Especial
+                </button>
+              </div>
+
+              {/* Título */}
               <div>
-                <label className="block text-[11px] font-bold text-charcoal-700 mb-1">Título de la Tarea</label>
+                <label className="block font-bold text-slate-800 mb-1">Título del Entregable *</label>
                 <input
                   type="text"
-                  disabled
-                  value={solicitudSeleccionada.titulo}
-                  className="w-full px-3 py-2 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 cursor-not-allowed"
+                  required
+                  placeholder="Ej. Diseño Instruccional del Módulo 1..."
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 font-semibold text-xs"
                 />
               </div>
 
-              {/* Tipo de Tarea */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Descripción */}
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">Descripción / Instrucciones Didácticas</label>
+                <textarea
+                  rows={3}
+                  placeholder="Detalles sobre los requerimientos, guías o especificaciones pedagógicas..."
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs"
+                />
+              </div>
+
+              {/* Material & Enlace Externo */}
+              <div>
+                <label className="block font-bold text-charcoal-800 mb-1 flex items-center gap-1.5">
+                  <LinkIcon className="w-3.5 h-3.5 text-sage-600" />
+                  <span>Enlace a Material o Recurso Didáctico (Opcional)</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/..., https://onedrive.live.com/..., o enlace web"
+                  value={enlaceRecurso}
+                  onChange={(e) => setEnlaceRecurso(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-mono"
+                />
+                <p className="text-[10px] text-charcoal-500 mt-1">
+                  Pega aquí el enlace a la carpeta compartida, documento de guion, Figma, OneDrive o Google Drive.
+                </p>
+              </div>
+
+              {/* Asignación a Curso o Proyecto */}
+              {tipoTarea === 'Curso Virtual' ? (
                 <div>
-                  <label className="block text-[11px] font-bold text-charcoal-700 mb-1">Tipo de Tarea</label>
+                  <label className="block font-bold text-charcoal-800 mb-1">Curso Virtual Asociado</label>
                   <select
-                    value={tipoTarea}
-                    onChange={(e) => setTipoTarea(e.target.value as TipoTarea)}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={activeCursoId}
+                    onChange={(e) => setCursoId(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium"
                   >
-                    <option value="Curso Virtual">Curso Virtual</option>
-                    <option value="Proyecto">Proyecto Especial</option>
+                    {cursos.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} ({c.codigo}) — {c.programa_nombre || 'General'}
+                      </option>
+                    ))}
                   </select>
                 </div>
-
-                {/* Curso o Proyecto Asociado */}
-                <div>
-                  <label className="block text-[11px] font-bold text-charcoal-700 mb-1">
-                    {tipoTarea === 'Curso Virtual' ? 'Asociar a Curso' : 'Asociar a Proyecto'}
-                  </label>
-                  {tipoTarea === 'Curso Virtual' ? (
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-charcoal-800 mb-1">Proyecto Especial Asociado</label>
                     <select
-                      value={cursoId}
-                      onChange={(e) => setCursoId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {cursos.map(c => (
-                        <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      value={proyectoId}
+                      value={activeProyectoId}
                       onChange={(e) => setProyectoId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium"
                     >
                       {proyectos.map(p => (
                         <option key={p.id} value={p.id}>{p.nombre}</option>
                       ))}
                     </select>
-                  )}
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-charcoal-800 mb-1">Tipo de Tarea / Especialidad</label>
+                    <select
+                      value={categoriaProyecto}
+                      onChange={(e) => setCategoriaProyecto(e.target.value as CategoriaTareaProyecto)}
+                      className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold bg-sage-50/50"
+                    >
+                      {tarifasProyecto.map(t => (
+                        <option key={t.categoria} value={t.categoria}>
+                          {t.categoria} (${t.tarifa_hora.toLocaleString('es-CO')} COP / 1 hr)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Asignación Dual de Responsables */}
+              <div className="p-4 bg-cream-50/80 rounded-2xl border border-stone-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-charcoal-900 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-sage-600" /> Responsables Asignados a la Tarea
+                  </label>
+                  <span className="text-[10px] text-charcoal-500 font-medium">
+                    Ambos roles podrán completar y comentar la tarea
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Responsable Principal */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-charcoal-800 text-[11px] flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-sage-700" /> Responsable Principal *
+                      </label>
+                      {respArea && (
+                        <span className="text-[9px] font-extrabold text-sage-800 bg-sage-50 border border-sage-200 px-1.5 py-0.2 rounded-full">
+                          {respArea.nombre}
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={activeResponsableId}
+                      onChange={(e) => setResponsableId(e.target.value)}
+                      className="w-full p-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium bg-white"
+                    >
+                      {usuarios.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre_completo} — {u.rol_nombre || 'Usuario'} ({u.area_nombre || 'CMU'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Segundo Responsable */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-charcoal-800 text-[11px] flex items-center gap-1">
+                        <UserCheck className="w-3.5 h-3.5 text-blue-600" /> Segundo Responsable (Opcional)
+                      </label>
+                      {resp2Area && (
+                        <span className="text-[9px] font-extrabold text-blue-800 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded-full">
+                          {resp2Area.nombre}
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={responsableSecundarioId}
+                      onChange={(e) => setResponsableSecundarioId(e.target.value)}
+                      className="w-full p-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium bg-white"
+                    >
+                      <option value="">-- Sin Segundo Responsable (Solo 1 Asignado) --</option>
+                      {usuarios.filter(u => u.id !== activeResponsableId).map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre_completo} — {u.rol_nombre || 'Usuario'} ({u.area_nombre || 'CMU'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              {/* Responsable & Rol Destino */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Planificación Temporal y Tiempos */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-charcoal-700 mb-1">Responsable Asignado</label>
-                  <select
-                    value={responsableId}
-                    onChange={(e) => setResponsableId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">-- Sin Asignar --</option>
-                    {usuarios.map(u => (
-                      <option key={u.id} value={u.id}>{u.nombre_completo} ({u.rol_nombre || 'Colaborador'})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-charcoal-700 mb-1">Especialidad / Rol Destino</label>
-                  <select
-                    value={rolDestino}
-                    onChange={(e) => {
-                      setRolDestino(e.target.value);
-                      setCategoriaProyecto(e.target.value as CategoriaTareaProyecto);
-                    }}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="Diseño">Diseño Instruccional</option>
-                    <option value="Multimedia">Producción Multimedia</option>
-                    <option value="Soporte">Soporte Técnico</option>
-                    <option value="Transmisión">Transmisión / Eventos</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Fechas de Entrega */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-charcoal-700 mb-1">Fecha Vencimiento</label>
+                  <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Fecha Vencimiento *</span>
+                  </label>
                   <input
                     type="date"
-                    required
                     value={fechaVencimiento}
                     onChange={(e) => setFechaVencimiento(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-semibold"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-charcoal-700 mb-1">Hora Vencimiento</label>
+                  <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Hora Vencimiento *</span>
+                  </label>
                   <input
                     type="time"
                     value={horaVencimiento}
                     onChange={(e) => setHoraVencimiento(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-bold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                    <Timer className="w-3.5 h-3.5 text-sage-600" />
+                    <span>Tiempo Estimado (Horas)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    placeholder="Ej. 4.5"
+                    value={tiempoEstimado}
+                    onChange={(e) => setTiempoEstimado(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-900 text-xs font-semibold placeholder:text-slate-400"
                   />
                 </div>
               </div>
 
-              {/* Botones */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-stone-100">
+              {/* Calculated Cost Card for Projects */}
+              {tipoTarea === 'Proyecto' && (
+                <div className="p-4 bg-sky-50/70 rounded-2xl border border-sky-200/80 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                      <DollarSign className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h5 className="font-extrabold text-slate-900 text-xs">Tarifa de Proyecto ({categoriaProyecto})</h5>
+                      <p className="text-[11px] text-slate-600">
+                        Tarifa Oficial: <span className="font-bold text-sky-800">${tarifaHoraActual.toLocaleString('es-CO')} COP / 1 hr</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-slate-500 block uppercase">Tarifa por Hora</span>
+                    <span className="text-base font-black text-sky-700">${tarifaHoraActual.toLocaleString('es-CO')} COP/h</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Action */}
+              <div className="pt-4 flex justify-end gap-3 border-t border-stone-100">
                 <button
                   type="button"
                   disabled={isProcessing}
                   onClick={() => setModoAccion(null)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-charcoal-700 font-bold text-xs hover:bg-stone-50"
+                  className="px-5 py-2.5 rounded-full bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-full bg-slate-800 text-white font-bold hover:bg-slate-900 shadow-md transition-all scale-100 hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <span>Procesando...</span>
                   ) : (
                     <>
-                      <Check className="w-4 h-4" />
-                      <span>Confirmar y Crear Tarea</span>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Crear Tarea</span>
                     </>
                   )}
                 </button>
               </div>
-
             </form>
           </div>
         </div>

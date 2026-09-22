@@ -36,7 +36,7 @@ import {
   Inbox,
   ListTodo
 } from 'lucide-react';
-import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto, PestanaAdmin, CategoriaAdmin } from '@/types';
+import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto, PestanaAdmin, CategoriaAdmin, TareaCCV } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { UserFormModal } from './UserFormModal';
 import { RolePermissionsModal } from './RolePermissionsModal';
@@ -429,6 +429,8 @@ interface AdminDashboardProps {
   pestanaInicial?: PestanaAdmin;
   tareasPendientesCount?: number;
   onNavigateKanban?: () => void;
+  onTareaCreada?: (tarea: TareaCCV) => void;
+  onRecargarTareas?: () => Promise<void>;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -440,6 +442,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   pestanaInicial = 'usuarios',
   tareasPendientesCount = 0,
   onNavigateKanban,
+  onTareaCreada,
+  onRecargarTareas,
 }) => {
   const {
     usuarios,
@@ -2268,6 +2272,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           cursos={cursos}
           proyectos={proyectos}
           areas={areas}
+          onNavigateKanban={onNavigateKanban}
+          onTareaCreada={onTareaCreada}
         />
       )}
 

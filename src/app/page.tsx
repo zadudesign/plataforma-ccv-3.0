@@ -617,6 +617,18 @@ export default function Home() {
               pestanaInicial={pestanaAdminInicial}
               tareasPendientesCount={tareasPendientesCount}
               onNavigateKanban={() => setVistaActual('kanban')}
+              onTareaCreada={(nueva) => {
+                setTareas(prev => {
+                  const filtered = prev.filter(t => t.id !== nueva.id);
+                  return ordenarTareasPorVencimiento([nueva, ...filtered]);
+                });
+              }}
+              onRecargarTareas={async () => {
+                const dbTareas = await fetchTareasDB();
+                if (dbTareas && dbTareas.length > 0) {
+                  setTareas(ordenarTareasPorVencimiento(dbTareas));
+                }
+              }}
             />
           ) : (
             <div className="ccv-card p-12 text-center space-y-4 max-w-lg mx-auto my-12 animate-fadeIn">
