@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS public.cursos (
     periodo TEXT NOT NULL, -- Ej: '2026-1', '2026-2'
     docente_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     evaluador_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    numero_unidades INT NOT NULL DEFAULT 1 CHECK (numero_unidades >= 1),
     estado TEXT NOT NULL DEFAULT 'En Diseño' CHECK (estado IN ('En Diseño', 'En Producción', 'En Revisión', 'Aprobado CCV', 'Publicado LMS')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -545,6 +546,8 @@ CREATE TABLE IF NOT EXISTS public.plantilla_tareas_curso (
     tipo_tarea TEXT DEFAULT 'PRODUCCION',
     tiempo_estimado INT DEFAULT 0, -- Minutos
     activa BOOLEAN DEFAULT true,
+    aplica_por_unidad BOOLEAN DEFAULT false,
+    seccion TEXT DEFAULT 'GENERAL',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -581,10 +584,12 @@ ALTER TABLE public.tareas
     ADD COLUMN IF NOT EXISTS estado_bloqueo TEXT NOT NULL DEFAULT 'DISPONIBLE' 
         CHECK (estado_bloqueo IN ('BLOQUEADA', 'DISPONIBLE', 'EN_PROCESO', 'COMPLETADA')),
     ADD COLUMN IF NOT EXISTS dependencias_operativas UUID[] DEFAULT '{}',
-    ADD COLUMN IF NOT EXISTS fecha_inicial DATE;
+    ADD COLUMN IF NOT EXISTS fecha_inicial DATE,
+    ADD COLUMN IF NOT EXISTS numero_unidad INT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_tareas_curso_bloqueo ON public.tareas(curso_id, estado_bloqueo);
 CREATE INDEX IF NOT EXISTS idx_tareas_dependencias_gin ON public.tareas USING GIN (dependencias_operativas);
+CREATE INDEX IF NOT EXISTS idx_tareas_curso_unidad ON public.tareas(curso_id, numero_unidad);
 
 -- RLS para Plantilla de Tareas
 ALTER TABLE public.plantilla_tareas_curso ENABLE ROW LEVEL SECURITY;
@@ -620,19 +625,34 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_curso RECORD;
+    v_num_unidades INT;
     v_total_existentes INT;
     v_pt RECORD;
     v_tarea_id UUID;
-    v_map_ids JSONB := '{}'::jsonb;
-    v_deps_nuevas UUID[];
-    v_bloqueo_inicial TEXT;
     v_responsable_id UUID;
     v_rol_destino TEXT;
+    
+    -- Mapas de IDs para resolución de dependencias
+    v_map_general JSONB := '{}'::jsonb;         -- plantilla_id -> tarea_id
+    v_map_unit JSONB := '{}'::jsonb;            -- (plantilla_id || '_' || u) -> tarea_id
+    
+    -- Cursor para resolución de dependencias
+    v_dep RECORD;
+    v_dep_pt RECORD;
+    v_deps_nuevas UUID[];
+    v_bloqueo_inicial TEXT;
+    u INT;
+    v_instancia_tarea_id UUID;
 BEGIN
     -- 1. Validar existencia del curso
     SELECT * INTO v_curso FROM public.cursos WHERE id = p_curso_id;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('success', false, 'message', 'El curso especificado no existe.');
+    END IF;
+
+    v_num_unidades := COALESCE(v_curso.numero_unidades, 1);
+    IF v_num_unidades < 1 THEN
+        v_num_unidades := 1;
     END IF;
 
     -- 2. Validación estricta: docente y par evaluador asignados
@@ -649,7 +669,10 @@ BEGIN
     WHERE curso_id = p_curso_id AND plantilla_origen_id IS NOT NULL;
 
     IF v_total_existentes > 0 THEN
-        RETURN jsonb_build_object('success', false, 'message', 'El curso ya tiene tareas cargadas desde la plantilla predeterminada.');
+        RETURN jsonb_build_object(
+            'success', false, 
+            'message', 'El curso ya tiene tareas cargadas desde la plantilla predeterminada.'
+        );
     END IF;
 
     -- 4. Iterar e insertar tareas activas de la plantilla
@@ -658,7 +681,7 @@ BEGIN
         WHERE activa = true 
         ORDER BY orden ASC 
     LOOP
-        -- Asignar responsable y rol según el tipo
+        -- Asignar responsable y rol según el tipo definido en la plantilla
         IF v_pt.tipo_responsable = 'DOCENTE' THEN
             v_responsable_id := v_curso.docente_id;
             v_rol_destino := 'Docente';
@@ -666,13 +689,11 @@ BEGIN
             v_responsable_id := v_curso.evaluador_id;
             v_rol_destino := 'Par Evaluador';
         ELSIF v_pt.tipo_responsable = 'COORDINADOR' THEN
-            -- Obtener el coordinador del programa del curso
             SELECT pr.coordinador_id INTO v_responsable_id
             FROM public.programas pr
             WHERE pr.id = v_curso.programa_id;
             v_rol_destino := 'Coordinador de Programa';
         ELSIF v_pt.tipo_responsable = 'DECANO' THEN
-            -- Obtener el decano de la facultad del curso
             SELECT f.decano_id INTO v_responsable_id
             FROM public.programas pr
             JOIN public.facultades f ON f.id = pr.facultad_id
@@ -686,63 +707,168 @@ BEGIN
             v_rol_destino := 'General';
         END IF;
 
-        INSERT INTO public.tareas (
-            titulo,
-            descripcion,
-            curso_id,
-            responsable_id,
-            rol_destino,
-            orden_tarea,
-            estado,
-            estado_bloqueo,
-            tipo_tarea,
-            tiempo_estimado,
-            plantilla_origen_id,
-            dependencias_operativas
-        ) VALUES (
-            v_pt.titulo,
-            v_pt.descripcion,
-            p_curso_id,
-            v_responsable_id,
-            v_rol_destino,
-            v_pt.orden,
-            'Pendiente',
-            'BLOQUEADA',
-            'Curso Virtual',
-            ROUND((v_pt.tiempo_estimado::numeric / 60.0), 2),
-            v_pt.id,
-            '{}'
-        ) RETURNING id INTO v_tarea_id;
+        -- CASO A: Tarea transversal/general (se crea 1 vez)
+        IF v_pt.aplica_por_unidad IS NOT TRUE THEN
+            INSERT INTO public.tareas (
+                titulo,
+                descripcion,
+                curso_id,
+                responsable_id,
+                rol_destino,
+                orden_tarea,
+                estado,
+                estado_bloqueo,
+                tipo_tarea,
+                tiempo_estimado,
+                plantilla_origen_id,
+                dependencias_operativas,
+                numero_unidad
+            ) VALUES (
+                v_pt.titulo,
+                COALESCE(v_pt.descripcion, ''),
+                p_curso_id,
+                v_responsable_id,
+                v_rol_destino,
+                v_pt.orden,
+                'Pendiente',
+                'BLOQUEADA',
+                'Curso Virtual',
+                ROUND((COALESCE(v_pt.tiempo_estimado, 0)::numeric / 60.0), 2),
+                v_pt.id,
+                '{}',
+                NULL
+            ) RETURNING id INTO v_tarea_id;
 
-        v_map_ids := jsonb_set(v_map_ids, ARRAY[v_pt.id::text], to_jsonb(v_tarea_id::text));
+            v_map_general := jsonb_set(v_map_general, ARRAY[v_pt.id::text], to_jsonb(v_tarea_id::text));
+
+        -- CASO B: Tarea por unidad (se multiplica N veces según v_num_unidades)
+        ELSE
+            FOR u IN 1..v_num_unidades LOOP
+                INSERT INTO public.tareas (
+                    titulo,
+                    descripcion,
+                    curso_id,
+                    responsable_id,
+                    rol_destino,
+                    orden_tarea,
+                    estado,
+                    estado_bloqueo,
+                    tipo_tarea,
+                    tiempo_estimado,
+                    plantilla_origen_id,
+                    dependencias_operativas,
+                    numero_unidad
+                ) VALUES (
+                    '[Unidad ' || u || '] ' || v_pt.titulo,
+                    COALESCE(v_pt.descripcion, '') || ' (Correspondiente a la Unidad ' || u || ' del curso)',
+                    p_curso_id,
+                    v_responsable_id,
+                    v_rol_destino,
+                    v_pt.orden,
+                    'Pendiente',
+                    'BLOQUEADA',
+                    'Curso Virtual',
+                    ROUND((COALESCE(v_pt.tiempo_estimado, 0)::numeric / 60.0), 2),
+                    v_pt.id,
+                    '{}',
+                    u
+                ) RETURNING id INTO v_tarea_id;
+
+                v_map_unit := jsonb_set(v_map_unit, ARRAY[v_pt.id::text || '_' || u::text], to_jsonb(v_tarea_id::text));
+            END LOOP;
+        END IF;
+
     END LOOP;
 
     -- 5. Mapear dependencias operativas y calcular estado_bloqueo inicial
     FOR v_pt IN SELECT * FROM public.plantilla_tareas_curso WHERE activa = true LOOP
-        v_tarea_id := (v_map_ids->>v_pt.id::text)::uuid;
 
-        SELECT COALESCE(array_agg((v_map_ids->>dep.depende_de_id::text)::uuid), '{}')
-        INTO v_deps_nuevas
-        FROM public.plantilla_tareas_dependencias dep
-        WHERE dep.tarea_plantilla_id = v_pt.id
-          AND v_map_ids ? dep.depende_de_id::text;
+        -- CASO 1: La tarea de plantilla era GENERAL
+        IF v_pt.aplica_por_unidad IS NOT TRUE THEN
+            v_instancia_tarea_id := (v_map_general->>v_pt.id::text)::uuid;
+            v_deps_nuevas := '{}';
 
-        IF array_length(v_deps_nuevas, 1) IS NULL OR array_length(v_deps_nuevas, 1) = 0 THEN
-            v_bloqueo_inicial := 'DISPONIBLE';
+            -- Buscar todas las dependencias de v_pt
+            FOR v_dep IN 
+                SELECT depende_de_id 
+                FROM public.plantilla_tareas_dependencias 
+                WHERE tarea_plantilla_id = v_pt.id 
+            LOOP
+                SELECT * INTO v_dep_pt FROM public.plantilla_tareas_curso WHERE id = v_dep.depende_de_id;
+                
+                -- Si la predecesora es GENERAL -> Depende de su única instancia
+                IF v_dep_pt.aplica_por_unidad IS NOT TRUE THEN
+                    IF v_map_general ? v_dep.depende_de_id::text THEN
+                        v_deps_nuevas := array_append(v_deps_nuevas, (v_map_general->>v_dep.depende_de_id::text)::uuid);
+                    END IF;
+                -- Si la predecesora es POR UNIDAD (ej. Cierre) -> Depende de TODAS las unidades de esa tarea
+                ELSE
+                    FOR u IN 1..v_num_unidades LOOP
+                        IF v_map_unit ? (v_dep.depende_de_id::text || '_' || u::text) THEN
+                            v_deps_nuevas := array_append(v_deps_nuevas, (v_map_unit->>(v_dep.depende_de_id::text || '_' || u::text))::uuid);
+                        END IF;
+                    END LOOP;
+                END IF;
+            END LOOP;
+
+            -- Estado inicial: DISPONIBLE si no tiene dependencias, BLOQUEADA si tiene
+            IF array_length(v_deps_nuevas, 1) IS NULL OR array_length(v_deps_nuevas, 1) = 0 THEN
+                v_bloqueo_inicial := 'DISPONIBLE';
+            ELSE
+                v_bloqueo_inicial := 'BLOQUEADA';
+            END IF;
+
+            UPDATE public.tareas
+            SET dependencias_operativas = v_deps_nuevas,
+                estado_bloqueo = v_bloqueo_inicial
+            WHERE id = v_instancia_tarea_id;
+
+        -- CASO 2: La tarea de plantilla era POR UNIDAD
         ELSE
-            v_bloqueo_inicial := 'BLOQUEADA';
+            FOR u IN 1..v_num_unidades LOOP
+                v_instancia_tarea_id := (v_map_unit->>(v_pt.id::text || '_' || u::text))::uuid;
+                v_deps_nuevas := '{}';
+
+                FOR v_dep IN 
+                    SELECT depende_de_id 
+                    FROM public.plantilla_tareas_dependencias 
+                    WHERE tarea_plantilla_id = v_pt.id 
+                LOOP
+                    SELECT * INTO v_dep_pt FROM public.plantilla_tareas_curso WHERE id = v_dep.depende_de_id;
+
+                    -- Si la predecesora es GENERAL -> Depende de la general (permite paralelismo entre unidades)
+                    IF v_dep_pt.aplica_por_unidad IS NOT TRUE THEN
+                        IF v_map_general ? v_dep.depende_de_id::text THEN
+                            v_deps_nuevas := array_append(v_deps_nuevas, (v_map_general->>v_dep.depende_de_id::text)::uuid);
+                        END IF;
+                    -- Si la predecesora es POR UNIDAD -> Depende de la tarea de su MISMA unidad (u)
+                    ELSE
+                        IF v_map_unit ? (v_dep.depende_de_id::text || '_' || u::text) THEN
+                            v_deps_nuevas := array_append(v_deps_nuevas, (v_map_unit->>(v_dep.depende_de_id::text || '_' || u::text))::uuid);
+                        END IF;
+                    END IF;
+                END LOOP;
+
+                IF array_length(v_deps_nuevas, 1) IS NULL OR array_length(v_deps_nuevas, 1) = 0 THEN
+                    v_bloqueo_inicial := 'DISPONIBLE';
+                ELSE
+                    v_bloqueo_inicial := 'BLOQUEADA';
+                END IF;
+
+                UPDATE public.tareas
+                SET dependencias_operativas = v_deps_nuevas,
+                    estado_bloqueo = v_bloqueo_inicial
+                WHERE id = v_instancia_tarea_id;
+            END LOOP;
         END IF;
 
-        UPDATE public.tareas
-        SET dependencias_operativas = v_deps_nuevas,
-            estado_bloqueo = v_bloqueo_inicial
-        WHERE id = v_tarea_id;
     END LOOP;
 
     RETURN jsonb_build_object(
         'success', true, 
-        'message', 'Secuencia de tareas instanciada exitosamente en el curso.',
-        'total', (SELECT count(*) FROM public.tareas WHERE curso_id = p_curso_id AND plantilla_origen_id IS NOT NULL)
+        'message', 'Secuencia de tareas instanciada exitosamente (' || v_num_unidades || ' unidades configuradas).',
+        'total', (SELECT count(*) FROM public.tareas WHERE curso_id = p_curso_id AND plantilla_origen_id IS NOT NULL),
+        'unidades', v_num_unidades
     );
 END;
 $$;

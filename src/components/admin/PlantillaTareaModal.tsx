@@ -42,6 +42,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
   const [tipoTarea, setTipoTarea] = useState('PRODUCCION');
   const [tiempoEstimado, setTiempoEstimado] = useState<number>(120);
   const [activa, setActiva] = useState(true);
+  const [aplicaPorUnidad, setAplicaPorUnidad] = useState(false);
+  const [seccion, setSeccion] = useState('GENERAL');
   const [dependenciasSeleccionadas, setDependenciasSeleccionadas] = useState<string[]>([]);
   const [errorValidacion, setErrorValidacion] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -57,6 +59,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
       setTipoTarea(initialData.tipo_tarea || 'PRODUCCION');
       setTiempoEstimado(initialData.tiempo_estimado || 0);
       setActiva(initialData.activa !== false);
+      setAplicaPorUnidad(initialData.aplica_por_unidad === true);
+      setSeccion(initialData.seccion || (initialData.aplica_por_unidad ? 'UNIDADES' : 'GENERAL'));
       setDependenciasSeleccionadas(initialData.dependencias || []);
     } else {
       const siguienteOrden = todasLasTareas.length > 0 
@@ -71,6 +75,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
       setTipoTarea('PRODUCCION');
       setTiempoEstimado(120);
       setActiva(true);
+      setAplicaPorUnidad(false);
+      setSeccion('GENERAL');
       setDependenciasSeleccionadas([]);
     }
     setErrorValidacion(null);
@@ -119,7 +125,9 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
         cmu_usuario_fijo_id: tipoResponsable === 'CMU_FIJO' ? cmuUsuarioFijoId : undefined,
         tipo_tarea: tipoTarea,
         tiempo_estimado: tiempoEstimado,
-        activa
+        activa,
+        aplica_por_unidad: aplicaPorUnidad,
+        seccion
       }, dependenciasSeleccionadas);
       onClose();
     } catch (err: any) {
@@ -366,6 +374,66 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
                 </select>
               </div>
             )}
+          </div>
+
+          {/* Row 4.5: Ámbito de la Tarea (General vs Por Unidad) */}
+          <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/70 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-bold text-charcoal-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🔁 Multiplicar por cada Unidad del Curso</span>
+                </label>
+                <p className="text-[11px] text-charcoal-500">
+                  Actívalo si esta tarea pertenece al desarrollo de módulos/unidades y debe crearse para la Unidad 1, Unidad 2, etc.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={aplicaPorUnidad}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setAplicaPorUnidad(checked);
+                    if (checked && seccion === 'GENERAL') {
+                      setSeccion('UNIDADES');
+                    } else if (!checked && seccion === 'UNIDADES') {
+                      setSeccion('GENERAL');
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+
+            <div className="pt-2 border-t border-stone-200/70 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+                  Sección / Etapa
+                </label>
+                <select
+                  value={seccion}
+                  onChange={e => setSeccion(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                >
+                  <option value="GENERAL">General / Transversal (Se ejecuta 1 vez)</option>
+                  <option value="UNIDADES">Sección Unidades (Módulos temáticos)</option>
+                  <option value="CIERRE">Cierre y Publicación (Al terminar todas las unidades)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center text-xs text-charcoal-500 bg-white p-2.5 rounded-xl border border-stone-200">
+                {aplicaPorUnidad ? (
+                  <span className="text-purple-700 font-medium">
+                    ⚡ Se generarán tantas tareas como unidades tenga el curso (ej. si el curso tiene 3 unidades, se generarán 3 instancias con prefijo [Unidad X]).
+                  </span>
+                ) : (
+                  <span className="text-stone-600 font-medium">
+                    📌 Se generará una única tarea general para todo el curso (independientemente del número de unidades).
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Row 5: Selector Múltiple de Dependencias */}

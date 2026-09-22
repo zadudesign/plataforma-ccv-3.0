@@ -604,6 +604,7 @@ export async function fetchCursos(): Promise<CursoVirtual[]> {
       docente_nombre: c.docente?.nombre_completo,
       evaluador_id: c.evaluador_id,
       evaluador_nombre: c.evaluador?.nombre_completo,
+      numero_unidades: c.numero_unidades !== undefined && c.numero_unidades !== null ? Number(c.numero_unidades) : 1,
       estado: c.estado,
       created_at: c.created_at
     }));
@@ -639,6 +640,7 @@ export async function createCursoDB(curso: Omit<CursoVirtual, 'id'>): Promise<Cu
       periodo: curso.periodo || '2026-1',
       docente_id: isGuid(curso.docente_id) ? curso.docente_id : null,
       evaluador_id: isGuid(curso.evaluador_id) ? curso.evaluador_id : null,
+      numero_unidades: curso.numero_unidades || 1,
       estado: curso.estado || 'En Diseño'
     };
     const { data, error } = await supabase.from('cursos').insert(payload).select().single();
@@ -777,6 +779,7 @@ export async function updateCursoFullDB(id: string, datos: Partial<CursoVirtual>
     if (datos.periodo) payload.periodo = datos.periodo;
     if (datos.docente_id !== undefined) payload.docente_id = isGuid(datos.docente_id) ? datos.docente_id : null;
     if (datos.evaluador_id !== undefined) payload.evaluador_id = isGuid(datos.evaluador_id) ? datos.evaluador_id : null;
+    if (datos.numero_unidades !== undefined) payload.numero_unidades = datos.numero_unidades;
     if (datos.estado) payload.estado = datos.estado;
 
     const { error } = await supabase.from('cursos').update(payload).eq('id', id);
@@ -905,6 +908,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
           plantilla_origen_id: t.plantilla_origen_id || undefined,
           estado_bloqueo: t.estado_bloqueo || (t.curso_id && t.plantilla_origen_id ? 'BLOQUEADA' : 'DISPONIBLE'),
           dependencias_operativas: t.dependencias_operativas || [],
+          numero_unidad: t.numero_unidad !== null && t.numero_unidad !== undefined ? Number(t.numero_unidad) : undefined,
           fecha_inicial: t.fecha_inicial || undefined,
           created_at: t.created_at
         };
@@ -943,6 +947,7 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       plantilla_origen_id: t.plantilla_origen_id || undefined,
       estado_bloqueo: t.estado_bloqueo || (t.curso_id && t.plantilla_origen_id ? 'BLOQUEADA' : 'DISPONIBLE'),
       dependencias_operativas: t.dependencias_operativas || [],
+      numero_unidad: t.numero_unidad !== null && t.numero_unidad !== undefined ? Number(t.numero_unidad) : undefined,
       fecha_inicial: t.fecha_inicial || undefined,
       created_at: t.created_at
     }));
@@ -1953,6 +1958,8 @@ export async function fetchPlantillaTareasCursoDB(): Promise<PlantillaTareaCurso
       tipo_tarea: t.tipo_tarea || 'PRODUCCION',
       tiempo_estimado: Number(t.tiempo_estimado || 0),
       activa: t.activa !== false,
+      aplica_por_unidad: !!t.aplica_por_unidad,
+      seccion: t.seccion || 'GENERAL',
       dependencias: depsMap[t.id] || [],
       created_at: t.created_at
     }));
@@ -1976,7 +1983,9 @@ export async function createPlantillaTareaDB(
       cmu_usuario_fijo_id: tarea.cmu_usuario_fijo_id || null,
       tipo_tarea: tarea.tipo_tarea || 'PRODUCCION',
       tiempo_estimado: tarea.tiempo_estimado || 0,
-      activa: tarea.activa !== false
+      activa: tarea.activa !== false,
+      aplica_por_unidad: !!tarea.aplica_por_unidad,
+      seccion: tarea.seccion || 'GENERAL'
     };
 
     const { data, error } = await supabase
@@ -2015,6 +2024,8 @@ export async function createPlantillaTareaDB(
       tipo_tarea: data.tipo_tarea,
       tiempo_estimado: data.tiempo_estimado,
       activa: data.activa,
+      aplica_por_unidad: data.aplica_por_unidad,
+      seccion: data.seccion,
       dependencias: dependenciasIds,
       created_at: data.created_at
     };
@@ -2044,6 +2055,8 @@ export async function updatePlantillaTareaDB(
     if (updates.tipo_tarea !== undefined) payload.tipo_tarea = updates.tipo_tarea;
     if (updates.tiempo_estimado !== undefined) payload.tiempo_estimado = updates.tiempo_estimado;
     if (updates.activa !== undefined) payload.activa = updates.activa;
+    if (updates.aplica_por_unidad !== undefined) payload.aplica_por_unidad = updates.aplica_por_unidad;
+    if (updates.seccion !== undefined) payload.seccion = updates.seccion;
 
     const { error } = await supabase
       .from('plantilla_tareas_curso')

@@ -39,6 +39,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
 }) => {
   const [busqueda, setBusqueda] = useState('');
   const [filtroResponsable, setFiltroResponsable] = useState<string>('todos');
+  const [filtroAlcance, setFiltroAlcance] = useState<'todos' | 'unidades' | 'transversal'>('todos');
   const [modalOpen, setModalOpen] = useState(false);
   const [tareaEnEdicion, setTareaEnEdicion] = useState<PlantillaTareaCurso | null>(null);
   const [tareaAEliminar, setTareaAEliminar] = useState<PlantillaTareaCurso | null>(null);
@@ -82,13 +83,20 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
           filtroResponsable === 'todos' || 
           t.tipo_responsable === filtroResponsable;
 
-        return matchesQuery && matchesResp;
+        const matchesAlcance = 
+          filtroAlcance === 'todos' ||
+          (filtroAlcance === 'unidades' && t.aplica_por_unidad) ||
+          (filtroAlcance === 'transversal' && !t.aplica_por_unidad);
+
+        return matchesQuery && matchesResp && matchesAlcance;
       })
       .sort((a, b) => a.orden - b.orden);
-  }, [plantillaTareas, busqueda, filtroResponsable]);
+  }, [plantillaTareas, busqueda, filtroResponsable, filtroAlcance]);
 
   // Estadísticas
   const totalActivas = plantillaTareas.filter(t => t.activa).length;
+  const totalPorUnidad = plantillaTareas.filter(t => t.aplica_por_unidad).length;
+  const totalTransversales = plantillaTareas.filter(t => !t.aplica_por_unidad).length;
   const totalConDependencias = plantillaTareas.filter(t => t.dependencias && t.dependencias.length > 0).length;
 
   const totalMinutosTodas = useMemo(() => {
@@ -160,40 +168,48 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
       </div>
 
       {/* Metric Pills */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-          <span className="text-[10px] font-bold text-charcoal-500 uppercase tracking-wider">Total Tareas Base</span>
+          <span className="text-[10px] font-bold text-charcoal-500 uppercase tracking-wider">Total Base</span>
           <p className="text-2xl font-black text-charcoal-900">{plantillaTareas.length}</p>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-purple-200/90 shadow-2xs space-y-1 bg-gradient-to-b from-purple-50/40 to-white">
           <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-purple-600" />
-            Duración Total
+            <span>🔁 Por Unidad</span>
           </span>
-          <p className="text-2xl font-black text-purple-800">
-            {formatearDuracion(totalMinutosTodas)}
-          </p>
+          <p className="text-2xl font-black text-purple-800">{totalPorUnidad}</p>
           <span className="text-[10px] text-purple-600/80 font-bold block">
-            {totalMinutosTodas.toLocaleString('es-CO')} min acumulados
+            Se multiplican por N
           </span>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Activas en Plantilla</span>
+          <span className="text-[10px] font-bold text-stone-600 uppercase tracking-wider">Transversales</span>
+          <p className="text-2xl font-black text-stone-800">{totalTransversales}</p>
+          <span className="text-[10px] text-stone-500 font-bold block">
+            1x por curso
+          </span>
+        </div>
+
+        <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
+          <span className="text-[10px] font-bold text-charcoal-500 uppercase tracking-wider flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-stone-500" />
+            Duración Base
+          </span>
+          <p className="text-2xl font-black text-charcoal-900">
+            {formatearDuracion(totalMinutosTodas)}
+          </p>
+        </div>
+
+        <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
+          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Activas</span>
           <p className="text-2xl font-black text-emerald-600">{totalActivas}</p>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-          <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">Con Dependencias</span>
+          <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">Con Deps</span>
           <p className="text-2xl font-black text-sky-600">{totalConDependencias}</p>
-        </div>
-
-        <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-          <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Primeras en Desbloquear</span>
-          <p className="text-2xl font-black text-amber-600">
-            {plantillaTareas.filter(t => !t.dependencias || t.dependencias.length === 0).length}
-          </p>
         </div>
       </div>
 
@@ -210,8 +226,18 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
           <Filter className="w-4 h-4 text-stone-400" />
+          <select
+            value={filtroAlcance}
+            onChange={e => setFiltroAlcance(e.target.value as any)}
+            className="px-3 py-2 text-xs rounded-xl border border-stone-200 bg-white font-bold text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-sage-400"
+          >
+            <option value="todos">Todos los Ámbitos</option>
+            <option value="unidades">🔁 Por Unidad (Multiplicables)</option>
+            <option value="transversal">📌 Transversal (1x Curso)</option>
+          </select>
+
           <select
             value={filtroResponsable}
             onChange={e => setFiltroResponsable(e.target.value)}
@@ -236,6 +262,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
                 <th className="py-3.5 px-4 w-16 text-center">Orden</th>
                 <th className="py-3.5 px-3 w-20">Código</th>
                 <th className="py-3.5 px-4">Título y Descripción</th>
+                <th className="py-3.5 px-4">Ámbito</th>
                 <th className="py-3.5 px-4">Asignación</th>
                 <th className="py-3.5 px-3">Duración</th>
                 <th className="py-3.5 px-4">Requiere Antes (Dependencias)</th>
@@ -246,7 +273,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
             <tbody className="divide-y divide-stone-100 text-charcoal-800">
               {tareasFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-charcoal-400">
+                  <td colSpan={9} className="py-12 text-center text-charcoal-400">
                     <Layers className="w-8 h-8 mx-auto mb-2 text-stone-300" />
                     <p className="font-bold">No se encontraron tareas en la plantilla.</p>
                     <p className="text-[11px] text-stone-400 mt-1">Crea una nueva tarea base con el botón superior.</p>
@@ -283,6 +310,19 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
                           <p className="text-[11px] text-charcoal-500 font-normal line-clamp-1 mt-0.5">
                             {tarea.descripcion}
                           </p>
+                        )}
+                      </td>
+
+                      {/* Ámbito / Sección */}
+                      <td className="py-3.5 px-4">
+                        {tarea.aplica_por_unidad ? (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1 w-fit shadow-2xs">
+                            🔁 Por Unidad (Nx)
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-stone-100 text-stone-700 border border-stone-200 flex items-center gap-1 w-fit">
+                            📌 Transversal
+                          </span>
                         )}
                       </td>
 

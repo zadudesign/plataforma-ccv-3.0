@@ -64,6 +64,9 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   const [periodo, setPeriodo] = useState((initialData as CursoVirtual)?.periodo || '2026-1');
   const [docenteId, setDocenteId] = useState((initialData as CursoVirtual)?.docente_id || '');
   const [evaluadorId, setEvaluadorId] = useState((initialData as CursoVirtual)?.evaluador_id || '');
+  const [numeroUnidades, setNumeroUnidades] = useState<number>(
+    (initialData as CursoVirtual)?.numero_unidades || 3
+  );
 
   // Campos específicos Proyecto
   const [descripcion, setDescripcion] = useState((initialData as ProyectoEspecial)?.descripcion || '');
@@ -135,6 +138,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           periodo,
           docente_id: docenteId,
           evaluador_id: evaluadorId,
+          numero_unidades: Math.max(1, Number(numeroUnidades) || 1),
         });
       } else {
         onCrearCurso({
@@ -146,6 +150,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           periodo,
           docente_id: docenteId,
           evaluador_id: evaluadorId,
+          numero_unidades: Math.max(1, Number(numeroUnidades) || 1),
           estado: 'En Diseño',
         });
       }
@@ -412,6 +417,53 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Cantidad de Unidades Académicas */}
+              <div className="bg-sage-50/70 border border-sage-200/90 rounded-2xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-charcoal-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>📚 Unidades del Curso</span>
+                    <span className="text-[10px] lowercase font-normal text-charcoal-500 bg-white px-2 py-0.5 rounded-full border border-stone-200">
+                      Multiplicador automático
+                    </span>
+                  </label>
+                  <span className="text-xs font-bold text-sage-800 bg-sage-100 border border-sage-300 px-2.5 py-0.5 rounded-full">
+                    {numeroUnidades} {numeroUnidades === 1 ? 'Unidad' : 'Unidades'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={numeroUnidades}
+                    onChange={e => setNumeroUnidades(parseInt(e.target.value) || 1)}
+                    className="flex-1 accent-sage-600 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setNumeroUnidades(Math.max(1, numeroUnidades - 1))}
+                      className="w-7 h-7 rounded-lg bg-white border border-stone-200 text-charcoal-700 font-bold hover:bg-stone-100 flex items-center justify-center text-xs cursor-pointer shadow-xs"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center text-xs font-bold text-charcoal-900 font-mono">
+                      {numeroUnidades}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setNumeroUnidades(Math.min(12, numeroUnidades + 1))}
+                      className="w-7 h-7 rounded-lg bg-white border border-stone-200 text-charcoal-700 font-bold hover:bg-stone-100 flex items-center justify-center text-xs cursor-pointer shadow-xs"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[11px] text-charcoal-500 leading-snug">
+                  Al cargar la plantilla de tareas predeterminadas en este curso, todas las tareas configuradas como <em>"Por Unidad"</em> se multiplicarán en {numeroUnidades} bloques (Unidad 1 a Unidad {numeroUnidades}) en paralelo.
+                </p>
               </div>
             </>
           )}

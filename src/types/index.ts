@@ -88,6 +88,7 @@ export interface CursoVirtual {
   docente_nombre?: string;
   evaluador_id?: string;
   evaluador_nombre?: string;
+  numero_unidades?: number;
   estado: 'En Diseño' | 'En Producción' | 'En Revisión' | 'Aprobado CCV' | 'Publicado LMS';
   created_at?: string;
 }
@@ -112,6 +113,8 @@ export interface PlantillaTareaCurso {
   tipo_tarea?: string;
   tiempo_estimado?: number; // minutos
   activa: boolean;
+  aplica_por_unidad?: boolean;
+  seccion?: string;
   dependencias?: string[]; // IDs de tareas_plantilla de las que depende
   created_at?: string;
 }
@@ -163,6 +166,7 @@ export interface TareaCCV {
   plantilla_origen_id?: string;
   estado_bloqueo?: EstadoBloqueoTarea;
   dependencias_operativas?: string[]; // IDs de tareas del mismo curso que la bloquean
+  numero_unidad?: number;
   fecha_inicial?: string;
   created_at?: string;
 }

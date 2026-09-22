@@ -222,6 +222,7 @@ export const INITIAL_CURSOS: CursoVirtual[] = [
     docente_nombre: 'Prof. Ana María Silva',
     evaluador_id: 'u-par',
     evaluador_nombre: 'Dr. Roberto Gómez',
+    numero_unidades: 3,
     estado: 'En Producción'
   },
   {
@@ -236,6 +237,7 @@ export const INITIAL_CURSOS: CursoVirtual[] = [
     docente_nombre: 'Dr. Roberto Gómez',
     evaluador_id: 'u-diseno',
     evaluador_nombre: 'Lic. Carlic Bolomboy',
+    numero_unidades: 4,
     estado: 'En Revisión'
   },
   {
@@ -250,6 +252,7 @@ export const INITIAL_CURSOS: CursoVirtual[] = [
     docente_nombre: 'Lic. Carlic Bolomboy',
     evaluador_id: 'u-decano',
     evaluador_nombre: 'Dra. Elena Rostova',
+    numero_unidades: 3,
     estado: 'Aprobado CCV'
   }
 ];
@@ -828,6 +831,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 120,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'GENERAL',
     dependencias: []
   },
   {
@@ -840,6 +845,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'REVISION',
     tiempo_estimado: 90,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'GENERAL',
     dependencias: ['pt-1']
   },
   {
@@ -852,6 +859,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 60,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'GENERAL',
     dependencias: ['pt-2']
   },
   {
@@ -864,6 +873,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 180,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'GENERAL',
     dependencias: ['pt-3']
   },
   {
@@ -876,6 +887,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 240,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'GENERAL',
     dependencias: ['pt-4']
   },
   {
@@ -888,6 +901,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 300,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'GENERAL',
     dependencias: ['pt-4']
   },
   {
@@ -900,6 +915,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'SOPORTE',
     tiempo_estimado: 180,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'CIERRE',
     dependencias: ['pt-5', 'pt-6']
   },
   {
@@ -912,6 +929,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'REVISION',
     tiempo_estimado: 120,
     activa: true,
+    aplica_por_unidad: false,
+    seccion: 'CIERRE',
     dependencias: ['pt-7']
   }
 ];

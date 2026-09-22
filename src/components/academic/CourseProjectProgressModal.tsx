@@ -67,6 +67,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
+  const [filtroUnidad, setFiltroUnidad] = useState<number | 'todas' | 'transversal'>('todas');
   const [horasInput, setHorasInput] = useState<number | string>('1');
   const [notasHoras, setNotasHoras] = useState('');
   const [imputarParaSecundario, setImputarParaSecundario] = useState(false);
@@ -143,10 +144,16 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
     return sum + (tarifaHora * ((t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0)));
   }, 0);
 
-  // Filtrar según pestaña seleccionada
+  // Filtrar según pestaña seleccionada y filtro de unidades
   const tareasMostrar = tareasEntidad.filter(t => {
-    if (filtroEstado === 'completadas') return t.estado === 'Completada';
-    if (filtroEstado === 'pendientes') return t.estado !== 'Completada';
+    if (filtroEstado === 'completadas' && t.estado !== 'Completada') return false;
+    if (filtroEstado === 'pendientes' && t.estado === 'Completada') return false;
+
+    if (esCurso) {
+      if (filtroUnidad === 'transversal' && (t.numero_unidad !== null && t.numero_unidad !== undefined)) return false;
+      if (typeof filtroUnidad === 'number' && t.numero_unidad !== filtroUnidad) return false;
+    }
+
     return true;
   });
 
@@ -350,6 +357,13 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-200 text-charcoal-700">
                   {entidad.estado}
                 </span>
+
+                {/* Badge Unidades para Cursos */}
+                {esCurso && (
+                  <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 shadow-2xs flex items-center gap-1">
+                    📚 {curso?.numero_unidades || 1} {(curso?.numero_unidades || 1) === 1 ? 'Unidad' : 'Unidades'}
+                  </span>
+                )}
 
                 {/* Badge Financiero Destacado para Proyectos */}
                 {!esCurso && (
@@ -691,6 +705,51 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                   </div>
                 </div>
 
+                {/* Selector de Unidades exclusivo para Cursos */}
+                {esCurso && ((curso?.numero_unidades || 1) > 1 || tareasEntidad.some(t => !!t.numero_unidad)) && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                    <span className="text-[10px] font-black text-charcoal-400 uppercase tracking-wider shrink-0 mr-1">
+                      Módulo:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFiltroUnidad('todas')}
+                      className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all shrink-0 cursor-pointer ${
+                        filtroUnidad === 'todas'
+                          ? 'bg-purple-700 text-white shadow-xs'
+                          : 'bg-cream-100 text-charcoal-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFiltroUnidad('transversal')}
+                      className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all shrink-0 cursor-pointer ${
+                        filtroUnidad === 'transversal'
+                          ? 'bg-purple-700 text-white shadow-xs'
+                          : 'bg-cream-100 text-charcoal-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      📌 Transversales
+                    </button>
+                    {Array.from({ length: Math.max(curso?.numero_unidades || 1, ...tareasEntidad.map(t => t.numero_unidad || 0)) }, (_, i) => i + 1).map(uNum => (
+                      <button
+                        key={uNum}
+                        type="button"
+                        onClick={() => setFiltroUnidad(uNum)}
+                        className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all shrink-0 cursor-pointer ${
+                          filtroUnidad === uNum
+                            ? 'bg-purple-700 text-white shadow-xs'
+                            : 'bg-cream-100 text-charcoal-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        📚 Unidad {uNum}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Task Items List */}
                 {tareasMostrar.length > 0 ? (
                   <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
@@ -744,6 +803,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                                     {esCurso && t.plantilla_origen_id && (
                                       <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-sage-50 text-sage-800 border border-sage-200">
                                         Fase #{t.orden_tarea || 1}
+                                      </span>
+                                    )}
+                                    {esCurso && t.numero_unidad && (
+                                      <span className="text-[9px] font-black px-2 py-0.2 rounded-full uppercase bg-purple-100 text-purple-800 border border-purple-300 shadow-2xs">
+                                        Unidad {t.numero_unidad}
                                       </span>
                                     )}
                                     <h4 
