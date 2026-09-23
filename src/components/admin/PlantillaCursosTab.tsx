@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { PlantillaTareaCurso, Usuario } from '@/types';
 import { PlantillaTareaModal } from './PlantillaTareaModal';
+import { resolverFasePlantilla } from '@/lib/courseScheduleUtils';
 
 interface PlantillaCursosTabProps {
   plantillaTareas: PlantillaTareaCurso[];
@@ -40,10 +41,41 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
   const [busqueda, setBusqueda] = useState('');
   const [filtroResponsable, setFiltroResponsable] = useState<string>('todos');
   const [filtroAlcance, setFiltroAlcance] = useState<'todos' | 'unidades' | 'transversal'>('todos');
+  const [filtroFase, setFiltroFase] = useState<string>('todas');
   const [modalOpen, setModalOpen] = useState(false);
   const [tareaEnEdicion, setTareaEnEdicion] = useState<PlantillaTareaCurso | null>(null);
   const [tareaAEliminar, setTareaAEliminar] = useState<PlantillaTareaCurso | null>(null);
   const [eliminando, setEliminando] = useState(false);
+
+  // Lista única de fases presentes en la plantilla para el filtro
+  const listaFasesDisponibles = useMemo(() => {
+    const map = new Map<number, string>();
+    plantillaTareas.forEach(t => {
+      const { fase, nombreFase } = resolverFasePlantilla(t);
+      if (!map.has(fase)) {
+        map.set(fase, nombreFase);
+      }
+    });
+    return Array.from(map.entries())
+      .map(([fase, nombreFase]) => ({ fase, nombreFase }))
+      .sort((a, b) => a.fase - b.fase);
+  }, [plantillaTareas]);
+
+  // Estilos de badge por número de fase
+  const getFaseBadgeStyle = (num: number) => {
+    switch (num) {
+      case 1:
+        return 'bg-sky-50 text-sky-800 border-sky-200';
+      case 2:
+        return 'bg-purple-50 text-purple-800 border-purple-200';
+      case 3:
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      case 4:
+        return 'bg-amber-50 text-amber-800 border-amber-200';
+      default:
+        return 'bg-stone-100 text-stone-800 border-stone-200';
+    }
+  };
 
   // Filtrar usuarios pertenecientes al CMU o de áreas de diseño/producción
   const usuariosCMU = useMemo(() => {
@@ -74,10 +106,12 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
   const tareasFiltradas = useMemo(() => {
     return plantillaTareas
       .filter(t => {
+        const infoFase = resolverFasePlantilla(t);
         const matchesQuery = 
           t.codigo.toLowerCase().includes(busqueda.toLowerCase()) ||
           t.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
-          (t.descripcion && t.descripcion.toLowerCase().includes(busqueda.toLowerCase()));
+          (t.descripcion && t.descripcion.toLowerCase().includes(busqueda.toLowerCase())) ||
+          infoFase.nombreFase.toLowerCase().includes(busqueda.toLowerCase());
 
         const matchesResp = 
           filtroResponsable === 'todos' || 
@@ -88,10 +122,14 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
           (filtroAlcance === 'unidades' && t.aplica_por_unidad) ||
           (filtroAlcance === 'transversal' && !t.aplica_por_unidad);
 
-        return matchesQuery && matchesResp && matchesAlcance;
+        const matchesFase =
+          filtroFase === 'todas' ||
+          String(infoFase.fase) === filtroFase;
+
+        return matchesQuery && matchesResp && matchesAlcance && matchesFase;
       })
       .sort((a, b) => a.orden - b.orden);
-  }, [plantillaTareas, busqueda, filtroResponsable, filtroAlcance]);
+  }, [plantillaTareas, busqueda, filtroResponsable, filtroAlcance, filtroFase]);
 
   // Estadísticas
   const totalActivas = plantillaTareas.filter(t => t.activa).length;
@@ -229,6 +267,19 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
           <Filter className="w-4 h-4 text-stone-400" />
           <select
+            value={filtroFase}
+            onChange={e => setFiltroFase(e.target.value)}
+            className="px-3 py-2 text-xs rounded-xl border border-stone-200 bg-white font-bold text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-sage-400"
+          >
+            <option value="todas">Todas las Fases</option>
+            {listaFasesDisponibles.map(f => (
+              <option key={f.fase} value={String(f.fase)}>
+                Fase {f.fase}: {f.nombreFase.replace(/^Fase\s+\d+:\s*/i, '')}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={filtroAlcance}
             onChange={e => setFiltroAlcance(e.target.value as any)}
             className="px-3 py-2 text-xs rounded-xl border border-stone-200 bg-white font-bold text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-sage-400"
@@ -261,6 +312,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
               <tr className="bg-stone-100/70 border-b border-stone-200 text-charcoal-600 font-black uppercase text-[10px] tracking-wider">
                 <th className="py-3.5 px-4 w-16 text-center">Orden</th>
                 <th className="py-3.5 px-3 w-20">Código</th>
+                <th className="py-3.5 px-4 min-w-[150px]">Fase</th>
                 <th className="py-3.5 px-4">Título y Descripción</th>
                 <th className="py-3.5 px-4">Ámbito</th>
                 <th className="py-3.5 px-4">Asignación</th>
@@ -273,7 +325,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
             <tbody className="divide-y divide-stone-100 text-charcoal-800">
               {tareasFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-charcoal-400">
+                  <td colSpan={10} className="py-12 text-center text-charcoal-400">
                     <Layers className="w-8 h-8 mx-auto mb-2 text-stone-300" />
                     <p className="font-bold">No se encontraron tareas en la plantilla.</p>
                     <p className="text-[11px] text-stone-400 mt-1">Crea una nueva tarea base con el botón superior.</p>
@@ -283,6 +335,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
                 tareasFiltradas.map((tarea) => {
                   const tieneDeps = tarea.dependencias && tarea.dependencias.length > 0;
                   const depsList = (tarea.dependencias || []).map(depId => tareasMap[depId]).filter(Boolean);
+                  const infoFase = resolverFasePlantilla(tarea);
 
                   return (
                     <tr 
@@ -301,18 +354,20 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
                         </span>
                       </td>
 
+                      {/* Fase */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-2xs ${getFaseBadgeStyle(infoFase.fase)}`}>
+                            Fase {infoFase.fase}
+                          </span>
+                          <span className="text-[11px] text-charcoal-600 font-semibold leading-tight line-clamp-1" title={infoFase.nombreFase}>
+                            {infoFase.nombreFase.replace(/^Fase\s+\d+:\s*/i, '')}
+                          </span>
+                        </div>
+                      </td>
+
                       {/* Título & Descripción */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                          <span className="font-bold text-[10px] px-2 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200">
-                            Fase {tarea.fase || 1}
-                          </span>
-                          {tarea.nombre_fase && (
-                            <span className="text-[10px] text-slate-500 font-medium truncate max-w-[200px]" title={tarea.nombre_fase}>
-                              • {tarea.nombre_fase}
-                            </span>
-                          )}
-                        </div>
                         <p className="font-extrabold text-charcoal-900 text-[13px] leading-tight">
                           {tarea.titulo}
                         </p>
@@ -439,9 +494,10 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
             {tareasFiltradas.length > 0 && (
               <tfoot className="bg-stone-50/90 border-t-2 border-stone-200">
                 <tr className="font-extrabold text-charcoal-800">
-                  <td colSpan={3} className="py-3 px-4 text-right text-[11px] uppercase tracking-wider text-charcoal-500">
+                  <td colSpan={4} className="py-3 px-4 text-right text-[11px] uppercase tracking-wider text-charcoal-500">
                     Totalización según filtro ({tareasFiltradas.length} tareas):
                   </td>
+                  <td className="py-3 px-4"></td>
                   <td className="py-3 px-4"></td>
                   <td className="py-3 px-3 font-black text-purple-700">
                     <span className="flex items-center gap-1 text-xs">

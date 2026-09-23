@@ -15,6 +15,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { PlantillaTareaCurso, TipoResponsablePlantilla, Usuario } from '@/types';
+import { resolverFasePlantilla } from '@/lib/courseScheduleUtils';
 
 interface PlantillaTareaModalProps {
   isOpen: boolean;
@@ -493,6 +494,7 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
               <div className="max-h-48 overflow-y-auto border border-stone-200 rounded-2xl p-2 divide-y divide-stone-100 bg-white scrollbar-thin">
                 {tareasCandidatas.map(candidata => {
                   const isChecked = dependenciasSeleccionadas.includes(candidata.id);
+                  const candFase = resolverFasePlantilla(candidata);
                   return (
                     <div
                       key={candidata.id}
@@ -511,6 +513,9 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
                         )}
                         <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-stone-100 border border-stone-200">
                           {candidata.codigo}
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 shrink-0">
+                          Fase {candFase.fase}
                         </span>
                         <span className="truncate">{candidata.titulo}</span>
                       </div>
