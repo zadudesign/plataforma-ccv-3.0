@@ -2167,12 +2167,88 @@ export async function reajustarCronogramaCursoDB(
       p_duracion_dias: duracionDias
     });
 
-    if (error) {
-      console.warn('Error llamando a RPC reajustar_cronograma_curso:', error.message);
-      return { success: false, message: error.message };
+    if (!error && data?.success) {
+      return data;
     }
 
-    return data || { success: true, message: 'Cronograma reajustado con éxito.' };
+    if (error) {
+      console.warn('RPC reajustar_cronograma_curso arrojó error, ejecutando cálculo y actualización directa:', error.message);
+    }
+
+    // FALLBACK DIRECTO: Obtener tareas del curso y recalcular fechas hábiles
+    const { data: tareasData, error: tErr } = await supabase
+      .from('tareas')
+      .select('id, fase, numero_unidad, estado')
+      .eq('curso_id', cursoId);
+
+    if (tErr || !tareasData) {
+      return { success: false, message: error?.message || tErr?.message || 'Error al obtener tareas del curso.' };
+    }
+
+    // Identificar etapas cronológicas únicas
+    const mapaEtapas = new Map<string, { fase: number; numero_unidad: number | null }>();
+    tareasData.forEach((t: any) => {
+      const f = t.fase || 1;
+      const key = t.numero_unidad ? `${f}_${t.numero_unidad}` : `${f}`;
+      if (!mapaEtapas.has(key)) {
+        mapaEtapas.set(key, { fase: f, numero_unidad: t.numero_unidad || null });
+      }
+    });
+
+    const etapasOrdenadas = Array.from(mapaEtapas.values()).sort((a, b) => {
+      if (a.fase !== b.fase) return a.fase - b.fase;
+      return (a.numero_unidad || 0) - (b.numero_unidad || 0);
+    });
+
+    const totalEtapas = Math.max(etapasOrdenadas.length, 1);
+    const mapaDias = new Map<string, number>();
+
+    etapasOrdenadas.forEach((etapa, idx) => {
+      const diasCalc = Math.round(((idx + 1) / totalEtapas) * duracionDias);
+      const key = etapa.numero_unidad ? `${etapa.fase}_${etapa.numero_unidad}` : `${etapa.fase}`;
+      mapaDias.set(key, diasCalc);
+    });
+
+    // Helper para ajustar fecha a día hábil (Sábado/Domingo -> Viernes)
+    const ajustarHabil = (fechaBase: string, diasAdd: number): string => {
+      const [y, m, d] = fechaBase.split('-').map(Number);
+      const dt = new Date(y, m - 1, d + diasAdd);
+      const day = dt.getDay();
+      if (day === 0) dt.setDate(dt.getDate() - 2); // Domingo -> Viernes
+      if (day === 6) dt.setDate(dt.getDate() - 1); // Sábado -> Viernes
+      const yyyy = dt.getFullYear();
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const fechaFinEstimada = ajustarHabil(fechaInicio, duracionDias);
+
+    // Actualizar fechas en el curso
+    await supabase
+      .from('cursos')
+      .update({
+        fecha_inicio: fechaInicio,
+        duracion_dias: duracionDias,
+        fecha_fin_estimada: fechaFinEstimada
+      })
+      .eq('id', cursoId);
+
+    // Actualizar fechas de vencimiento de las tareas no completadas
+    const tareasParaActualizar = tareasData.filter((t: any) => t.estado !== 'Completada');
+    await Promise.all(
+      tareasParaActualizar.map((t: any) => {
+        const key = t.numero_unidad ? `${t.fase || 1}_${t.numero_unidad}` : `${t.fase || 1}`;
+        const dias = mapaDias.get(key) || duracionDias;
+        const nuevaFecha = ajustarHabil(fechaInicio, dias);
+        return supabase
+          .from('tareas')
+          .update({ fecha_vencimiento: nuevaFecha })
+          .eq('id', t.id);
+      })
+    );
+
+    return { success: true, message: 'Cronograma reajustado exitosamente con fechas hábiles.' };
   } catch (err: any) {
     console.error('Excepción en reajustarCronogramaCursoDB:', err);
     return { success: false, message: err?.message || 'Error al reajustar el cronograma.' };

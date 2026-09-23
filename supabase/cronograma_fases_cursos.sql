@@ -329,10 +329,13 @@ BEGIN
     -- Mapear días acumulados por etapa cronológica
     v_etapa_idx := 0;
     FOR v_etapa_rec IN 
-        SELECT DISTINCT COALESCE(fase, 1) AS fase, numero_unidad
-        FROM public.tareas
-        WHERE curso_id = p_curso_id
-        ORDER BY COALESCE(fase, 1) ASC, COALESCE(numero_unidad, 0) ASC
+        SELECT fase, numero_unidad
+        FROM (
+            SELECT DISTINCT COALESCE(fase, 1) AS fase, numero_unidad
+            FROM public.tareas
+            WHERE curso_id = p_curso_id
+        ) sub_etapas
+        ORDER BY sub_etapas.fase ASC, COALESCE(sub_etapas.numero_unidad, 0) ASC
     LOOP
         v_etapa_idx := v_etapa_idx + 1;
         v_dias_calc := ROUND((v_etapa_idx::numeric / v_total_etapas::numeric) * p_duracion_dias);
