@@ -36,6 +36,7 @@ import { calcularProgresoTareas, PESOS_ESTADO_TAREA } from '@/lib/progressUtils'
 import { TaskTimeTracker } from '@/components/tasks/TaskTimeTracker';
 import { validarRequisitosCargaPlantilla, obtenerTareasBloqueantes, ordenarTareasSegunCatalogo } from '@/lib/courseTemplateUtils';
 import { ConfirmCompleteTaskModal } from '@/components/tasks/ConfirmCompleteTaskModal';
+import { ScheduleCourseModal } from './ScheduleCourseModal';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -62,7 +63,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onAddHours,
   onRefreshTareas,
 }) => {
-  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, forzarDesbloqueoAdmin, eliminarCurso } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
@@ -73,9 +74,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const [imputarParaSecundario, setImputarParaSecundario] = useState(false);
   const [mostrarExitoHoras, setMostrarExitoHoras] = useState(false);
 
-  // Estados del Motor de Plantillas y Secuencia
+  // Estados del Motor de Plantillas y Cronograma
   const [cargandoPlantilla, setCargandoPlantilla] = useState(false);
   const [mensajePlantilla, setMensajePlantilla] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  const [mostrarModalCronograma, setMostrarModalCronograma] = useState(false);
+  const [modoCronograma, setModoCronograma] = useState<'inicializar' | 'reajustar'>('inicializar');
   const [tareaParaConfirmar, setTareaParaConfirmar] = useState<TareaCCV | null>(null);
   const [forzandoId, setForzandoId] = useState<string | null>(null);
 
@@ -270,20 +273,43 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const validacionPlantilla = esCurso && curso ? validarRequisitosCargaPlantilla(curso, tareasEntidad) : null;
   const yaTienePlantilla = tareasEntidad.some(t => !!t.plantilla_origen_id);
 
-  const handleCargarPlantilla = async () => {
+  const handleAbrirCronogramaInicial = () => {
+    setModoCronograma('inicializar');
+    setMostrarModalCronograma(true);
+  };
+
+  const handleAbrirReajusteCronograma = () => {
+    setModoCronograma('reajustar');
+    setMostrarModalCronograma(true);
+  };
+
+  const handleConfirmarCronograma = async (fechaInicio: string, duracionDias: number) => {
     if (!curso) return;
     setCargandoPlantilla(true);
     setMensajePlantilla(null);
     try {
-      const res = await inicializarTareasCurso(curso.id);
-      if (res.success) {
-        setMensajePlantilla({ tipo: 'exito', texto: res.message });
-        if (onRefreshTareas) await onRefreshTareas();
+      if (modoCronograma === 'inicializar') {
+        const res = await inicializarTareasCurso(curso.id, fechaInicio, duracionDias);
+        if (res.success) {
+          setMensajePlantilla({ tipo: 'exito', texto: res.message });
+          if (onRefreshTareas) await onRefreshTareas();
+        } else {
+          setMensajePlantilla({ tipo: 'error', texto: res.message });
+          throw new Error(res.message);
+        }
       } else {
-        setMensajePlantilla({ tipo: 'error', texto: res.message });
+        const res = await reajustarCronogramaCurso(curso.id, fechaInicio, duracionDias);
+        if (res.success) {
+          setMensajePlantilla({ tipo: 'exito', texto: res.message });
+          if (onRefreshTareas) await onRefreshTareas();
+        } else {
+          setMensajePlantilla({ tipo: 'error', texto: res.message });
+          throw new Error(res.message);
+        }
       }
     } catch (err: any) {
-      setMensajePlantilla({ tipo: 'error', texto: err?.message || 'Error al cargar la plantilla.' });
+      setMensajePlantilla({ tipo: 'error', texto: err?.message || 'Error al procesar el cronograma.' });
+      throw err;
     } finally {
       setCargandoPlantilla(false);
     }
@@ -654,19 +680,39 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                       )}
                     </div>
 
-                    {!yaTienePlantilla && (
+                    {yaTienePlantilla ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {curso.duracion_dias && (
+                          <div className="text-right hidden sm:block">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cronograma Acordado</p>
+                            <p className="text-xs font-black text-slate-800">
+                              {curso.duracion_dias} días • Cierre: {curso.fecha_fin_estimada || 'Calculado'}
+                            </p>
+                          </div>
+                        )}
+                        <button
+                          onClick={handleAbrirReajusteCronograma}
+                          disabled={cargandoPlantilla}
+                          className="px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 bg-sky-50 text-sky-800 border border-sky-200 hover:bg-sky-100 transition-all cursor-pointer shadow-2xs"
+                          title="Reajustar fecha de inicio o duración del curso"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-sky-600" />
+                          Reajustar Cronograma
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={handleCargarPlantilla}
+                        onClick={handleAbrirCronogramaInicial}
                         disabled={!validacionPlantilla?.valido || cargandoPlantilla}
                         className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shrink-0 ${
                           validacionPlantilla?.valido && !cargandoPlantilla
                             ? 'bg-sage-700 hover:bg-sage-800 text-white shadow-md hover:shadow-lg cursor-pointer'
                             : 'bg-stone-200 text-stone-400 border border-stone-300 cursor-not-allowed'
                         }`}
-                        title={!validacionPlantilla?.valido ? validacionPlantilla?.motivo : 'Instanciar el paquete de 52 tareas predeterminadas'}
+                        title={!validacionPlantilla?.valido ? validacionPlantilla?.motivo : 'Acordar cronograma y cargar tareas predeterminadas'}
                       >
-                        <Layers className="w-4 h-4" />
-                        {cargandoPlantilla ? 'Instanciando Secuencia...' : 'Cargar Tareas Predeterminadas'}
+                        <Calendar className="w-4 h-4 text-emerald-300" />
+                        {cargandoPlantilla ? 'Calculando Cronograma...' : 'Programar y Cargar Plantilla'}
                       </button>
                     )}
                   </div>
@@ -802,9 +848,14 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                                     <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-md uppercase bg-white border border-stone-200 text-charcoal-800">
                                       {t.categoria_proyecto || t.tipo_tarea}
                                     </span>
-                                    {esCurso && t.plantilla_origen_id && (
-                                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-sage-50 text-sage-800 border border-sage-200">
-                                        Fase #{t.orden_tarea || 1}
+                                    {esCurso && t.fase && (
+                                      <span className="text-[9px] font-bold px-2 py-0.2 rounded bg-sky-50 text-sky-800 border border-sky-200">
+                                        Fase {t.fase}
+                                      </span>
+                                    )}
+                                    {esCurso && t.orden_tarea && (
+                                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-stone-100 text-stone-700 border border-stone-200">
+                                        #{t.orden_tarea}
                                       </span>
                                     )}
                                     {esCurso && t.numero_unidad && (
@@ -829,7 +880,12 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                                         <span className="text-blue-700 font-bold"> & {t.responsable_secundario_nombre}</span>
                                       )}
                                     </span>
-                                    {t.fecha_vencimiento && <span>• Vence: {t.fecha_vencimiento}</span>}
+                                    {t.fecha_vencimiento && (
+                                      <span className="text-sky-800 font-bold flex items-center gap-1 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                                        <Calendar className="w-3 h-3 text-sky-600" />
+                                        Vence: {t.fecha_vencimiento}
+                                      </span>
+                                    )}
                                     {t.tiempo_invertido !== undefined && <span>• {t.tiempo_invertido || 0} hrs</span>}
                                     {costoTarea !== undefined && costoTarea > 0 && (
                                       <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
@@ -1162,6 +1218,17 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
             setTareaParaConfirmar(null);
           }}
         />
+
+        {/* Modal de Programación y Reajuste de Cronograma */}
+        {mostrarModalCronograma && curso && (
+          <ScheduleCourseModal
+            curso={curso}
+            plantillaTareas={plantillaTareas}
+            modo={modoCronograma}
+            onClose={() => setMostrarModalCronograma(false)}
+            onConfirm={handleConfirmarCronograma}
+          />
+        )}
       </div>
     </div>
   );

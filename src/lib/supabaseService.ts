@@ -2107,11 +2107,17 @@ export async function deletePlantillaTareaDB(id: string): Promise<boolean> {
   }
 }
 
-export async function inicializarTareasCursoDB(cursoId: string): Promise<{ success: boolean; message: string; total?: number }> {
+export async function inicializarTareasCursoDB(
+  cursoId: string,
+  fechaInicio?: string,
+  duracionDias?: number
+): Promise<{ success: boolean; message: string; total?: number }> {
   try {
-    const { data, error } = await supabase.rpc('inicializar_tareas_curso', {
-      p_curso_id: cursoId
-    });
+    const params: Record<string, any> = { p_curso_id: cursoId };
+    if (fechaInicio) params.p_fecha_inicio = fechaInicio;
+    if (duracionDias) params.p_duracion_dias = duracionDias;
+
+    const { data, error } = await supabase.rpc('inicializar_tareas_curso', params);
 
     if (error) {
       console.warn('Error llamando a RPC inicializar_tareas_curso:', error.message);
@@ -2121,6 +2127,16 @@ export async function inicializarTareasCursoDB(cursoId: string): Promise<{ succe
           message: 'Error de tipos en Supabase: la columna "rol_destino" de la tabla tareas aún es de tipo UUID. Debes ejecutar el script SQL "supabase/fix_rol_destino_tareas.sql" en el SQL Editor de Supabase para convertirla a TEXT.'
         };
       }
+      // Fallback si la función RPC aún no fue actualizada con p_fecha_inicio y p_duracion_dias
+      if (error.message.includes('p_fecha_inicio') || error.message.includes('p_duracion_dias') || error.message.includes('function')) {
+        const { data: fallbackData, error: fallbackError } = await supabase.rpc('inicializar_tareas_curso', {
+          p_curso_id: cursoId
+        });
+        if (fallbackError) {
+          return { success: false, message: fallbackError.message };
+        }
+        return fallbackData || { success: true, message: 'Tareas cargadas con éxito.' };
+      }
       return { success: false, message: error.message };
     }
 
@@ -2128,6 +2144,30 @@ export async function inicializarTareasCursoDB(cursoId: string): Promise<{ succe
   } catch (err: any) {
     console.error('Excepción en inicializarTareasCursoDB:', err);
     return { success: false, message: err?.message || 'Error de conexión al cargar la plantilla.' };
+  }
+}
+
+export async function reajustarCronogramaCursoDB(
+  cursoId: string,
+  fechaInicio: string,
+  duracionDias: number
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { data, error } = await supabase.rpc('reajustar_cronograma_curso', {
+      p_curso_id: cursoId,
+      p_fecha_inicio: fechaInicio,
+      p_duracion_dias: duracionDias
+    });
+
+    if (error) {
+      console.warn('Error llamando a RPC reajustar_cronograma_curso:', error.message);
+      return { success: false, message: error.message };
+    }
+
+    return data || { success: true, message: 'Cronograma reajustado con éxito.' };
+  } catch (err: any) {
+    console.error('Excepción en reajustarCronogramaCursoDB:', err);
+    return { success: false, message: err?.message || 'Error al reajustar el cronograma.' };
   }
 }
 

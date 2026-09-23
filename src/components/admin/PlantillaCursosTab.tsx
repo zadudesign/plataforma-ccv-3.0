@@ -303,6 +303,16 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
 
                       {/* Título & Descripción */}
                       <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <span className="font-bold text-[10px] px-2 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200">
+                            Fase {tarea.fase || 1}
+                          </span>
+                          {tarea.nombre_fase && (
+                            <span className="text-[10px] text-slate-500 font-medium truncate max-w-[200px]" title={tarea.nombre_fase}>
+                              • {tarea.nombre_fase}
+                            </span>
+                          )}
+                        </div>
                         <p className="font-extrabold text-charcoal-900 text-[13px] leading-tight">
                           {tarea.titulo}
                         </p>

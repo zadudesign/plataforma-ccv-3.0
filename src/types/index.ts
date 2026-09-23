@@ -89,6 +89,9 @@ export interface CursoVirtual {
   evaluador_id?: string;
   evaluador_nombre?: string;
   numero_unidades?: number;
+  fecha_inicio?: string;
+  duracion_dias?: number;
+  fecha_fin_estimada?: string;
   estado: 'En Diseño' | 'En Producción' | 'En Revisión' | 'Aprobado CCV' | 'Publicado LMS';
   created_at?: string;
 }
@@ -115,6 +118,8 @@ export interface PlantillaTareaCurso {
   activa: boolean;
   aplica_por_unidad?: boolean;
   seccion?: string;
+  fase?: number;
+  nombre_fase?: string;
   dependencias?: string[]; // IDs de tareas_plantilla de las que depende
   created_at?: string;
 }
@@ -168,6 +173,8 @@ export interface TareaCCV {
   dependencias_operativas?: string[]; // IDs de tareas del mismo curso que la bloquean
   numero_unidad?: number;
   fecha_inicial?: string;
+  fase?: number;
+  nombre_fase?: string;
   created_at?: string;
 }
 

@@ -51,6 +51,7 @@ import {
   updatePlantillaTareaDB,
   deletePlantillaTareaDB,
   inicializarTareasCursoDB,
+  reajustarCronogramaCursoDB,
   forzarDesbloqueoAdminDB
 } from '@/lib/supabaseService';
 
@@ -138,7 +139,8 @@ interface AuthContextType {
   crearPlantillaTarea: (tarea: Omit<PlantillaTareaCurso, 'id'>, dependenciasIds?: string[]) => Promise<PlantillaTareaCurso | null>;
   editarPlantillaTarea: (id: string, updates: Partial<PlantillaTareaCurso>, dependenciasIds?: string[]) => Promise<boolean>;
   eliminarPlantillaTarea: (id: string) => Promise<boolean>;
-  inicializarTareasCurso: (cursoId: string) => Promise<{ success: boolean; message: string; total?: number }>;
+  inicializarTareasCurso: (cursoId: string, fechaInicio?: string, duracionDias?: number) => Promise<{ success: boolean; message: string; total?: number }>;
+  reajustarCronogramaCurso: (cursoId: string, fechaInicio: string, duracionDias: number) => Promise<{ success: boolean; message: string }>;
   forzarDesbloqueoAdmin: (tareaId: string, adminId: string) => Promise<{ success: boolean; message: string }>;
 }
 
@@ -1060,8 +1062,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return ok;
   };
 
-  const inicializarTareasCurso = async (cursoId: string) => {
-    return await inicializarTareasCursoDB(cursoId);
+  const inicializarTareasCurso = async (cursoId: string, fechaInicio?: string, duracionDias?: number) => {
+    return await inicializarTareasCursoDB(cursoId, fechaInicio, duracionDias);
+  };
+
+  const reajustarCronogramaCurso = async (cursoId: string, fechaInicio: string, duracionDias: number) => {
+    return await reajustarCronogramaCursoDB(cursoId, fechaInicio, duracionDias);
   };
 
   const forzarDesbloqueoAdmin = async (tareaId: string, adminId: string) => {
@@ -1100,6 +1106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         editarPlantillaTarea,
         eliminarPlantillaTarea,
         inicializarTareasCurso,
+        reajustarCronogramaCurso,
         forzarDesbloqueoAdmin,
         hasPermission,
         canAccessLevel,

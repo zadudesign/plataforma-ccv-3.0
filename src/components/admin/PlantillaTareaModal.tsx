@@ -44,6 +44,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
   const [activa, setActiva] = useState(true);
   const [aplicaPorUnidad, setAplicaPorUnidad] = useState(false);
   const [seccion, setSeccion] = useState('GENERAL');
+  const [fase, setFase] = useState<number>(1);
+  const [nombreFase, setNombreFase] = useState('');
   const [dependenciasSeleccionadas, setDependenciasSeleccionadas] = useState<string[]>([]);
   const [errorValidacion, setErrorValidacion] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -61,6 +63,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
       setActiva(initialData.activa !== false);
       setAplicaPorUnidad(initialData.aplica_por_unidad === true);
       setSeccion(initialData.seccion || (initialData.aplica_por_unidad ? 'UNIDADES' : 'GENERAL'));
+      setFase(initialData.fase || 1);
+      setNombreFase(initialData.nombre_fase || '');
       setDependenciasSeleccionadas(initialData.dependencias || []);
     } else {
       const siguienteOrden = todasLasTareas.length > 0 
@@ -77,6 +81,8 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
       setActiva(true);
       setAplicaPorUnidad(false);
       setSeccion('GENERAL');
+      setFase(1);
+      setNombreFase('Fase 1: Estructuración Curricular');
       setDependenciasSeleccionadas([]);
     }
     setErrorValidacion(null);
@@ -127,7 +133,9 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
         tiempo_estimado: tiempoEstimado,
         activa,
         aplica_por_unidad: aplicaPorUnidad,
-        seccion
+        seccion,
+        fase: Number(fase) || 1,
+        nombre_fase: nombreFase.trim() || undefined
       }, dependenciasSeleccionadas);
       onClose();
     } catch (err: any) {
@@ -432,6 +440,36 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
                     📌 Se generará una única tarea general para todo el curso (independientemente del número de unidades).
                   </span>
                 )}
+              </div>
+            </div>
+
+            {/* Configuración de Fase de Cronograma */}
+            <div className="pt-2 border-t border-stone-200/70 grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="sm:col-span-3">
+                <label className="block text-[11px] font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+                  Número de Fase *
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={fase}
+                  onChange={e => setFase(parseInt(e.target.value, 10) || 1)}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                />
+              </div>
+
+              <div className="sm:col-span-9">
+                <label className="block text-[11px] font-bold text-charcoal-700 uppercase tracking-wider mb-1">
+                  Nombre de Fase (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={nombreFase}
+                  onChange={e => setNombreFase(e.target.value)}
+                  placeholder="Ej. Fase 1: Estructuración Curricular"
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                />
               </div>
             </div>
           </div>
