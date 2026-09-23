@@ -1964,6 +1964,8 @@ export async function fetchPlantillaTareasCursoDB(): Promise<PlantillaTareaCurso
       activa: t.activa !== false,
       aplica_por_unidad: !!t.aplica_por_unidad,
       seccion: t.seccion || 'GENERAL',
+      fase: t.fase !== undefined && t.fase !== null ? Number(t.fase) : 1,
+      nombre_fase: t.nombre_fase || undefined,
       dependencias: depsMap[t.id] || [],
       created_at: t.created_at
     }));
@@ -1989,7 +1991,9 @@ export async function createPlantillaTareaDB(
       tiempo_estimado: tarea.tiempo_estimado || 0,
       activa: tarea.activa !== false,
       aplica_por_unidad: !!tarea.aplica_por_unidad,
-      seccion: tarea.seccion || 'GENERAL'
+      seccion: tarea.seccion || 'GENERAL',
+      fase: tarea.fase || 1,
+      nombre_fase: tarea.nombre_fase || null
     };
 
     const { data, error } = await supabase
@@ -2030,6 +2034,8 @@ export async function createPlantillaTareaDB(
       activa: data.activa,
       aplica_por_unidad: data.aplica_por_unidad,
       seccion: data.seccion,
+      fase: data.fase,
+      nombre_fase: data.nombre_fase,
       dependencias: dependenciasIds,
       created_at: data.created_at
     };
@@ -2061,6 +2067,8 @@ export async function updatePlantillaTareaDB(
     if (updates.activa !== undefined) payload.activa = updates.activa;
     if (updates.aplica_por_unidad !== undefined) payload.aplica_por_unidad = updates.aplica_por_unidad;
     if (updates.seccion !== undefined) payload.seccion = updates.seccion;
+    if (updates.fase !== undefined) payload.fase = updates.fase;
+    if (updates.nombre_fase !== undefined) payload.nombre_fase = updates.nombre_fase;
 
     const { error } = await supabase
       .from('plantilla_tareas_curso')

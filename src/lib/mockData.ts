@@ -833,6 +833,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     activa: true,
     aplica_por_unidad: false,
     seccion: 'GENERAL',
+    fase: 1,
+    nombre_fase: 'Fase 1: Estructuración y Acuerdos Curriculares',
     dependencias: []
   },
   {
@@ -847,6 +849,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     activa: true,
     aplica_por_unidad: false,
     seccion: 'GENERAL',
+    fase: 1,
+    nombre_fase: 'Fase 1: Estructuración y Acuerdos Curriculares',
     dependencias: ['pt-1']
   },
   {
@@ -861,6 +865,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     activa: true,
     aplica_por_unidad: false,
     seccion: 'GENERAL',
+    fase: 1,
+    nombre_fase: 'Fase 1: Estructuración y Acuerdos Curriculares',
     dependencias: ['pt-2']
   },
   {
@@ -873,8 +879,10 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 180,
     activa: true,
-    aplica_por_unidad: false,
-    seccion: 'GENERAL',
+    aplica_por_unidad: true,
+    seccion: 'UNIDADES',
+    fase: 2,
+    nombre_fase: 'Fase 2: Elaboración y Producción de Contenidos',
     dependencias: ['pt-3']
   },
   {
@@ -887,8 +895,10 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 240,
     activa: true,
-    aplica_por_unidad: false,
-    seccion: 'GENERAL',
+    aplica_por_unidad: true,
+    seccion: 'UNIDADES',
+    fase: 2,
+    nombre_fase: 'Fase 2: Elaboración y Producción de Contenidos',
     dependencias: ['pt-4']
   },
   {
@@ -901,8 +911,10 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     tipo_tarea: 'PRODUCCION',
     tiempo_estimado: 300,
     activa: true,
-    aplica_por_unidad: false,
-    seccion: 'GENERAL',
+    aplica_por_unidad: true,
+    seccion: 'UNIDADES',
+    fase: 2,
+    nombre_fase: 'Fase 2: Elaboración y Producción de Contenidos',
     dependencias: ['pt-4']
   },
   {
@@ -917,6 +929,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     activa: true,
     aplica_por_unidad: false,
     seccion: 'CIERRE',
+    fase: 3,
+    nombre_fase: 'Fase 3: Montaje en LMS y Certificación de Calidad',
     dependencias: ['pt-5', 'pt-6']
   },
   {
@@ -931,6 +945,8 @@ export const INITIAL_PLANTILLA_CURSOS: PlantillaTareaCurso[] = [
     activa: true,
     aplica_por_unidad: false,
     seccion: 'CIERRE',
+    fase: 3,
+    nombre_fase: 'Fase 3: Montaje en LMS y Certificación de Calidad',
     dependencias: ['pt-7']
   }
 ];
