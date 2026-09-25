@@ -295,10 +295,10 @@ export default function Home() {
     }
   };
 
-  const handleUpdateFechaCompletada = async (tareaId: string, nuevaFecha: string) => {
+  const handleUpdateFechaCompletada = async (tareaId: string, nuevaFecha: string): Promise<boolean> => {
     if (!isAdmin()) {
       alert('Solo los usuarios con rol de Administrador pueden modificar la fecha de finalización de una tarea.');
-      return;
+      return false;
     }
 
     const exito = await updateTareaFechaCompletadaDB(tareaId, nuevaFecha);
@@ -316,6 +316,7 @@ export default function Home() {
     if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
       setTareaSeleccionada(prev => prev ? { ...prev, fecha_completada: nuevaFecha } : null);
     }
+    return exito;
   };
 
   const handleAddComment = async (tareaId: string, texto: string) => {

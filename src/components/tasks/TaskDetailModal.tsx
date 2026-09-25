@@ -38,7 +38,7 @@ interface TaskDetailModalProps {
   onAddComment: (tareaId: string, texto: string) => void;
   onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => void;
   onOpenCursoOProyecto?: (entidadId: string, tipo: 'curso' | 'proyecto') => void;
-  onUpdateFechaCompletada?: (tareaId: string, nuevaFecha: string) => Promise<boolean> | void;
+  onUpdateFechaCompletada?: (tareaId: string, nuevaFecha: string) => Promise<any> | void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
