@@ -1207,6 +1207,7 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     if (datos.estado !== undefined) payload.estado = datos.estado;
     if (datos.fecha_vencimiento !== undefined) payload.fecha_vencimiento = datos.fecha_vencimiento;
     if (datos.hora_vencimiento !== undefined) payload.hora_vencimiento = datos.hora_vencimiento;
+    if (datos.fecha_completada !== undefined) payload.fecha_completada = datos.fecha_completada || null;
     if (datos.tiempo_estimado !== undefined) payload.tiempo_estimado = Number(datos.tiempo_estimado);
     if (datos.tiempo_invertido !== undefined) payload.tiempo_invertido = Number(datos.tiempo_invertido);
     if (datos.tiempo_invertido_secundario !== undefined) payload.tiempo_invertido_secundario = Number(datos.tiempo_invertido_secundario);
@@ -1224,6 +1225,7 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
       if (error.message.includes('tiempo_estimado')) delete payload.tiempo_estimado;
       if (error.message.includes('tiempo_invertido_secundario')) delete payload.tiempo_invertido_secundario;
       if (error.message.includes('hora_vencimiento')) delete payload.hora_vencimiento;
+      if (error.message.includes('fecha_completada')) delete payload.fecha_completada;
       const res = await supabase.from('tareas').update(payload).eq('id', id);
       error = res.error;
     }
@@ -1231,6 +1233,28 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     return !error;
   } catch (err) {
     console.error('Excepción al actualizar tarea:', err);
+    return false;
+  }
+}
+
+/**
+ * Permite actualizar exclusivamente la fecha_completada de una tarea en Supabase (Solo Admin)
+ */
+export async function updateTareaFechaCompletadaDB(id: string, fechaCompletada: string | null): Promise<boolean> {
+  try {
+    if (!isGuid(id)) return true;
+    const payload = {
+      fecha_completada: fechaCompletada || null,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabase.from('tareas').update(payload).eq('id', id);
+    if (error) {
+      console.error('Error actualizando fecha_completada en Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Excepción actualizando fecha_completada:', err);
     return false;
   }
 }

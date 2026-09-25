@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Clock, 
@@ -18,7 +18,11 @@ import {
   Link as LinkIcon,
   ExternalLink,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  CalendarCheck,
+  ShieldCheck,
+  Save,
+  Check
 } from 'lucide-react';
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -34,6 +38,7 @@ interface TaskDetailModalProps {
   onAddComment: (tareaId: string, texto: string) => void;
   onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => void;
   onOpenCursoOProyecto?: (entidadId: string, tipo: 'curso' | 'proyecto') => void;
+  onUpdateFechaCompletada?: (tareaId: string, nuevaFecha: string) => Promise<boolean> | void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -45,10 +50,33 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onAddComment,
   onAddHours,
   onOpenCursoOProyecto,
+  onUpdateFechaCompletada,
 }) => {
-  const { roles, usuarios } = useAuth();
+  const { roles, usuarios, isAdmin } = useAuth();
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [confirmarCompletadaOpen, setConfirmarCompletadaOpen] = useState(false);
+  const [fechaCompletadaLocal, setFechaCompletadaLocal] = useState<string>('');
+  const [isSavingFecha, setIsSavingFecha] = useState(false);
+  const [savedSuccessFecha, setSavedSuccessFecha] = useState(false);
+
+  useEffect(() => {
+    if (tarea) {
+      setFechaCompletadaLocal(tarea.fecha_completada || new Date().toISOString().split('T')[0]);
+      setSavedSuccessFecha(false);
+    }
+  }, [tarea]);
+
+  const handleGuardarFechaCompletada = async () => {
+    if (!tarea || !fechaCompletadaLocal || !onUpdateFechaCompletada) return;
+    setIsSavingFecha(true);
+    try {
+      await onUpdateFechaCompletada(tarea.id, fechaCompletadaLocal);
+      setSavedSuccessFecha(true);
+      setTimeout(() => setSavedSuccessFecha(false), 3000);
+    } finally {
+      setIsSavingFecha(false);
+    }
+  };
 
   const handleCambiarEstado = (est: EstadoTarea) => {
     if (!tarea) return;
@@ -371,6 +399,82 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               })}
             </div>
           </div>
+
+          {/* Sección de Fecha de Finalización (Especial Admin) */}
+          {(tarea.estado === 'Completada' || tarea.fecha_completada) && (
+            <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/90 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <CalendarCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+                      Fecha de Finalización Real
+                      {isAdmin() && (
+                        <span className="text-[10px] bg-emerald-200 text-emerald-900 border border-emerald-300 font-bold px-1.5 py-0.2 rounded-md flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-emerald-800" /> Admin
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-emerald-800 font-medium">
+                      {isAdmin()
+                        ? 'Como Administrador puedes corregir o ajustar la fecha en que se completó esta tarea.'
+                        : 'Fecha oficial en la que se dio por finalizada la tarea.'}
+                    </p>
+                  </div>
+                </div>
+
+                {!isAdmin() && (
+                  <span className="px-3 py-1 rounded-full bg-white text-emerald-900 font-black text-xs border border-emerald-300 shadow-2xs font-mono">
+                    📅 {tarea.fecha_completada || 'Fecha de hoy'}
+                  </span>
+                )}
+              </div>
+
+              {/* Formulario exclusivo para Administradores */}
+              {isAdmin() && (
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <div className="relative flex-1 max-w-xs min-w-[200px]">
+                    <input
+                      type="date"
+                      value={fechaCompletadaLocal}
+                      onChange={(e) => setFechaCompletadaLocal(e.target.value)}
+                      disabled={isSavingFecha}
+                      className="w-full py-2 px-3 bg-white rounded-xl text-xs font-bold border border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-charcoal-900 shadow-2xs font-mono"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleGuardarFechaCompletada}
+                    disabled={isSavingFecha || !fechaCompletadaLocal || fechaCompletadaLocal === tarea.fecha_completada}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                      savedSuccessFecha
+                        ? 'bg-emerald-600 text-white border border-emerald-700'
+                        : !fechaCompletadaLocal || fechaCompletadaLocal === tarea.fecha_completada
+                        ? 'bg-stone-200 text-stone-500 border border-stone-300 cursor-not-allowed opacity-60'
+                        : 'bg-emerald-700 hover:bg-emerald-800 text-white border border-emerald-800 hover:shadow-md active:scale-98'
+                    }`}
+                  >
+                    {savedSuccessFecha ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>¡Guardada!</span>
+                      </>
+                    ) : isSavingFecha ? (
+                      <span>Guardando...</span>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Actualizar Fecha</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Live Comments Feed */}
           <div>

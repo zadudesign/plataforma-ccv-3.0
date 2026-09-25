@@ -257,12 +257,14 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Trigger para marcar fecha_completada automáticamente al cambiar estado a 'Completada'
+-- Trigger para marcar fecha_completada automáticamente al cambiar estado a 'Completada' o respetar edición del Admin
 CREATE OR REPLACE FUNCTION public.handle_tarea_completada()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.estado = 'Completada' AND OLD.estado != 'Completada' THEN
-        NEW.fecha_completada := CURRENT_DATE;
+    IF NEW.estado = 'Completada' AND (OLD.estado IS NULL OR OLD.estado != 'Completada') THEN
+        IF NEW.fecha_completada IS NULL THEN
+            NEW.fecha_completada := CURRENT_DATE;
+        END IF;
     ELSIF NEW.estado != 'Completada' THEN
         NEW.fecha_completada := NULL;
     END IF;

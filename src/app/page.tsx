@@ -23,6 +23,7 @@ import {
   createTareaDB, 
   updateTareaEstadoDB, 
   updateTareaFullDB,
+  updateTareaFechaCompletadaDB,
   fetchComentariosDB, 
   addComentarioDB,
   addRegistroHorasDB
@@ -294,6 +295,29 @@ export default function Home() {
     }
   };
 
+  const handleUpdateFechaCompletada = async (tareaId: string, nuevaFecha: string) => {
+    if (!isAdmin()) {
+      alert('Solo los usuarios con rol de Administrador pueden modificar la fecha de finalización de una tarea.');
+      return;
+    }
+
+    const exito = await updateTareaFechaCompletadaDB(tareaId, nuevaFecha);
+    if (!exito) {
+      console.warn('No se pudo guardar la fecha en Supabase, aplicando actualización en memoria local.');
+    }
+
+    setTareas(prev => prev.map(t => {
+      if (t.id === tareaId) {
+        return { ...t, fecha_completada: nuevaFecha };
+      }
+      return t;
+    }));
+
+    if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
+      setTareaSeleccionada(prev => prev ? { ...prev, fecha_completada: nuevaFecha } : null);
+    }
+  };
+
   const handleAddComment = async (tareaId: string, texto: string) => {
     if (!usuarioActual) return;
     const dbCom = await addComentarioDB(tareaId, usuarioActual.id, texto);
@@ -537,6 +561,7 @@ export default function Home() {
                 if (p) setEntidadProgresoSeleccionada({ entidad: p, tipo: 'proyecto' });
               }
             }}
+            onUpdateFechaCompletada={handleUpdateFechaCompletada}
           />
         )}
 
