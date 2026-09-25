@@ -489,6 +489,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     actualizarTarifaProyecto,
     solicitudesTareas,
     plantillaTareas,
+    cargarPlantillaTareas,
     crearPlantillaTarea,
     editarPlantillaTarea,
     eliminarPlantillaTarea
@@ -2285,6 +2286,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onCrearTarea={crearPlantillaTarea}
           onEditarTarea={editarPlantillaTarea}
           onEliminarTarea={eliminarPlantillaTarea}
+          onCargarPlantilla={cargarPlantillaTareas}
         />
       )}
 

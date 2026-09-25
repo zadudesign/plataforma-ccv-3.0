@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -17,7 +17,8 @@ import {
   ArrowRight,
   Filter,
   Check,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { PlantillaTareaCurso, Usuario } from '@/types';
 import { PlantillaTareaModal } from './PlantillaTareaModal';
@@ -29,6 +30,7 @@ interface PlantillaCursosTabProps {
   onCrearTarea: (tarea: Omit<PlantillaTareaCurso, 'id'>, dependenciasIds: string[]) => Promise<PlantillaTareaCurso | null>;
   onEditarTarea: (id: string, updates: Partial<PlantillaTareaCurso>, dependenciasIds?: string[]) => Promise<boolean>;
   onEliminarTarea: (id: string) => Promise<boolean>;
+  onCargarPlantilla?: () => Promise<void>;
 }
 
 export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
@@ -36,7 +38,8 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
   usuarios,
   onCrearTarea,
   onEditarTarea,
-  onEliminarTarea
+  onEliminarTarea,
+  onCargarPlantilla
 }) => {
   const [busqueda, setBusqueda] = useState('');
   const [filtroResponsable, setFiltroResponsable] = useState<string>('todos');
@@ -46,6 +49,24 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
   const [tareaEnEdicion, setTareaEnEdicion] = useState<PlantillaTareaCurso | null>(null);
   const [tareaAEliminar, setTareaAEliminar] = useState<PlantillaTareaCurso | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  const [refrescando, setRefrescando] = useState(false);
+
+  // Asegurar que al entrar a la pestaña se carguen los datos frescos de Supabase
+  useEffect(() => {
+    if (onCargarPlantilla) {
+      onCargarPlantilla();
+    }
+  }, [onCargarPlantilla]);
+
+  const handleRefrescar = async () => {
+    if (!onCargarPlantilla || refrescando) return;
+    setRefrescando(true);
+    try {
+      await onCargarPlantilla();
+    } finally {
+      setTimeout(() => setRefrescando(false), 500);
+    }
+  };
 
   // Lista única de fases presentes en la plantilla para el filtro
   const listaFasesDisponibles = useMemo(() => {
@@ -194,7 +215,19 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {onCargarPlantilla && (
+            <button
+              onClick={handleRefrescar}
+              disabled={refrescando}
+              title="Sincronizar y obtener datos más recientes de Supabase"
+              className="px-4 py-2.5 bg-white hover:bg-stone-100 text-charcoal-700 border border-stone-300 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs hover:shadow-sm cursor-pointer shrink-0 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-sage-600 ${refrescando ? 'animate-spin' : ''}`} />
+              <span>{refrescando ? 'Sincronizando...' : 'Sincronizar BD'}</span>
+            </button>
+          )}
+
           <button
             onClick={handleOpenNueva}
             className="px-5 py-2.5 bg-sage-700 hover:bg-sage-800 text-white rounded-2xl text-xs font-black flex items-center gap-2 transition-all shadow-md hover:shadow-lg cursor-pointer shrink-0"

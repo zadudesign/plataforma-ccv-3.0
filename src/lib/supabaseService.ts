@@ -1954,13 +1954,28 @@ export async function deletePublicacionParrillaDB(id: string): Promise<{ success
 
 export async function fetchPlantillaTareasCursoDB(): Promise<PlantillaTareaCurso[]> {
   try {
-    const { data: tareasData, error: tareasErr } = await supabase
+    let { data: tareasData, error: tareasErr } = await supabase
       .from('plantilla_tareas_curso')
       .select('*, usuarios!cmu_usuario_fijo_id(nombre_completo)')
       .order('orden', { ascending: true });
 
+    // Si falló por la relación o foreign key 'usuarios', intentar select directo sin join
+    if (tareasErr) {
+      console.warn('Advertencia en join de plantilla_tareas_curso con usuarios, intentando select plano:', tareasErr.message);
+      const resPlano = await supabase
+        .from('plantilla_tareas_curso')
+        .select('*')
+        .order('orden', { ascending: true });
+      if (!resPlano.error && resPlano.data) {
+        tareasData = resPlano.data;
+        tareasErr = null;
+      }
+    }
+
     if (tareasErr || !tareasData || tareasData.length === 0) {
-      // Si la tabla aún no existe o está vacía en Supabase, usar INITIAL_PLANTILLA_CURSOS como respaldo
+      if (tareasErr) {
+        console.warn('No se pudo cargar plantilla_tareas_curso desde Supabase, usando respaldo mock:', tareasErr.message);
+      }
       return INITIAL_PLANTILLA_CURSOS;
     }
 

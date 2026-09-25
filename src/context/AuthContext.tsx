@@ -245,9 +245,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (usuarioEncontrado) {
           establecerUsuarioAutenticado(usuarioEncontrado);
         }
+        // Recargar plantilla de tareas ahora que la sesión está formalmente verificada
+        fetchPlantillaTareasCursoDB().then(fresh => {
+          if (fresh && fresh.length > 0) setPlantillaTareas(fresh);
+        });
       }
     };
     loadInitialData();
+
+    // Listener para eventos de autenticación de Supabase (login, refresh token)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        const freshPlantilla = await fetchPlantillaTareasCursoDB();
+        if (freshPlantilla && freshPlantilla.length > 0) {
+          setPlantillaTareas(freshPlantilla);
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Calcular permisos y nivel de área del usuario actual
@@ -347,6 +365,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
           }
         }
+        // Recargar plantilla de tareas inmediatamente con el token de la sesión
+        fetchPlantillaTareasCursoDB().then(fresh => {
+          if (fresh && fresh.length > 0) setPlantillaTareas(fresh);
+        });
         return { success: true };
       }
       return { success: false, error: 'No se pudo obtener la información de usuario.' };
@@ -444,6 +466,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         setUsuarioActual(usr);
+        fetchPlantillaTareasCursoDB().then(fresh => {
+          if (fresh && fresh.length > 0) setPlantillaTareas(fresh);
+        });
         return { success: true };
       }
 

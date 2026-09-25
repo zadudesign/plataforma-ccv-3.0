@@ -600,7 +600,7 @@ ALTER TABLE public.plantilla_tareas_dependencias ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lectura pública/autenticada de plantilla de tareas" ON public.plantilla_tareas_curso;
 CREATE POLICY "Lectura pública/autenticada de plantilla de tareas"
 ON public.plantilla_tareas_curso FOR SELECT
-USING (auth.role() = 'authenticated');
+USING (true);
 
 DROP POLICY IF EXISTS "Gestión de plantilla exclusiva para administradores" ON public.plantilla_tareas_curso;
 CREATE POLICY "Gestión de plantilla exclusiva para administradores"
@@ -611,7 +611,7 @@ WITH CHECK (public.es_admin(auth.uid()));
 DROP POLICY IF EXISTS "Lectura pública/autenticada de dependencias plantilla" ON public.plantilla_tareas_dependencias;
 CREATE POLICY "Lectura pública/autenticada de dependencias plantilla"
 ON public.plantilla_tareas_dependencias FOR SELECT
-USING (auth.role() = 'authenticated');
+USING (true);
 
 DROP POLICY IF EXISTS "Gestión de dependencias plantilla exclusiva para admin" ON public.plantilla_tareas_dependencias;
 CREATE POLICY "Gestión de dependencias plantilla exclusiva para admin"
