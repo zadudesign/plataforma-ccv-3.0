@@ -23,7 +23,8 @@ import {
   AlertCircle,
   Search,
   Shield,
-  FilePlus
+  FilePlus,
+  Inbox
 } from 'lucide-react';
 import { TareaCCV, Usuario, CursoVirtual, ProyectoEspecial, Programa, Facultad, TareaComentario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -116,6 +117,7 @@ interface DashboardOverviewProps {
   onSelectTask: (tarea: TareaCCV) => void;
   onOpenCreateTask: () => void;
   onOpenTaskRequest?: () => void;
+  onOpenSolicitudes?: () => void;
   onOpenProgreso?: (entidad: CursoVirtual | ProyectoEspecial, tipo: 'curso' | 'proyecto') => void;
 }
 
@@ -131,9 +133,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onSelectTask,
   onOpenCreateTask,
   onOpenTaskRequest,
+  onOpenSolicitudes,
   onOpenProgreso,
 }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, solicitudesTareas } = useAuth();
+
+  // Solicitudes personales del usuario para acceso rápido
+  const misSolicitudes = (solicitudesTareas || []).filter(s => {
+    const matchId = s.solicitante_id && s.solicitante_id === usuarioActual.id;
+    const matchEmail = s.solicitante_email && usuarioActual.email && 
+      s.solicitante_email.trim().toLowerCase() === usuarioActual.email.trim().toLowerCase();
+    return matchId || matchEmail;
+  });
+  const misPendientes = misSolicitudes.filter(s => s.estado === 'Pendiente').length;
+
   // 1. MÉTRICAS INSTITUCIONALES GENERALES
   const numProgramas = programas.length;
   const numCursos = cursos.length;
@@ -183,6 +196,64 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   return (
     <div className="space-y-8 animate-fadeIn">
+      {/* ==================================================================== */}
+      {/* BANNER / ACCESO RÁPIDO: BANDEJA DE SOLICITUDES & NUEVO REQUERIMIENTO */}
+      {/* ==================================================================== */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
+            <Inbox className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-sm font-black text-slate-900">
+                {isAdmin() ? 'Bandeja de Solicitudes CCV' : 'Bandeja de Solicitudes de Tareas'}
+              </h4>
+              {misPendientes > 0 && !isAdmin() && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
+                  {misPendientes} en revisión
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {isAdmin()
+                ? 'Gestiona y responde los requerimientos radicados por docentes y dependencias institucionales.'
+                : 'Consulta el estado de tus solicitudes radicadas, las tareas aprobadas y las respuestas del Administrador.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Acciones y métricas rápidas */}
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          {onOpenSolicitudes && (
+            <button
+              onClick={onOpenSolicitudes}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-800 text-xs font-bold border border-slate-200 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+            >
+              <Inbox className="w-4 h-4 text-slate-600" />
+              <span>{isAdmin() ? 'Abrir Bandeja Admin' : 'Bandeja de Solicitudes'}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                (isAdmin() ? (solicitudesTareas?.filter(s => s.estado === 'Pendiente').length || 0) : misPendientes) > 0
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-white text-slate-600 border border-slate-200'
+              }`}>
+                {isAdmin() ? (solicitudesTareas?.filter(s => s.estado === 'Pendiente').length || 0) : misSolicitudes.length}
+              </span>
+            </button>
+          )}
+
+          {!isAdmin() && onOpenTaskRequest && (
+            <button
+              onClick={onOpenTaskRequest}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all shadow-xs hover:shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
+              <span>+ Solicitar Tarea</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* ==================================================================== */}
       {/* 1. SECCIÓN: MÉTRICAS INSTITUCIONALES (8 RECUADROS)                    */}
       {/* ==================================================================== */}

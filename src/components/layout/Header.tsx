@@ -36,7 +36,17 @@ export const Header: React.FC<HeaderProps> = ({
   const { usuarioActual: contextUsuario, nivelArea, setIsDevSimulatorOpen, isRealAdmin, isAdmin, solicitudesTareas } = useAuth();
   const usuarioActual = propsUsuario || contextUsuario;
 
-  const solicitudesPendientes = solicitudesTareas?.filter(s => s.estado === 'Pendiente').length || 0;
+  // Solicitudes pendientes: Para Admin es el total global; para los demás roles son las del propio usuario
+  const misSolicitudes = solicitudesTareas?.filter(s => {
+    const matchId = s.solicitante_id && s.solicitante_id === usuarioActual?.id;
+    const matchEmail = s.solicitante_email && usuarioActual?.email && 
+      s.solicitante_email.trim().toLowerCase() === usuarioActual.email.trim().toLowerCase();
+    return matchId || matchEmail;
+  }) || [];
+
+  const solicitudesPendientes = isAdmin()
+    ? (solicitudesTareas?.filter(s => s.estado === 'Pendiente').length || 0)
+    : (misSolicitudes.filter(s => s.estado === 'Pendiente').length);
   const tareasPendientes = tareasPendientesCount;
 
   if (!usuarioActual) return null;
@@ -95,9 +105,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Action Button: Nueva Tarea (Exclusivo Admin) con Alerta de Tareas Pendientes y Solicitudes Vigentes vs Solicitar Tarea */}
+        {/* Action Buttons: Tareas Pendientes, Bandeja de Solicitudes y Nueva/Solicitar Tarea */}
         <div className="flex items-center gap-2.5">
-          {/* Alerta de Tareas Pendientes (Visible tanto para Admin como para Docentes/Operativos) */}
+          {/* Alerta de Tareas Pendientes (Visible para todos los roles) */}
           {onOpenTareasPendientes && (
             <button
               onClick={onOpenTareasPendientes}
@@ -132,58 +142,61 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {isAdmin() ? (
-            <>
-              {/* Alerta de Bandeja de Solicitudes (Visible siempre al lado de Nueva Tarea para saber solicitudes vigentes) */}
-              {onOpenSolicitudes && (
-                <button
-                  onClick={onOpenSolicitudes}
-                  id="btn-header-alerta-solicitudes"
-                  className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md scale-100 hover:scale-105 active:scale-95 cursor-pointer border ${
-                    solicitudesPendientes > 0
-                      ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 ring-2 ring-amber-400/40 animate-pulse'
-                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
-                  }`}
-                  title={
-                    solicitudesPendientes > 0
+          {/* Bandeja de Solicitudes (Visible para todos los roles) */}
+          {onOpenSolicitudes && (
+            <button
+              onClick={onOpenSolicitudes}
+              id="btn-header-alerta-solicitudes"
+              className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all duration-200 shadow-sm hover:shadow-md scale-100 hover:scale-105 active:scale-95 cursor-pointer border ${
+                solicitudesPendientes > 0
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 ring-2 ring-amber-400/40 animate-pulse'
+                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+              }`}
+              title={
+                isAdmin()
+                  ? (solicitudesPendientes > 0
                       ? `⚠️ Hay ${solicitudesPendientes} solicitud(es) vigente(s) pendiente(s) por revisar. Haz clic para abrir la Bandeja.`
-                      : 'Bandeja de Solicitudes al día (0 solicitudes vigentes pendientes). Haz clic para abrir el historial.'
-                  }
-                >
-                  <div className="relative">
-                    <Inbox className={`w-4 h-4 ${solicitudesPendientes > 0 ? 'text-white' : 'text-slate-500'}`} />
-                    {solicitudesPendientes > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                    )}
-                  </div>
-                  <span>Bandeja de Solicitudes</span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-black flex items-center justify-center ${
-                      solicitudesPendientes > 0
-                        ? 'bg-white text-amber-700 shadow-2xs'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {solicitudesPendientes}
-                  </span>
-                </button>
-              )}
-
-              <button
-                onClick={onOpenCreateTask}
-                id="btn-header-nueva-tarea"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 cursor-pointer"
-                title="Crear nueva tarea en la plataforma"
+                      : 'Bandeja de Solicitudes al día (0 solicitudes vigentes pendientes). Haz clic para abrir el historial.')
+                  : (solicitudesPendientes > 0
+                      ? `Tienes ${solicitudesPendientes} solicitud(es) en espera de revisión. Haz clic para ver el estado.`
+                      : 'Bandeja de Solicitudes: Consulta el estado y respuesta del Admin a tus requerimientos.')
+              }
+            >
+              <div className="relative">
+                <Inbox className={`w-4 h-4 ${solicitudesPendientes > 0 ? 'text-white' : 'text-slate-500'}`} />
+                {solicitudesPendientes > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                )}
+              </div>
+              <span>Bandeja de Solicitudes</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-black flex items-center justify-center ${
+                  solicitudesPendientes > 0
+                    ? 'bg-white text-amber-700 shadow-2xs'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
               >
-                <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
-                <span>Nueva Tarea</span>
-              </button>
-            </>
+                {solicitudesPendientes}
+              </span>
+            </button>
+          )}
+
+          {/* Botón de Creación / Solicitud de Tarea según Rol */}
+          {isAdmin() ? (
+            <button
+              onClick={onOpenCreateTask}
+              id="btn-header-nueva-tarea"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 cursor-pointer"
+              title="Crear nueva tarea en la plataforma"
+            >
+              <Plus className="w-4 h-4 stroke-[3] text-sky-400" />
+              <span>Nueva Tarea</span>
+            </button>
           ) : onOpenTaskRequest ? (
             <button
               onClick={onOpenTaskRequest}
               id="btn-header-solicitar-tarea"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg scale-100 hover:scale-105 active:scale-95 cursor-pointer"
               title="Solicitar nueva tarea o requerimiento institucional"
             >
               <FilePlus className="w-4 h-4 stroke-[2.5] text-sky-400" />

@@ -521,7 +521,8 @@ ON public.solicitudes_tareas
 FOR SELECT
 USING (
     public.es_admin(auth.uid()) OR 
-    solicitante_id = auth.uid()
+    solicitante_id = auth.uid() OR
+    solicitante_email = (auth.jwt() ->> 'email')
 );
 
 -- Política de Gestión solo para Administrador (Actualización y Eliminación)

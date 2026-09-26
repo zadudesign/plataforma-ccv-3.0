@@ -12,6 +12,7 @@ import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { TaskDetailModal } from '@/components/tasks/TaskDetailModal';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { TaskRequestModal } from '@/components/home/TaskRequestModal';
+import { UserSolicitudesModal } from '@/components/tasks/UserSolicitudesModal';
 import { LandingHome } from '@/components/home/LandingHome';
 import { DevRoleSimulatorModal } from '@/components/auth/DevRoleSimulatorModal';
 import { DigitalSignatureModal } from '@/components/auth/DigitalSignatureModal';
@@ -64,6 +65,7 @@ export default function Home() {
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isTaskRequestOpen, setIsTaskRequestOpen] = useState(false);
+  const [isUserSolicitudesOpen, setIsUserSolicitudesOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
   const [pestanaAdminInicial, setPestanaAdminInicial] = useState<PestanaAdmin>('usuarios');
@@ -413,8 +415,12 @@ export default function Home() {
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
             onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
             onOpenSolicitudes={() => {
-              setPestanaAdminInicial('solicitudes');
-              setVistaActual('admin');
+              if (isAdmin()) {
+                setPestanaAdminInicial('solicitudes');
+                setVistaActual('admin');
+              } else {
+                setIsUserSolicitudesOpen(true);
+              }
             }}
             onOpenTareasPendientes={() => setVistaActual('kanban')}
             tareasPendientesCount={tareasPendientesCount}
@@ -442,6 +448,14 @@ export default function Home() {
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
             onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
+            onOpenSolicitudes={() => {
+              if (isAdmin()) {
+                setPestanaAdminInicial('solicitudes');
+                setVistaActual('admin');
+              } else {
+                setIsUserSolicitudesOpen(true);
+              }
+            }}
             onOpenProgreso={(entidad, tipo) => setEntidadProgresoSeleccionada({ entidad, tipo })}
           />
         )}
@@ -582,6 +596,15 @@ export default function Home() {
           <TaskRequestModal
             isOpen={isTaskRequestOpen}
             onClose={() => setIsTaskRequestOpen(false)}
+          />
+        )}
+
+        {/* User Solicitudes Inbox Modal (Bandeja para todos los roles) */}
+        {isUserSolicitudesOpen && (
+          <UserSolicitudesModal
+            isOpen={isUserSolicitudesOpen}
+            onClose={() => setIsUserSolicitudesOpen(false)}
+            onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
           />
         )}
 
