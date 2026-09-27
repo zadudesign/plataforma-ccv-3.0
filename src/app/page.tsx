@@ -448,14 +448,6 @@ export default function Home() {
             onSelectTask={(t) => setTareaSeleccionada(t)}
             onOpenCreateTask={() => setIsCreateTaskOpen(true)}
             onOpenTaskRequest={() => setIsTaskRequestOpen(true)}
-            onOpenSolicitudes={() => {
-              if (isAdmin()) {
-                setPestanaAdminInicial('solicitudes');
-                setVistaActual('admin');
-              } else {
-                setIsUserSolicitudesOpen(true);
-              }
-            }}
             onOpenProgreso={(entidad, tipo) => setEntidadProgresoSeleccionada({ entidad, tipo })}
           />
         )}
