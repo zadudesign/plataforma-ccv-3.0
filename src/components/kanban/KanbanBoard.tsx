@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { TareaCCV, EstadoTarea } from '@/types';
 import { isRoleMatch } from '@/lib/roleVisibilityUtils';
+import { useAuth } from '@/context/AuthContext';
 
 interface KanbanBoardProps {
   tareas: TareaCCV[];
@@ -39,6 +40,29 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onUpdateStatus,
   onOpenCreateTask,
 }) => {
+  const { roles } = useAuth();
+
+  // Diccionario de mapeo rápido id -> nombre para resolver roles si vienen como UUID
+  const rolesIdMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (roles || []).forEach(r => {
+      if (r.id) map.set(r.id.toLowerCase().trim(), r.nombre);
+      if (r.nombre) map.set(r.nombre.toLowerCase().trim(), r.nombre);
+    });
+    return map;
+  }, [roles]);
+
+  const resolveRolNombre = (rolOId?: string): string => {
+    if (!rolOId) return '';
+    const clean = rolOId.trim();
+    const mapped = rolesIdMap.get(clean.toLowerCase());
+    if (mapped) return mapped;
+    if (/^[0-9a-fA-F-]{20,}$/.test(clean) || /^[rua]-[0-9]+$/.test(clean)) {
+      return 'General';
+    }
+    return clean;
+  };
+
   // Filtros interactivos del Kanban
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'Curso Virtual' | 'Proyecto'>('todos');
@@ -91,13 +115,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     },
   ];
 
-  // Extracción dinámica de roles presentes en las tareas activas
+  // Extracción dinámica de roles presentes en las tareas activas (resolviendo nombres de roles)
   const rolesInfo = useMemo(() => {
     const rolesMap = new Map<string, number>();
     tareas.forEach(t => {
       if (t.estado_bloqueo === 'BLOQUEADA') return;
-      const rol1 = t.rol_destino?.trim();
-      const rol2 = t.rol_destino_secundario?.trim();
+      const rol1 = resolveRolNombre(t.rol_destino);
+      const rol2 = resolveRolNombre(t.rol_destino_secundario);
       if (rol1) {
         rolesMap.set(rol1, (rolesMap.get(rol1) || 0) + 1);
       }
@@ -109,7 +133,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return Array.from(rolesMap.entries())
       .map(([nombre, count]) => ({ nombre, count }))
       .sort((a, b) => b.count - a.count || a.nombre.localeCompare(b.nombre));
-  }, [tareas]);
+  }, [tareas, rolesIdMap]);
 
   // Filtrado de tareas según rol, tipo y búsqueda local
   const tareasFiltradas = useMemo(() => {
@@ -118,11 +142,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       // Filtro por Rol
       if (filtroRol !== 'todos') {
+        const rol1Nombre = resolveRolNombre(t.rol_destino);
+        const rol2Nombre = resolveRolNombre(t.rol_destino_secundario);
         const matchRol =
+          isRoleMatch(rol1Nombre, filtroRol) ||
+          isRoleMatch(rol2Nombre, filtroRol) ||
+          rol1Nombre.toLowerCase().trim() === filtroRol.toLowerCase().trim() ||
+          rol2Nombre.toLowerCase().trim() === filtroRol.toLowerCase().trim() ||
           isRoleMatch(t.rol_destino, filtroRol) ||
-          isRoleMatch(t.rol_destino_secundario, filtroRol) ||
-          t.rol_destino?.toLowerCase().trim() === filtroRol.toLowerCase().trim() ||
-          t.rol_destino_secundario?.toLowerCase().trim() === filtroRol.toLowerCase().trim();
+          isRoleMatch(t.rol_destino_secundario, filtroRol);
         if (!matchRol) return false;
       }
 
@@ -141,7 +169,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         const matchEntidad =
           t.curso_nombre?.toLowerCase().includes(q) ||
           t.proyecto_nombre?.toLowerCase().includes(q);
+        const rol1Nombre = resolveRolNombre(t.rol_destino);
+        const rol2Nombre = resolveRolNombre(t.rol_destino_secundario);
         const matchRolDest =
+          rol1Nombre.toLowerCase().includes(q) ||
+          rol2Nombre.toLowerCase().includes(q) ||
           t.rol_destino?.toLowerCase().includes(q) ||
           t.rol_destino_secundario?.toLowerCase().includes(q);
         if (!matchTitulo && !matchResp && !matchEntidad && !matchRolDest) return false;
@@ -149,7 +181,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       return true;
     });
-  }, [tareas, filtroRol, filtroTipo, busquedaLocal]);
+  }, [tareas, filtroRol, filtroTipo, busquedaLocal, rolesIdMap]);
 
   const hayFiltrosActivos = filtroRol !== 'todos' || filtroTipo !== 'todos' || busquedaLocal.trim() !== '';
 
@@ -449,8 +481,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                       {tarea.tipo_tarea}
                                     </span>
                                     {tarea.rol_destino && (
-                                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md border ${getRolBadgeColor(tarea.rol_destino)}`}>
-                                        {tarea.rol_destino}
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md border ${getRolBadgeColor(resolveRolNombre(tarea.rol_destino))}`}>
+                                        {resolveRolNombre(tarea.rol_destino)}
+                                      </span>
+                                    )}
+                                    {tarea.rol_destino_secundario && (
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md border ${getRolBadgeColor(resolveRolNombre(tarea.rol_destino_secundario))}`}>
+                                        {resolveRolNombre(tarea.rol_destino_secundario)}
                                       </span>
                                     )}
                                     <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md bg-stone-100/90 text-charcoal-700 border border-stone-200">

@@ -67,7 +67,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
+  const [filtroEstado, setFiltroEstado] = useState<'pendientes' | 'completadas' | 'todas'>('pendientes');
   const [filtroUnidad, setFiltroUnidad] = useState<number | 'todas' | 'transversal'>('todas');
   const [horasInput, setHorasInput] = useState<number | string>('1');
   const [notasHoras, setNotasHoras] = useState('');
@@ -148,8 +148,8 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   }, 0);
 
   // Filtrar y ordenar según pestaña seleccionada y filtro de unidades
-  const tareasMostrar = ordenarTareasSegunCatalogo(
-    tareasEntidad.filter(t => {
+  const tareasMostrar = (() => {
+    const filtradas = tareasEntidad.filter(t => {
       if (filtroEstado === 'completadas' && t.estado !== 'Completada') return false;
       if (filtroEstado === 'pendientes' && t.estado === 'Completada') return false;
 
@@ -159,8 +159,23 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
       }
 
       return true;
-    })
-  );
+    });
+
+    if (filtroEstado === 'todas') {
+      // En 'Todas', priorizar Pendientes / En Proceso primero y luego Completadas
+      return [...filtradas].sort((a, b) => {
+        const aComp = a.estado === 'Completada' ? 1 : 0;
+        const bComp = b.estado === 'Completada' ? 1 : 0;
+        if (aComp !== bComp) return aComp - bComp;
+        const ordenA = a.orden_tarea !== undefined && a.orden_tarea !== null ? a.orden_tarea : 9999;
+        const ordenB = b.orden_tarea !== undefined && b.orden_tarea !== null ? b.orden_tarea : 9999;
+        if (ordenA !== ordenB) return ordenA - ordenB;
+        return (a.numero_unidad || 0) - (b.numero_unidad || 0);
+      });
+    }
+
+    return ordenarTareasSegunCatalogo(filtradas);
+  })();
 
   const getGaugeColor = (pct: number) => {
     if (pct >= 80) return '#16A34A'; // Verde
@@ -724,16 +739,8 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                     Desglose Puntual de Tareas ({tareasEntidad.length})
                   </h3>
 
-                  {/* Filter Tabs */}
+                  {/* Filter Tabs: Pendientes primero, luego Completadas y luego Todas */}
                   <div className="flex items-center gap-1 p-1 bg-cream-100 rounded-full border border-stone-200 text-xs font-bold shrink-0 self-start sm:self-auto">
-                    <button
-                      onClick={() => setFiltroEstado('todas')}
-                      className={`px-3 py-1 rounded-full transition-all ${
-                        filtroEstado === 'todas' ? 'bg-white text-charcoal-900 shadow-xs' : 'text-charcoal-500 hover:text-charcoal-900'
-                      }`}
-                    >
-                      Todas ({totalTareas})
-                    </button>
                     <button
                       onClick={() => setFiltroEstado('pendientes')}
                       className={`px-3 py-1 rounded-full transition-all ${
@@ -749,6 +756,14 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                       }`}
                     >
                       Completadas ({completadas})
+                    </button>
+                    <button
+                      onClick={() => setFiltroEstado('todas')}
+                      className={`px-3 py-1 rounded-full transition-all ${
+                        filtroEstado === 'todas' ? 'bg-white text-charcoal-900 shadow-xs' : 'text-charcoal-500 hover:text-charcoal-900'
+                      }`}
+                    >
+                      Todas ({totalTareas})
                     </button>
                   </div>
                 </div>

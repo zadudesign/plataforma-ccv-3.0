@@ -620,8 +620,15 @@ ON public.plantilla_tareas_dependencias FOR ALL
 USING (public.es_admin(auth.uid()))
 WITH CHECK (public.es_admin(auth.uid()));
 
+-- Eliminar versión obsoleta de 1 parámetro para evitar ambigüedad en Postgres/PostgREST
+DROP FUNCTION IF EXISTS public.inicializar_tareas_curso(UUID);
+
 -- Función RPC: Instanciar Plantilla en un Curso
-CREATE OR REPLACE FUNCTION public.inicializar_tareas_curso(p_curso_id UUID)
+CREATE OR REPLACE FUNCTION public.inicializar_tareas_curso(
+    p_curso_id UUID,
+    p_fecha_inicio DATE DEFAULT CURRENT_DATE,
+    p_duracion_dias INT DEFAULT 60
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER

@@ -53,6 +53,9 @@ END;
 $$;
 
 -- 6. Actualización de RPC: inicializar_tareas_curso con cálculo de cronograma
+-- Eliminar versión previa de 1 parámetro para evitar error de función ambigua (42725)
+DROP FUNCTION IF EXISTS public.inicializar_tareas_curso(UUID);
+
 CREATE OR REPLACE FUNCTION public.inicializar_tareas_curso(
     p_curso_id UUID,
     p_fecha_inicio DATE DEFAULT CURRENT_DATE,

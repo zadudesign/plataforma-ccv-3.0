@@ -834,19 +834,34 @@ export async function updateProyectoFullDB(id: string, datos: Partial<ProyectoEs
 
 export async function fetchTareasDB(): Promise<TareaCCV[]> {
   try {
-    const { data, error } = await supabase
-      .from('tareas')
-      .select(`
-        *,
-        proyectos(nombre),
-        cursos(nombre),
-        areas(nombre),
-        usuarios!responsable_id(nombre_completo, avatar_url)
-      `)
-      .order('orden_tarea', { ascending: true, nullsFirst: false })
-      .order('numero_unidad', { ascending: true, nullsFirst: false })
-      .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
-      .order('hora_vencimiento', { ascending: true, nullsFirst: false });
+    const [{ data, error }, { data: rolesData }] = await Promise.all([
+      supabase
+        .from('tareas')
+        .select(`
+          *,
+          proyectos(nombre),
+          cursos(nombre),
+          areas(nombre),
+          usuarios!responsable_id(nombre_completo, avatar_url)
+        `)
+        .order('orden_tarea', { ascending: true, nullsFirst: false })
+        .order('numero_unidad', { ascending: true, nullsFirst: false })
+        .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
+        .order('hora_vencimiento', { ascending: true, nullsFirst: false }),
+      supabase.from('roles').select('id, nombre')
+    ]);
+
+    const rolMap = new Map((rolesData || []).map((r: any) => [r.id, r.nombre]));
+    const resolveRolDestino = (val?: string | null) => {
+      if (!val) return undefined;
+      const clean = val.trim();
+      const mapped = rolMap.get(clean);
+      if (mapped) return mapped;
+      if (/^[0-9a-fA-F-]{20,}$/.test(clean) || /^[rua]-[0-9]+$/.test(clean)) {
+        return 'General';
+      }
+      return clean;
+    };
 
     if (error || !data) {
       // Fallback sin joins en caso de discrepancia en nombres de foreign keys:
@@ -891,11 +906,11 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
           responsable_id: t.responsable_id,
           responsable_nombre: u?.nombre_completo || undefined,
           responsable_avatar: u?.avatar_url || undefined,
-          rol_destino: t.rol_destino,
+          rol_destino: resolveRolDestino(t.rol_destino),
           responsable_secundario_id: t.responsable_secundario_id,
           responsable_secundario_nombre: uSec?.nombre_completo || undefined,
           responsable_secundario_avatar: uSec?.avatar_url || undefined,
-          rol_destino_secundario: t.rol_destino_secundario,
+          rol_destino_secundario: resolveRolDestino(t.rol_destino_secundario),
           categoria_proyecto: t.categoria_proyecto,
           orden_tarea: t.orden_tarea || 0,
           estado: t.estado as EstadoTarea,
@@ -932,9 +947,9 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       responsable_id: t.responsable_id,
       responsable_nombre: t.usuarios?.nombre_completo,
       responsable_avatar: t.usuarios?.avatar_url,
-      rol_destino: t.rol_destino,
+      rol_destino: resolveRolDestino(t.rol_destino),
       responsable_secundario_id: t.responsable_secundario_id,
-      rol_destino_secundario: t.rol_destino_secundario,
+      rol_destino_secundario: resolveRolDestino(t.rol_destino_secundario),
       categoria_proyecto: t.categoria_proyecto,
       orden_tarea: t.orden_tarea || 0,
       estado: t.estado as EstadoTarea,
@@ -2160,9 +2175,12 @@ export async function inicializarTareasCursoDB(
   duracionDias?: number
 ): Promise<{ success: boolean; message: string; total?: number }> {
   try {
-    const params: Record<string, any> = { p_curso_id: cursoId };
-    if (fechaInicio) params.p_fecha_inicio = fechaInicio;
-    if (duracionDias) params.p_duracion_dias = duracionDias;
+    const hoy = new Date().toISOString().split('T')[0];
+    const params: Record<string, any> = {
+      p_curso_id: cursoId,
+      p_fecha_inicio: fechaInicio || hoy,
+      p_duracion_dias: duracionDias || 60
+    };
 
     const { data, error } = await supabase.rpc('inicializar_tareas_curso', params);
 
@@ -2174,8 +2192,17 @@ export async function inicializarTareasCursoDB(
           message: 'Error de tipos en Supabase: la columna "rol_destino" de la tabla tareas aún es de tipo UUID. Debes ejecutar el script SQL "supabase/fix_rol_destino_tareas.sql" en el SQL Editor de Supabase para convertirla a TEXT.'
         };
       }
-      // Fallback si la función RPC aún no fue actualizada con p_fecha_inicio y p_duracion_dias
-      if (error.message.includes('p_fecha_inicio') || error.message.includes('p_duracion_dias') || error.message.includes('function')) {
+      
+      // Manejo de función sobrecargada ambigua en PostgreSQL (error 42725)
+      if (error.message.includes('Could not choose the best candidate') || error.message.includes('candidate function')) {
+        return {
+          success: false,
+          message: 'Conflicto de versiones en Supabase: Existen dos funciones inicializar_tareas_curso en la BD. Ejecuta en el SQL Editor de Supabase: DROP FUNCTION IF EXISTS public.inicializar_tareas_curso(UUID);'
+        };
+      }
+
+      // Fallback si en la BD solo existe la versión antigua de 1 parámetro (sin cronograma)
+      if (error.message.includes('p_fecha_inicio') || error.message.includes('p_duracion_dias') || error.message.includes('parameter')) {
         const { data: fallbackData, error: fallbackError } = await supabase.rpc('inicializar_tareas_curso', {
           p_curso_id: cursoId
         });
