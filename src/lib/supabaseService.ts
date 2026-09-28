@@ -1675,9 +1675,10 @@ export async function convertirSolicitudEnTareaDB(
 
 export const DEFAULT_CMU_CAPACIDAD: CmuCapacidadRol[] = [
   { rol_nombre: 'Diseño', horas_semanales_maximas: 40 },
+  { rol_nombre: 'Multimedia', horas_semanales_maximas: 40 },
   { rol_nombre: 'Soporte', horas_semanales_maximas: 40 },
   { rol_nombre: 'Producción', horas_semanales_maximas: 40 },
-  { rol_nombre: 'Multimedia', horas_semanales_maximas: 40 },
+  { rol_nombre: 'Pedagogía', horas_semanales_maximas: 40 },
 ];
 
 export async function fetchCmuCapacidadRolesDB(): Promise<CmuCapacidadRol[]> {

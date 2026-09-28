@@ -23,7 +23,7 @@ import {
   FolderKanban,
   SlidersHorizontal
 } from 'lucide-react';
-import { TareaCCV, EstadoTarea } from '@/types';
+import { TareaCCV, EstadoTarea, Area } from '@/types';
 import { isRoleMatch } from '@/lib/roleVisibilityUtils';
 import { useAuth } from '@/context/AuthContext';
 
@@ -40,7 +40,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onUpdateStatus,
   onOpenCreateTask,
 }) => {
-  const { roles } = useAuth();
+  const { roles, areas, proyectos } = useAuth();
 
   // Diccionario de mapeo rápido id -> nombre para resolver roles si vienen como UUID
   const rolesIdMap = useMemo(() => {
@@ -63,7 +63,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return clean;
   };
 
-  // Filtros interactivos del Kanban
+  // Roles operativos oficiales institucionales
+  const ROLES_OFICIALES = useMemo(() => ['Diseño', 'Multimedia', 'Soporte', 'Producción', 'Pedagogía'], []);
+
+  // Filtros interactivos del Kanban: Área, Rol, Tipo y Búsqueda
+  const [filtroArea, setFiltroArea] = useState<string>('todas');
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'Curso Virtual' | 'Proyecto'>('todos');
   const [busquedaLocal, setBusquedaLocal] = useState<string>('');
@@ -115,30 +119,108 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     },
   ];
 
-  // Extracción dinámica de roles presentes en las tareas activas (resolviendo nombres de roles)
+  // Lista jerárquica de áreas y sub-áreas para el selector
+  const areasOrganizadas = useMemo(() => {
+    if (!areas || areas.length === 0) return [];
+    const raices = areas.filter(a => !a.parent_id || a.parent_id === 'a-6' || !areas.some(x => x.id === a.parent_id));
+    const resultado: { id: string; nombre: string; esSubArea: boolean; nivel: number }[] = [];
+
+    const agregarConHijos = (area: Area, nivelIndent: number) => {
+      resultado.push({
+        id: area.id,
+        nombre: area.nombre,
+        esSubArea: nivelIndent > 0,
+        nivel: nivelIndent,
+      });
+      const hijos = areas.filter(sub => sub.parent_id === area.id && sub.id !== area.id);
+      hijos.forEach(hijo => agregarConHijos(hijo, nivelIndent + 1));
+    };
+
+    raices.forEach(r => agregarConHijos(r, 0));
+    return resultado;
+  }, [areas]);
+
+  // Extracción de roles destacando los 5 roles operativos institucionales solicitados
   const rolesInfo = useMemo(() => {
     const rolesMap = new Map<string, number>();
+    ROLES_OFICIALES.forEach(r => rolesMap.set(r, 0));
+
     tareas.forEach(t => {
       if (t.estado_bloqueo === 'BLOQUEADA') return;
       const rol1 = resolveRolNombre(t.rol_destino);
       const rol2 = resolveRolNombre(t.rol_destino_secundario);
-      if (rol1) {
+
+      let matchOficial1 = false;
+      let matchOficial2 = false;
+
+      ROLES_OFICIALES.forEach(oficial => {
+        if (isRoleMatch(rol1, oficial) || isRoleMatch(t.rol_destino, oficial)) {
+          rolesMap.set(oficial, (rolesMap.get(oficial) || 0) + 1);
+          matchOficial1 = true;
+        }
+        if (rol2 && (isRoleMatch(rol2, oficial) || isRoleMatch(t.rol_destino_secundario, oficial)) && rol2 !== rol1) {
+          rolesMap.set(oficial, (rolesMap.get(oficial) || 0) + 1);
+          matchOficial2 = true;
+        }
+      });
+
+      if (!matchOficial1 && rol1 && rol1 !== 'General') {
         rolesMap.set(rol1, (rolesMap.get(rol1) || 0) + 1);
       }
-      if (rol2 && rol2 !== rol1) {
+      if (!matchOficial2 && rol2 && rol2 !== rol1 && rol2 !== 'General') {
         rolesMap.set(rol2, (rolesMap.get(rol2) || 0) + 1);
       }
     });
 
-    return Array.from(rolesMap.entries())
-      .map(([nombre, count]) => ({ nombre, count }))
-      .sort((a, b) => b.count - a.count || a.nombre.localeCompare(b.nombre));
-  }, [tareas, rolesIdMap]);
+    const listaOficiales = ROLES_OFICIALES.map(nombre => ({
+      nombre,
+      count: rolesMap.get(nombre) || 0
+    }));
 
-  // Filtrado de tareas según rol, tipo y búsqueda local
+    const listaOtros: { nombre: string; count: number }[] = [];
+    rolesMap.forEach((count, nombre) => {
+      if (!ROLES_OFICIALES.includes(nombre) && count > 0) {
+        listaOtros.push({ nombre, count });
+      }
+    });
+    listaOtros.sort((a, b) => b.count - a.count || a.nombre.localeCompare(b.nombre));
+
+    return [...listaOficiales, ...listaOtros];
+  }, [tareas, rolesIdMap, ROLES_OFICIALES]);
+
+  // Filtrado de tareas según área/sub-área, rol, tipo y búsqueda local
   const tareasFiltradas = useMemo(() => {
     return tareas.filter(t => {
       if (t.estado_bloqueo === 'BLOQUEADA') return false;
+
+      // Filtro por Área / Sub-área
+      if (filtroArea !== 'todas') {
+        const areaSeleccionada = (areas || []).find(a => a.id === filtroArea);
+        const subAreaIds = new Set<string>();
+        if (areaSeleccionada) {
+          subAreaIds.add(areaSeleccionada.id);
+          const agregarDescendientes = (id: string) => {
+            (areas || []).filter(sub => sub.parent_id === id).forEach(sub => {
+              subAreaIds.add(sub.id);
+              agregarDescendientes(sub.id);
+            });
+          };
+          agregarDescendientes(areaSeleccionada.id);
+        }
+
+        const taskAreaId = t.area_id;
+        const proyAreaId = t.proyecto_id ? (proyectos || []).find(p => p.id === t.proyecto_id)?.area_id : undefined;
+
+        const matchArea =
+          (taskAreaId && (subAreaIds.has(taskAreaId) || taskAreaId === filtroArea)) ||
+          (proyAreaId && (subAreaIds.has(proyAreaId) || proyAreaId === filtroArea)) ||
+          (areaSeleccionada && (
+            (t.area_nombre && t.area_nombre.toLowerCase() === areaSeleccionada.nombre.toLowerCase()) ||
+            (subAreaIds.has(t.area_nombre || ''))
+          ));
+
+        if (!matchArea) return false;
+      }
 
       // Filtro por Rol
       if (filtroRol !== 'todos') {
@@ -181,9 +263,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       return true;
     });
-  }, [tareas, filtroRol, filtroTipo, busquedaLocal, rolesIdMap]);
+  }, [tareas, filtroArea, filtroRol, filtroTipo, busquedaLocal, rolesIdMap, areas, proyectos]);
 
-  const hayFiltrosActivos = filtroRol !== 'todos' || filtroTipo !== 'todos' || busquedaLocal.trim() !== '';
+  const hayFiltrosActivos = filtroRol !== 'todos' || filtroArea !== 'todas' || filtroTipo !== 'todos' || busquedaLocal.trim() !== '';
 
   const formatFechaDia = (fechaStr?: string) => {
     if (!fechaStr || fechaStr === 'Sin fecha') return 'Sin fecha';
@@ -229,11 +311,32 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     if (r.includes('multi')) return 'bg-purple-50 text-purple-700 border-purple-200';
     if (r.includes('soporte')) return 'bg-amber-50 text-amber-800 border-amber-200';
     if (r.includes('producc')) return 'bg-rose-50 text-rose-700 border-rose-200';
+    if (r.includes('pedagog') || r.includes('instruccional')) return 'bg-emerald-50 text-emerald-800 border-emerald-200';
     if (r.includes('docente')) return 'bg-violet-50 text-violet-700 border-violet-200';
-    if (r.includes('evaluador') || r.includes('par')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (r.includes('coord')) return 'bg-teal-50 text-teal-700 border-teal-200';
+    if (r.includes('evaluador') || r.includes('par')) return 'bg-teal-50 text-teal-700 border-teal-200';
+    if (r.includes('coord')) return 'bg-cyan-50 text-cyan-700 border-cyan-200';
     if (r.includes('decano')) return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     return 'bg-slate-100 text-slate-700 border-slate-200';
+  };
+
+  const getRoleSelectedStyle = (nombre: string, isSelected: boolean) => {
+    if (!isSelected) {
+      return 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300';
+    }
+    const n = nombre.toLowerCase();
+    if (n.includes('disen')) return 'bg-sky-600 text-white border-sky-700 shadow-xs scale-102';
+    if (n.includes('multi')) return 'bg-purple-600 text-white border-purple-700 shadow-xs scale-102';
+    if (n.includes('soporte')) return 'bg-amber-600 text-white border-amber-700 shadow-xs scale-102';
+    if (n.includes('producc')) return 'bg-rose-600 text-white border-rose-700 shadow-xs scale-102';
+    if (n.includes('pedagog') || n.includes('instruccional')) return 'bg-emerald-600 text-white border-emerald-700 shadow-xs scale-102';
+    return 'bg-slate-800 text-white border-slate-900 shadow-xs scale-102';
+  };
+
+  const getRoleCountBadgeStyle = (isSelected: boolean) => {
+    if (!isSelected) {
+      return 'bg-slate-100 text-slate-700 border border-slate-200';
+    }
+    return 'bg-black/20 text-white border border-white/20';
   };
 
   return (
@@ -264,7 +367,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       </div>
 
-      {/* Modern Interactive Filter Bar by Role & Entity Type */}
+      {/* Modern Interactive Filter Bar by Area, Role & Entity Type */}
       <div className="ccv-card p-4 space-y-3 bg-white border border-slate-200/80 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Section title & active filters indicator */}
@@ -274,18 +377,36 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </div>
             <div>
               <span className="text-xs font-black uppercase tracking-wider text-slate-800">
-                Filtrar por Rol Asignado
+                Filtros por Área y Roles Operativos
               </span>
               <p className="text-[11px] text-slate-500">
-                Selecciona un rol para visualizar exclusivamente las tareas asignadas a esa especialidad
+                Filtra por Área/Sub-área institucional y por especialidad: Diseño, Multimedia, Soporte, Producción o Pedagogía
               </p>
             </div>
           </div>
 
-          {/* Quick Search and Type Switcher */}
+          {/* Quick Search, Area Selector and Type Switcher */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Search Input inside Kanban */}
+            {/* Area / Sub-area Selector */}
             <div className="relative min-w-[200px] flex-1 sm:flex-none">
+              <select
+                value={filtroArea}
+                onChange={(e) => setFiltroArea(e.target.value)}
+                className="w-full py-1.5 pl-8 pr-7 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-800 cursor-pointer transition-all"
+                title="Filtrar por Área o Sub-área institucional"
+              >
+                <option value="todas">🏛️ Todas las Áreas y Sub-áreas</option>
+                {areasOrganizadas.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.esSubArea ? `   ↳ ${a.nombre}` : `■ ${a.nombre}`}
+                  </option>
+                ))}
+              </select>
+              <Layers className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+            </div>
+
+            {/* Search Input inside Kanban */}
+            <div className="relative min-w-[180px] flex-1 sm:flex-none">
               <input
                 type="text"
                 placeholder="Buscar en Kanban..."
@@ -345,10 +466,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <button
                 onClick={() => {
                   setFiltroRol('todos');
+                  setFiltroArea('todas');
                   setFiltroTipo('todos');
                   setBusquedaLocal('');
                 }}
-                className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-all flex items-center gap-1"
+                className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-all flex items-center gap-1 cursor-pointer"
                 title="Limpiar todos los filtros aplicados"
               >
                 <X className="w-3 h-3" />
@@ -363,7 +485,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {/* Option: Todos los roles */}
           <button
             onClick={() => setFiltroRol('todos')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs cursor-pointer ${
               filtroRol === 'todos'
                 ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -378,23 +500,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </span>
           </button>
 
-          {/* Dynamic role pills from active tasks */}
+          {/* Dynamic and prominent role pills */}
           {rolesInfo.map(({ nombre, count }) => {
             const isSelected = filtroRol.toLowerCase() === nombre.toLowerCase();
             return (
               <button
                 key={nombre}
                 onClick={() => setFiltroRol(isSelected ? 'todos' : nombre)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs cursor-pointer ${getRoleSelectedStyle(
+                  nombre,
                   isSelected
-                    ? 'bg-sky-600 text-white border-sky-700 shadow-xs scale-102'
-                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
-                }`}
+                )}`}
               >
                 <span>{nombre}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                  isSelected ? 'bg-sky-700 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                }`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${getRoleCountBadgeStyle(isSelected)}`}>
                   {count}
                 </span>
               </button>

@@ -98,7 +98,7 @@ export interface CursoVirtual {
 
 export type EstadoTarea = 'Pendiente' | 'En Proceso' | 'En Revisión' | 'Completada';
 export type TipoTarea = 'Curso Virtual' | 'Proyecto';
-export type CategoriaTareaProyecto = 'Diseño' | 'Multimedia' | 'Soporte' | 'Transmisión';
+export type CategoriaTareaProyecto = 'Diseño' | 'Multimedia' | 'Soporte' | 'Transmisión' | 'Producción' | 'Pedagogía';
 
 // TIPOS PARA MOTOR DE PLANTILLAS Y SECUENCIA DE TAREAS (CURSOS)
 export type TipoResponsablePlantilla = 'DOCENTE' | 'PAR_EVALUADOR' | 'COORDINADOR' | 'DECANO' | 'CMU_FIJO';
@@ -235,7 +235,7 @@ export type VistaNavegacion = 'dashboard' | 'calendar' | 'kanban' | 'productivit
 export type PestanaAdmin = 'usuarios' | 'roles' | 'areas' | 'asignaciones' | 'tarifas' | 'solicitudes' | 'plantillas';
 export type CategoriaAdmin = 'rbac' | 'academica' | 'operaciones';
 
-export type RolCmuNombre = 'Diseño' | 'Soporte' | 'Producción' | 'Multimedia';
+export type RolCmuNombre = 'Diseño' | 'Multimedia' | 'Soporte' | 'Producción' | 'Pedagogía';
 
 export interface CmuCapacidadRol {
   id?: string;

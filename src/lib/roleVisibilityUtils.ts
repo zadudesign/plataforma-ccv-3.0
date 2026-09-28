@@ -66,8 +66,16 @@ export function isRoleMatch(roleA?: string, roleB?: string): boolean {
 
   // Producción
   if (
-    (a.includes('produccion') || a.includes('productor')) &&
-    (b.includes('produccion') || b.includes('productor'))
+    (a.includes('produccion') || a.includes('productor') || a === 'r-10') &&
+    (b.includes('produccion') || b.includes('productor') || b === 'r-10')
+  ) {
+    return true;
+  }
+
+  // Pedagogía / Asesoría Pedagógica / Diseño Instruccional
+  if (
+    (a.includes('pedagog') || a.includes('instruccional') || a === 'r-11') &&
+    (b.includes('pedagog') || b.includes('instruccional') || b === 'r-11')
   ) {
     return true;
   }
@@ -214,6 +222,74 @@ export function getSupervisedAreasForUser(
 }
 
 /**
+ * Obtiene el conjunto de IDs y nombres de áreas accesibles para un colaborador según su área o sub-área asignada.
+ * Respeta el aislamiento jerárquico:
+ * - Un usuario adscrito a una sub-área sólo accede a esa sub-área y subdivisiones inferiores.
+ * - Un usuario adscrito a un área principal accede a dicha área y a todas sus sub-áreas descendientes.
+ */
+export function getUserAreaScope(
+  usuarioActual: Usuario | null,
+  areas: Area[],
+  roles: Rol[] = [],
+  nivelArea: NivelArea = 1
+): { areaIds: Set<string>; areaNombres: Set<string>; isRestricted: boolean } {
+  const areaIds = new Set<string>();
+  const areaNombres = new Set<string>();
+
+  if (!usuarioActual) {
+    return { areaIds, areaNombres, isRestricted: true };
+  }
+
+  const rolObj = roles.find(r => r.id === usuarioActual.rol_id);
+  const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
+
+  // Administrador no tiene restricción
+  if (nivelArea === 6 || isRoleMatch(rolNombre, 'Administrador')) {
+    areas.forEach(a => {
+      if (a.id) areaIds.add(a.id);
+      if (a.nombre) areaNombres.add(a.nombre.toLowerCase());
+    });
+    return { areaIds, areaNombres, isRestricted: false };
+  }
+
+  let areaBase: Area | undefined;
+  if (usuarioActual.area_id) {
+    areaBase = areas.find(a => a.id === usuarioActual.area_id);
+  }
+  if (!areaBase && usuarioActual.area_nombre) {
+    areaBase = areas.find(a => a.nombre.toLowerCase() === usuarioActual.area_nombre?.toLowerCase());
+  }
+  if (!areaBase && rolObj?.area_id) {
+    areaBase = areas.find(a => a.id === rolObj.area_id);
+  }
+  if (!areaBase && rolObj?.area_nombre) {
+    areaBase = areas.find(a => a.nombre.toLowerCase() === rolObj.area_nombre?.toLowerCase());
+  }
+
+  if (!areaBase) {
+    return { areaIds, areaNombres, isRestricted: false };
+  }
+
+  const agregarAreaYDescendientes = (area: Area) => {
+    if (!area || !area.id || areaIds.has(area.id)) return;
+    areaIds.add(area.id);
+    if (area.nombre) areaNombres.add(area.nombre.toLowerCase());
+
+    areas
+      .filter(sub => (sub.parent_id === area.id || sub.parent_id === area.nombre) && sub.id !== area.id && !areaIds.has(sub.id))
+      .forEach(sub => agregarAreaYDescendientes(sub));
+  };
+
+  agregarAreaYDescendientes(areaBase);
+
+  return {
+    areaIds,
+    areaNombres,
+    isRestricted: areaIds.size > 0
+  };
+}
+
+/**
  * Aplica las reglas estrictas de visibilidad y aislamiento de información por rol y jerarquía.
  * Cada rol ve exclusivamente lo que está bajo su responsabilidad:
  * - Administrador (Nivel 6): Visión total.
@@ -223,7 +299,7 @@ export function getSupervisedAreasForUser(
  * - Coordinador: Programas, cursos y tareas de su programa, o asignados directamente.
  * - Docente: Solo sus cursos asignados (donde es docente o par) y sus tareas correspondientes.
  * - Par Evaluador: Solo sus cursos asignados (donde es par o docente) y sus tareas correspondientes.
- * - Especialistas CMU (Diseño, Multimedia, Soporte, Producción): Tareas asignadas a su rol/usuario y los cursos/proyectos respectivos.
+ * - Especialistas Operativos (Diseño, Multimedia, Soporte, Producción, Pedagogía): Tareas y proyectos de su área/sub-área asignadas a su especialidad.
  */
 export function getEntitiesVisibleByRole(params: FilterEntitiesParams): FilteredEntitiesResult {
   const {
@@ -316,12 +392,32 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
   );
   const idsProyectosAsignadosDirectamente = new Set(proyectosAsignadosDirectamente.map(p => p.id));
 
-  // 5. Determinar si el rol es operativo CMU (Diseño, Multimedia, Soporte, Producción)
+  // 5. Determinar si el rol es operativo (Diseño, Multimedia, Soporte, Producción, Pedagogía)
   const isOperativoCMU =
     isRoleMatch(rolNombre, 'Diseño') ||
     isRoleMatch(rolNombre, 'Multimedia') ||
     isRoleMatch(rolNombre, 'Soporte') ||
-    isRoleMatch(rolNombre, 'Producción');
+    isRoleMatch(rolNombre, 'Producción') ||
+    isRoleMatch(rolNombre, 'Pedagogía');
+
+  // Ámbito de área asignada al usuario operativo respetando jerarquía de áreas y sub-áreas
+  const {
+    areaIds: areaIdsOperativo,
+    areaNombres: areaNombresOperativo,
+    isRestricted: tieneRestriccionAreaOperativa
+  } = getUserAreaScope(usuarioActual, areas, roles, nivelArea);
+
+  const isAreaEnAmbitoOperativo = (areaIdOrName?: string) => {
+    if (!tieneRestriccionAreaOperativa) return true;
+    if (!areaIdOrName) return true;
+    if (areaIdsOperativo.has(areaIdOrName)) return true;
+    if (areaNombresOperativo.has(areaIdOrName.toLowerCase())) return true;
+    const a = areas.find(x => x.id === areaIdOrName || x.nombre.toLowerCase() === areaIdOrName.toLowerCase());
+    if (a && (areaIdsOperativo.has(a.id) || areaNombresOperativo.has(a.nombre.toLowerCase()))) {
+      return true;
+    }
+    return false;
+  };
 
   // 6. Filtrar Tareas Visibles
   const tareasVisibles = tareas.filter(t => {
@@ -414,14 +510,30 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       }
     }
 
-    // G. Roles Operativos CMU (Diseño, Multimedia, Soporte, Producción):
-    // Ven las tareas asignadas específicamente a su especialidad cuando no tienen otro responsable exclusivo
+    // G. Roles Operativos (Diseño, Multimedia, Soporte, Producción, Pedagogía):
+    // Se filtran estrictamente por ROL y por ÁREA/SUB-ÁREA jerárquica
     if (isOperativoCMU) {
       const matchPrincipal = t.rol_destino && isRoleMatch(t.rol_destino, rolNombre);
       const matchSecundario = t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre);
       if (matchPrincipal || matchSecundario) {
-        // Si la tarea tiene un responsable_id diferente y específico, sólo la ve ese usuario responsable (o si el usuario actual es el asignado)
-        if (!t.responsable_id || t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id) {
+        // Validar que la tarea o su proyecto pertenezca al área o sub-área correspondiente
+        let perteneceArea = true;
+        if (tieneRestriccionAreaOperativa) {
+          if (t.area_id) {
+            perteneceArea = isAreaEnAmbitoOperativo(t.area_id);
+          } else if (t.proyecto_id) {
+            const proy = proyectos.find(p => p.id === t.proyecto_id);
+            if (proy?.area_id) {
+              perteneceArea = isAreaEnAmbitoOperativo(proy.area_id);
+            }
+          }
+        }
+
+        if (perteneceArea) {
+          if (!t.responsable_id || t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id) {
+            return true;
+          }
+          // Visualización colaborativa dentro de la misma área/sub-área para el rol
           return true;
         }
       }

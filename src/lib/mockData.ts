@@ -5,6 +5,8 @@ export const INITIAL_TARIFAS_PROYECTO: ConfiguracionTarifa[] = [
   { id: 'tar-2', categoria: 'Multimedia', tarifa_hora: 45000, descripcion: 'Tarifa por hora (COP) para edición audiovisual, producción de video y animaciones H5P' },
   { id: 'tar-3', categoria: 'Soporte', tarifa_hora: 25000, descripcion: 'Tarifa por hora (COP) para soporte técnico, empaquetado SCORM y asistencia en plataformas' },
   { id: 'tar-4', categoria: 'Transmisión', tarifa_hora: 50000, descripcion: 'Tarifa por hora (COP) para producción de streaming, masterización en vivo y webinars' },
+  { id: 'tar-5', categoria: 'Producción', tarifa_hora: 42000, descripcion: 'Tarifa por hora (COP) para producción audiovisual, rodaje y postproducción' },
+  { id: 'tar-6', categoria: 'Pedagogía', tarifa_hora: 38000, descripcion: 'Tarifa por hora (COP) para asesoría pedagógica, diseño instruccional y mediación didáctica' },
 ];
 
 export const INITIAL_AREAS: Area[] = [
@@ -13,6 +15,7 @@ export const INITIAL_AREAS: Area[] = [
   { id: 'a-5-1', nombre: 'PRODUCCIÓN MULTIMEDIA', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU', color: 'purple', icono: 'Video' },
   { id: 'a-5-2', nombre: 'DISEÑO INSTRUCCIONAL', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU', color: 'blue', icono: 'Palette' },
   { id: 'a-5-3', nombre: 'SOPORTE LMS', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU', color: 'teal', icono: 'Headphones' },
+  { id: 'a-5-4', nombre: 'ASESORÍA PEDAGÓGICA', nivel: 5, parent_id: 'a-5', area_padre_nombre: 'CMU', color: 'indigo', icono: 'GraduationCap' },
   { id: 'a-4', nombre: 'DEPARTAMENTO', nivel: 4, parent_id: 'a-6', area_padre_nombre: 'ADMIN', color: 'amber', icono: 'FolderKanban' },
   { id: 'a-4-1', nombre: 'Departamento de Innovación y Educación Virtual CCV', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO', color: 'amber', icono: 'Sparkles' },
   { id: 'a-4-2', nombre: 'Departamento de Producción Multimedial (CMU)', nivel: 4, parent_id: 'a-4', area_padre_nombre: 'DEPARTAMENTO', color: 'purple', icono: 'Video' },
@@ -28,6 +31,8 @@ export const INITIAL_ROLES: Rol[] = [
   { id: 'r-3', nombre: 'Diseño', area_id: 'a-5', area_nombre: 'CMU' },
   { id: 'r-4', nombre: 'Multimedia', area_id: 'a-5', area_nombre: 'CMU' },
   { id: 'r-5', nombre: 'Soporte', area_id: 'a-5', area_nombre: 'CMU' },
+  { id: 'r-10', nombre: 'Producción', area_id: 'a-5', area_nombre: 'CMU' },
+  { id: 'r-11', nombre: 'Pedagogía', area_id: 'a-5', area_nombre: 'CMU' },
   { id: 'r-6', nombre: 'Decano', area_id: 'a-3', area_nombre: 'FACULTAD' },
   { id: 'r-7', nombre: 'Coordinador', area_id: 'a-2', area_nombre: 'PROGRAMA' },
   { id: 'r-8', nombre: 'Docente', area_id: 'a-1', area_nombre: 'CURSO' },
@@ -50,6 +55,8 @@ export const ROLES_PERMISOS_MAP: Record<string, string[]> = {
   'r-3': ['registro:crear', 'registro:editar', 'registro:ver', 'tarea:aprobar'], // Diseño
   'r-4': ['registro:crear', 'registro:editar', 'registro:ver'], // Multimedia
   'r-5': ['registro:editar', 'registro:ver'], // Soporte
+  'r-10': ['registro:crear', 'registro:editar', 'registro:ver', 'tarea:aprobar'], // Producción
+  'r-11': ['registro:crear', 'registro:editar', 'registro:ver', 'tarea:aprobar'], // Pedagogía
   'r-6': ['registro:crear', 'registro:editar', 'registro:ver', 'tarea:aprobar'], // Decano
   'r-7': ['registro:crear', 'registro:editar', 'registro:ver'], // Coordinador
   'r-8': ['registro:crear', 'registro:editar', 'registro:ver'], // Docente
@@ -166,6 +173,32 @@ export const INITIAL_USUARIOS: Usuario[] = [
     telefono: '+57 306 888 9900',
     activo: true,
     ultima_conexion: new Date(Date.now() - 11 * 24 * 3600 * 1000).toISOString(), // Hace 11 días (Advertencia: Naranja)
+  },
+  {
+    id: 'u-prod',
+    nombre_completo: 'Lic. Mateo Rivas',
+    email: 'mateo.produccion@ccv.edu.co',
+    rol_id: 'r-10',
+    rol_nombre: 'Producción',
+    area_id: 'a-5-1',
+    area_nombre: 'PRODUCCIÓN MULTIMEDIA',
+    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    telefono: '+57 300 999 8877',
+    activo: true,
+    ultima_conexion: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'u-pedagogia',
+    nombre_completo: 'Mg. Valentina Restrepo',
+    email: 'valentina.pedagogia@ccv.edu.co',
+    rol_id: 'r-11',
+    rol_nombre: 'Pedagogía',
+    area_id: 'a-5-4',
+    area_nombre: 'ASESORÍA PEDAGÓGICA',
+    avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    telefono: '+57 301 555 4433',
+    activo: true,
+    ultima_conexion: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
   }
 ];
 
@@ -450,6 +483,47 @@ export const INITIAL_TAREAS: TareaCCV[] = [
     tiempo_invertido: 24.0,
     tarifa_hora: 25000,
     tarifa_tarea: 625000,
+  },
+  {
+    id: 't-110',
+    titulo: 'Rodaje y Masterización de Cápsulas Masterclass 4K',
+    descripcion: 'Grabación en estudio croma y edición multicámara de lecciones magistrales.',
+    proyecto_id: 'pry-2',
+    proyecto_nombre: 'Plataforma Interactiva de Simulación Clínica',
+    area_id: 'a-5-1',
+    area_nombre: 'PRODUCCIÓN MULTIMEDIA',
+    responsable_id: 'u-prod',
+    responsable_nombre: 'Lic. Mateo Rivas',
+    responsable_avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Producción',
+    orden_tarea: 2,
+    estado: 'En Proceso',
+    tipo_tarea: 'Proyecto',
+    categoria_proyecto: 'Producción',
+    fecha_vencimiento: '2026-09-10',
+    hora_vencimiento: '15:00',
+    tiempo_invertido: 18.0,
+    tarifa_hora: 42000,
+    tarifa_tarea: 756000,
+  },
+  {
+    id: 't-111',
+    titulo: 'Asesoría Pedagógica y Mediación Tecno-Didáctica del Curso',
+    descripcion: 'Validación de objetivos de aprendizaje, diseño de secuencias didácticas y rúbricas de evaluación formativa.',
+    curso_id: 'c-1',
+    curso_nombre: 'Machine Learning y Modelos Generativos',
+    area_id: 'a-5-4',
+    area_nombre: 'ASESORÍA PEDAGÓGICA',
+    responsable_id: 'u-pedagogia',
+    responsable_nombre: 'Mg. Valentina Restrepo',
+    responsable_avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    rol_destino: 'Pedagogía',
+    orden_tarea: 3,
+    estado: 'En Proceso',
+    tipo_tarea: 'Curso Virtual',
+    fecha_vencimiento: '2026-09-08',
+    hora_vencimiento: '17:30',
+    tiempo_invertido: 14.0,
   }
 ];
 

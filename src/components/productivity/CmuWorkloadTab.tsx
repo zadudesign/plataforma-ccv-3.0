@@ -54,7 +54,7 @@ interface CmuWorkloadTabProps {
   onSelectTask?: (tarea: TareaCCV) => void;
 }
 
-const ROLES_CMU_OFICIALES: RolCmuNombre[] = ['Diseño', 'Soporte', 'Producción', 'Multimedia'];
+const ROLES_CMU_OFICIALES: RolCmuNombre[] = ['Diseño', 'Multimedia', 'Soporte', 'Producción', 'Pedagogía'];
 
 // Helper para obtener el inicio (lunes) y fin (domingo) de la semana de una fecha
 function getRangoSemana(fecha: Date): { inicio: Date; fin: Date; lunesStr: string; domingoStr: string; label: string } {
@@ -138,9 +138,10 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
         setCapacidades(res);
         const mapVals: Record<string, number> = {
           'Diseño': 40,
+          'Multimedia': 40,
           'Soporte': 40,
           'Producción': 40,
-          'Multimedia': 40,
+          'Pedagogía': 40,
         };
         res.forEach(c => {
           mapVals[c.rol_nombre] = c.horas_semanales_maximas;
@@ -182,10 +183,11 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
   // 5. Filtrar los colaboradores que pertenecen al CMU con los 4 roles oficiales
   const miembrosCMU = useMemo(() => {
     return usuarios.filter(u => {
-      const areaMatch = u.area_nombre?.toUpperCase().includes('CMU') || u.area_id === 'a-5' || u.area_id === 'a-5-1' || u.area_id === 'a-5-2' || u.area_id === 'a-5-3';
+      const areaMatch = u.area_nombre?.toUpperCase().includes('CMU') || u.area_id === 'a-5' || u.area_id?.startsWith('a-5');
       const rolMatch = ROLES_CMU_OFICIALES.some(r => 
         u.rol_nombre?.toLowerCase() === r.toLowerCase() ||
-        (r === 'Producción' && u.rol_nombre?.toLowerCase().includes('producci'))
+        (r === 'Producción' && u.rol_nombre?.toLowerCase().includes('producci')) ||
+        (r === 'Pedagogía' && (u.rol_nombre?.toLowerCase().includes('pedagog') || u.rol_nombre?.toLowerCase().includes('instruccional')))
       );
       return areaMatch || rolMatch;
     });
@@ -223,12 +225,13 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
   // 8. Computar la carga de trabajo por cada colaborador del CMU y las entidades que atiende
   const dataMiembros = useMemo(() => {
     return miembrosCMU.map(m => {
-      // Normalizar el rol del miembro dentro de los 4 roles CMU
+      // Normalizar el rol del miembro dentro de los roles operativos CMU
       let rolNormalizado: RolCmuNombre = 'Diseño';
       const rolUpper = (m.rol_nombre || '').toUpperCase();
       if (rolUpper.includes('MULTIMEDIA')) rolNormalizado = 'Multimedia';
       else if (rolUpper.includes('SOPORTE')) rolNormalizado = 'Soporte';
       else if (rolUpper.includes('PRODUCCI')) rolNormalizado = 'Producción';
+      else if (rolUpper.includes('PEDAGOG') || rolUpper.includes('INSTRUCCIONAL')) rolNormalizado = 'Pedagogía';
       else if (rolUpper.includes('DISEÑO') || rolUpper.includes('DISENO')) rolNormalizado = 'Diseño';
 
       // Tareas asignadas al miembro en el ámbito
