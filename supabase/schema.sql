@@ -620,6 +620,47 @@ ON public.plantilla_tareas_dependencias FOR ALL
 USING (public.es_admin(auth.uid()))
 WITH CHECK (public.es_admin(auth.uid()));
 
+-- Helper para omitir fines de semana (Sábado/Domingo -> Viernes hábil)
+CREATE OR REPLACE FUNCTION public.ajustar_a_dia_habil(p_fecha DATE)
+RETURNS DATE
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+    v_dow INT;
+BEGIN
+    v_dow := EXTRACT(DOW FROM p_fecha);
+    IF v_dow = 6 THEN
+        RETURN p_fecha - 1;
+    ELSIF v_dow = 0 THEN
+        RETURN p_fecha - 2;
+    END IF;
+    RETURN p_fecha;
+END;
+$$;
+
+-- Sobrecarga para timestamp without time zone
+CREATE OR REPLACE FUNCTION public.ajustar_a_dia_habil(p_fecha TIMESTAMP WITHOUT TIME ZONE)
+RETURNS DATE
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+    RETURN public.ajustar_a_dia_habil(p_fecha::DATE);
+END;
+$$;
+
+-- Sobrecarga para timestamptz
+CREATE OR REPLACE FUNCTION public.ajustar_a_dia_habil(p_fecha TIMESTAMPTZ)
+RETURNS DATE
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+    RETURN public.ajustar_a_dia_habil(p_fecha::DATE);
+END;
+$$;
+
 -- Eliminar versión obsoleta de 1 parámetro para evitar ambigüedad en Postgres/PostgREST
 DROP FUNCTION IF EXISTS public.inicializar_tareas_curso(UUID);
 

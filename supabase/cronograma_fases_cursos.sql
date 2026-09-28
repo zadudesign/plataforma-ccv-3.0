@@ -44,11 +44,33 @@ BEGIN
     -- 0 = Domingo, 6 = Sábado
     v_dow := EXTRACT(DOW FROM p_fecha);
     IF v_dow = 6 THEN
-        RETURN p_fecha - INTERVAL '1 day'; -- Sábado -> Viernes hábil
+        RETURN p_fecha - 1; -- Sábado -> Viernes hábil
     ELSIF v_dow = 0 THEN
-        RETURN p_fecha - INTERVAL '2 days'; -- Domingo -> Viernes hábil
+        RETURN p_fecha - 2; -- Domingo -> Viernes hábil
     END IF;
     RETURN p_fecha;
+END;
+$$;
+
+-- Sobrecarga para timestamp without time zone (generado por expresiones date + interval)
+CREATE OR REPLACE FUNCTION public.ajustar_a_dia_habil(p_fecha TIMESTAMP WITHOUT TIME ZONE)
+RETURNS DATE
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+    RETURN public.ajustar_a_dia_habil(p_fecha::DATE);
+END;
+$$;
+
+-- Sobrecarga para timestamptz
+CREATE OR REPLACE FUNCTION public.ajustar_a_dia_habil(p_fecha TIMESTAMPTZ)
+RETURNS DATE
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+    RETURN public.ajustar_a_dia_habil(p_fecha::DATE);
 END;
 $$;
 
@@ -158,7 +180,7 @@ BEGIN
     END LOOP;
 
     -- 5. Actualizar fechas maestras del curso
-    v_fecha_cierre_final := public.ajustar_a_dia_habil(p_fecha_inicio + (p_duracion_dias || ' days')::interval);
+    v_fecha_cierre_final := public.ajustar_a_dia_habil((p_fecha_inicio + (p_duracion_dias || ' days')::interval)::date);
     UPDATE public.cursos
     SET fecha_inicio = p_fecha_inicio,
         duracion_dias = p_duracion_dias,
@@ -198,7 +220,7 @@ BEGIN
         -- CASO A: Tarea transversal
         IF v_pt.aplica_por_unidad IS NOT TRUE THEN
             v_dias_calc := COALESCE((v_map_dias->>v_pt.fase::text)::int, p_duracion_dias);
-            v_fecha_limite := public.ajustar_a_dia_habil(p_fecha_inicio + (v_dias_calc || ' days')::interval);
+            v_fecha_limite := public.ajustar_a_dia_habil((p_fecha_inicio + (v_dias_calc || ' days')::interval)::date);
 
             INSERT INTO public.tareas (
                 titulo, descripcion, curso_id, responsable_id, rol_destino,
@@ -219,7 +241,7 @@ BEGIN
         ELSE
             FOR u IN 1..v_num_unidades LOOP
                 v_dias_calc := COALESCE((v_map_dias->>(v_pt.fase::text || '_' || u::text))::int, p_duracion_dias);
-                v_fecha_limite := public.ajustar_a_dia_habil(p_fecha_inicio + (v_dias_calc || ' days')::interval);
+                v_fecha_limite := public.ajustar_a_dia_habil((p_fecha_inicio + (v_dias_calc || ' days')::interval)::date);
 
                 INSERT INTO public.tareas (
                     titulo, descripcion, curso_id, responsable_id, rol_destino,
@@ -350,7 +372,7 @@ BEGIN
     END LOOP;
 
     -- Actualizar fechas maestras del curso
-    v_fecha_cierre_final := public.ajustar_a_dia_habil(p_fecha_inicio + (p_duracion_dias || ' days')::interval);
+    v_fecha_cierre_final := public.ajustar_a_dia_habil((p_fecha_inicio + (p_duracion_dias || ' days')::interval)::date);
     UPDATE public.cursos
     SET fecha_inicio = p_fecha_inicio,
         duracion_dias = p_duracion_dias,
@@ -365,7 +387,7 @@ BEGIN
             v_dias_calc := COALESCE((v_map_dias->>(COALESCE(v_t.fase, 1)::text || '_' || v_t.numero_unidad::text))::int, p_duracion_dias);
         END IF;
 
-        v_nueva_fecha := public.ajustar_a_dia_habil(p_fecha_inicio + (v_dias_calc || ' days')::interval);
+        v_nueva_fecha := public.ajustar_a_dia_habil((p_fecha_inicio + (v_dias_calc || ' days')::interval)::date);
 
         UPDATE public.tareas
         SET fecha_vencimiento = v_nueva_fecha::text
