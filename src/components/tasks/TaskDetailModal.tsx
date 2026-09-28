@@ -209,22 +209,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEditingOpen(true)}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                  className="w-9 h-9 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
                   title="Editar tarea (Solo Administrador)"
+                  aria-label="Editar tarea"
                 >
-                  <Pencil className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="hidden sm:inline">Editar Tarea</span>
+                  <Pencil className="w-4 h-4 text-amber-600" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setConfirmarEliminarOpen(true)}
                   disabled={isDeleting}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                  className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-50"
                   title="Eliminar tarea permanentemente (Solo Administrador)"
+                  aria-label="Eliminar tarea"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                  <span className="hidden sm:inline">Eliminar Tarea</span>
+                  <Trash2 className="w-4 h-4 text-rose-600" />
                 </button>
               </>
             )}

@@ -962,19 +962,35 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                                   <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
 
-                                {/* Eliminación Exclusiva para Admin */}
+                                {/* Acciones Exclusivas para Admin: Editar y Eliminar */}
                                 {isAdmin() && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setTareaAEliminar(t);
-                                    }}
-                                    className="p-1.5 rounded-full text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer shadow-2xs shrink-0"
-                                    title="Eliminar tarea permanentemente (Solo Administrador)"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTareaAEditar(t);
+                                      }}
+                                      className="p-1.5 rounded-full text-stone-400 hover:text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all cursor-pointer shadow-2xs"
+                                      title="Editar tarea (Solo Administrador)"
+                                      aria-label="Editar tarea"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTareaAEliminar(t);
+                                      }}
+                                      className="p-1.5 rounded-full text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
+                                      title="Eliminar tarea permanentemente (Solo Administrador)"
+                                      aria-label="Eliminar tarea"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -1017,25 +1033,25 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                   </div>
 
                   {isAdmin() && (
-                    <div className="flex items-center gap-2 self-start shrink-0">
+                    <div className="flex items-center gap-1.5 self-start shrink-0">
                       <button
                         type="button"
                         onClick={() => setTareaAEditar(tareaSeleccionadaLocal)}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                        className="w-8 h-8 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
                         title="Editar tarea (Solo Administrador)"
+                        aria-label="Editar tarea"
                       >
-                        <Pencil className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Editar Tarea</span>
+                        <Pencil className="w-4 h-4 text-amber-600" />
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setTareaAEliminar(tareaSeleccionadaLocal)}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
-                        title="Eliminar tarea (Solo Administrador)"
+                        className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                        title="Eliminar tarea permanentemente (Solo Administrador)"
+                        aria-label="Eliminar tarea"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                        <span>Eliminar Tarea</span>
+                        <Trash2 className="w-4 h-4 text-rose-600" />
                       </button>
                     </div>
                   )}
