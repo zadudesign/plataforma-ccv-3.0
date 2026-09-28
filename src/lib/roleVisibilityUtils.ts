@@ -131,10 +131,94 @@ export interface FilteredEntitiesResult {
 }
 
 /**
+ * Obtiene el conjunto de IDs y nombres en minúscula de áreas y sub-áreas supervisadas por un usuario.
+ * Respeta estrictamente la jerarquía institucional:
+ * - El jefe de una sub-área SOLO supervisa su sub-área (y descendientes directos hacia abajo si los hubiere).
+ *   Nunca sube al área padre ni accede a sub-áreas hermanas.
+ * - El jefe de un área principal supervisa su área Y TODAS sus sub-áreas respectivas (recursivamente).
+ */
+export function getSupervisedAreasForUser(
+  usuarioActual: Usuario | null,
+  areas: Area[],
+  roles: Rol[] = [],
+  nivelArea: NivelArea = 1
+): { areaIds: Set<string>; areaNombres: Set<string>; isJefe: boolean } {
+  const areaIds = new Set<string>();
+  const areaNombres = new Set<string>();
+
+  if (!usuarioActual) {
+    return { areaIds, areaNombres, isJefe: false };
+  }
+
+  const rolObj = roles.find(r => r.id === usuarioActual.rol_id);
+  const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
+
+  // Administrador supervisa absolutamente todas las áreas
+  if (nivelArea === 6 || isRoleMatch(rolNombre, 'Administrador')) {
+    areas.forEach(a => {
+      if (a.id) areaIds.add(a.id);
+      if (a.nombre) areaNombres.add(a.nombre.toLowerCase());
+    });
+    return { areaIds, areaNombres, isJefe: true };
+  }
+
+  // 1. Identificar áreas donde está asignado explícitamente como jefe_id
+  const areasJefeDirecto = areas.filter(a => a.jefe_id && a.jefe_id === usuarioActual.id);
+
+  // 2. Si no tiene asignación directa como jefe_id, pero tiene rol de Jefe o jerarquía 4/5
+  const esRolJefe = isRoleMatch(rolNombre, 'Jefe') || nivelArea === 4 || nivelArea === 5;
+  const areasBase: Area[] = [...areasJefeDirecto];
+
+  if (areasBase.length === 0 && esRolJefe) {
+    let areaAsignada: Area | undefined;
+    if (usuarioActual.area_id) {
+      areaAsignada = areas.find(a => a.id === usuarioActual.area_id);
+    }
+    if (!areaAsignada && usuarioActual.area_nombre) {
+      areaAsignada = areas.find(a => a.nombre.toLowerCase() === usuarioActual.area_nombre?.toLowerCase());
+    }
+    if (!areaAsignada && rolObj?.area_id) {
+      areaAsignada = areas.find(a => a.id === rolObj.area_id);
+    }
+    if (!areaAsignada && rolObj?.area_nombre) {
+      areaAsignada = areas.find(a => a.nombre.toLowerCase() === rolObj.area_nombre?.toLowerCase());
+    }
+    if (areaAsignada) {
+      areasBase.push(areaAsignada);
+    }
+  }
+
+  if (areasBase.length === 0) {
+    return { areaIds, areaNombres, isJefe: false };
+  }
+
+  // 3. Travesía jerárquica: ÚNICAMENTE hacia abajo (descendientes / sub-áreas).
+  // Nunca hacia arriba (parent_id) y nunca hacia áreas hermanas.
+  const agregarAreaYDescendientes = (area: Area) => {
+    if (!area || !area.id || areaIds.has(area.id)) return;
+    areaIds.add(area.id);
+    if (area.nombre) areaNombres.add(area.nombre.toLowerCase());
+
+    areas
+      .filter(sub => (sub.parent_id === area.id || sub.parent_id === area.nombre) && sub.id !== area.id && !areaIds.has(sub.id))
+      .forEach(sub => agregarAreaYDescendientes(sub));
+  };
+
+  areasBase.forEach(a => agregarAreaYDescendientes(a));
+
+  return {
+    areaIds,
+    areaNombres,
+    isJefe: areaIds.size > 0
+  };
+}
+
+/**
  * Aplica las reglas estrictas de visibilidad y aislamiento de información por rol y jerarquía.
  * Cada rol ve exclusivamente lo que está bajo su responsabilidad:
  * - Administrador (Nivel 6): Visión total.
- * - Jefe de Departamento: Proyectos y tareas de su departamento y subáreas.
+ * - Jefe de Departamento / Área: Proyectos y tareas de su departamento y todas sus subáreas respectivas.
+ * - Jefe de Sub-área: Únicamente proyectos y tareas adscritos a su sub-área.
  * - Decano: Facultades, programas, cursos y proyectos de su facultad, o asignados directamente.
  * - Coordinador: Programas, cursos y tareas de su programa, o asignados directamente.
  * - Docente: Solo sus cursos asignados (donde es docente o par) y sus tareas correspondientes.
@@ -183,26 +267,23 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
     };
   }
 
-  // 1. Detección de Áreas/Departamentos bajo jefatura
-  const areasDondeEsJefe = areas.filter(
-    a =>
-      (a.jefe_id && a.jefe_id === usuarioActual.id) ||
-      (isRoleMatch(rolNombre, 'Jefe') &&
-        (a.id === rolObj?.area_id || a.nombre === rolObj?.area_nombre || a.nombre === usuarioActual.area_nombre))
-  );
+  // 1. Detección de Áreas/Departamentos bajo jefatura y sus subáreas jerárquicas
+  const {
+    areaIds: areaIdsSupervisadasPorJefe,
+    areaNombres: areaNombresSupervisadasPorJefe,
+    isJefe: esJefeDeArea
+  } = getSupervisedAreasForUser(usuarioActual, areas, roles, nivelArea);
 
-  const areaIdsSupervisadasPorJefe = new Set<string>();
-  const agregarAreaYSubareas = (areaId: string) => {
-    if (!areaId || areaIdsSupervisadasPorJefe.has(areaId)) return;
-    areaIdsSupervisadasPorJefe.add(areaId);
-    areas
-      .filter(sub => sub.parent_id === areaId && sub.id && sub.id !== areaId && !areaIdsSupervisadasPorJefe.has(sub.id))
-      .forEach(sub => agregarAreaYSubareas(sub.id));
+  const isAreaSupervisadaPorJefe = (areaIdOrName?: string) => {
+    if (!areaIdOrName) return false;
+    if (areaIdsSupervisadasPorJefe.has(areaIdOrName)) return true;
+    if (areaNombresSupervisadasPorJefe.has(areaIdOrName.toLowerCase())) return true;
+    const a = areas.find(x => x.id === areaIdOrName || x.nombre.toLowerCase() === areaIdOrName.toLowerCase());
+    if (a && (areaIdsSupervisadasPorJefe.has(a.id) || areaNombresSupervisadasPorJefe.has(a.nombre.toLowerCase()))) {
+      return true;
+    }
+    return false;
   };
-  areasDondeEsJefe.forEach(a => {
-    if (a.id) agregarAreaYSubareas(a.id);
-  });
-  const esJefeDeArea = areaIdsSupervisadasPorJefe.size > 0;
 
   // 2. Detección de Facultades y Programas a cargo
   const facultadesDondeEsDecano = facultades.filter(
@@ -254,10 +335,18 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       return true;
     }
 
-    // B. Jefe de departamento: Tareas asignadas a la jefatura o directamente a su usuario
+    // B. Jefe de Área / Sub-área:
+    // - Ve tareas asignadas a la jefatura en sus áreas/sub-áreas supervisadas
+    // - Ve TODAS las tareas correspondientes a proyectos adscritos a sus áreas/sub-áreas supervisadas
     if (esJefeDeArea) {
       if (isRoleMatch(t.rol_destino, 'Jefe') || isRoleMatch(t.rol_destino_secundario, 'Jefe')) {
-        if (!t.area_id || areaIdsSupervisadasPorJefe.has(t.area_id)) return true;
+        if (!t.area_id || isAreaSupervisadaPorJefe(t.area_id)) return true;
+      }
+      if (t.proyecto_id) {
+        const proy = proyectos.find(p => p.id === t.proyecto_id);
+        if (proy && proy.area_id && isAreaSupervisadaPorJefe(proy.area_id)) {
+          return true;
+        }
       }
     }
 
@@ -375,8 +464,10 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
 
   // 8. Proyectos Visibles por Rol
   const proyectosVisibles = proyectos.filter(p => {
-    // Jefe de Departamento: Proyectos adscritos a su departamento/subáreas
-    if (esJefeDeArea && p.area_id && areaIdsSupervisadasPorJefe.has(p.area_id)) {
+    // Jefe de Área / Sub-área:
+    // El jefe de una sub-área SOLO ve proyectos asignados a su sub-área.
+    // El jefe de un área principal ve proyectos de dicha área Y de todas sus respectivas sub-áreas.
+    if (esJefeDeArea && p.area_id && isAreaSupervisadaPorJefe(p.area_id)) {
       return true;
     }
 
@@ -386,7 +477,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
     }
 
     // Decano: Proyectos de su facultad
-    if (facultadesDondeEsDecano.length > 0 && p.area_id && idsFacultadesDecano.has(p.area_id)) {
+    if (facultadesDondeEsDecano.length > 0 && p.area_id && (idsFacultadesDecano.has(p.area_id) || nombresFacultadesDecano.has(p.area_id))) {
       return true;
     }
 
@@ -444,3 +535,59 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
     comentariosVisibles,
   };
 }
+
+/**
+ * Determina si el usuario actual tiene permisos para editar una tarea específica.
+ * Reglas de visualización y edición:
+ * - Administrador (Nivel 6): Puede editar cualquier tarea del sistema.
+ * - Jefe de Área / Sub-área: Puede editar las tareas de los proyectos adscritos a su jurisdicción:
+ *   - El jefe de una sub-área SOLO puede editar tareas de los proyectos asignados a su sub-área.
+ *   - El jefe de un área principal puede editar las tareas de los proyectos de dicha área y de todas sus sub-áreas respectivas.
+ * - Líder o Co-líder de Proyecto: Puede editar las tareas del proyecto que lidera.
+ */
+export function canUserEditTask(
+  usuarioActual: Usuario | null,
+  tarea: TareaCCV,
+  proyectos: ProyectoEspecial[],
+  areas: Area[],
+  roles: Rol[] = [],
+  nivelArea: NivelArea = 1
+): boolean {
+  if (!usuarioActual) return false;
+
+  const rolObj = roles.find(r => r.id === usuarioActual.rol_id);
+  const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
+
+  // 1. Administrador (Nivel 6) tiene control total para editar cualquier tarea
+  if (nivelArea === 6 || isRoleMatch(rolNombre, 'Administrador')) {
+    return true;
+  }
+
+  // 2. Si la tarea pertenece a un proyecto especial
+  if (tarea.tipo_tarea === 'Proyecto' || Boolean(tarea.proyecto_id)) {
+    const proy = proyectos.find(p => p.id === tarea.proyecto_id);
+    if (!proy) return false;
+
+    // A. Líder o co-líder del proyecto asignado
+    if (proy.lider_id === usuarioActual.id || proy.lider_secundario_id === usuarioActual.id) {
+      return true;
+    }
+
+    // B. Jefe de Área o Sub-área adscrita al proyecto
+    if (proy.area_id) {
+      const { areaIds, areaNombres, isJefe } = getSupervisedAreasForUser(usuarioActual, areas, roles, nivelArea);
+      if (isJefe) {
+        if (areaIds.has(proy.area_id) || areaNombres.has(proy.area_id.toLowerCase())) {
+          return true;
+        }
+        const a = areas.find(x => x.id === proy.area_id || x.nombre.toLowerCase() === proy.area_id.toLowerCase());
+        if (a && (areaIds.has(a.id) || areaNombres.has(a.nombre.toLowerCase()))) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+

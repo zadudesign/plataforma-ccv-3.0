@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { canUserEditTask } from '@/lib/roleVisibilityUtils';
 import { TaskTimeTracker } from './TaskTimeTracker';
 import { ConfirmCompleteTaskModal } from './ConfirmCompleteTaskModal';
 import { ConfirmDeleteTaskModal } from './ConfirmDeleteTaskModal';
@@ -60,7 +61,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onDeleteTask,
   onEditTask,
 }) => {
-  const { roles, usuarios, areas, cursos, proyectos, isAdmin, eliminarTarea, editarTarea } = useAuth();
+  const { roles, usuarios, areas, cursos, proyectos, nivelArea, isAdmin, eliminarTarea, editarTarea } = useAuth();
+  const canEdit = isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea) : false);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [confirmarCompletadaOpen, setConfirmarCompletadaOpen] = useState(false);
   const [confirmarEliminarOpen, setConfirmarEliminarOpen] = useState(false);
@@ -204,29 +206,29 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {isAdmin() && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingOpen(true)}
-                  className="w-9 h-9 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
-                  title="Editar tarea (Solo Administrador)"
-                  aria-label="Editar tarea"
-                >
-                  <Pencil className="w-4 h-4 text-amber-600" />
-                </button>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsEditingOpen(true)}
+                className="w-9 h-9 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                title={isAdmin() ? "Editar tarea (Administrador)" : "Editar tarea (Permisos Autorizados)"}
+                aria-label="Editar tarea"
+              >
+                <Pencil className="w-4 h-4 text-amber-600" />
+              </button>
+            )}
 
-                <button
-                  type="button"
-                  onClick={() => setConfirmarEliminarOpen(true)}
-                  disabled={isDeleting}
-                  className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-50"
-                  title="Eliminar tarea permanentemente (Solo Administrador)"
-                  aria-label="Eliminar tarea"
-                >
-                  <Trash2 className="w-4 h-4 text-rose-600" />
-                </button>
-              </>
+            {isAdmin() && (
+              <button
+                type="button"
+                onClick={() => setConfirmarEliminarOpen(true)}
+                disabled={isDeleting}
+                className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-50"
+                title="Eliminar tarea permanentemente (Solo Administrador)"
+                aria-label="Eliminar tarea"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+              </button>
             )}
 
             <button

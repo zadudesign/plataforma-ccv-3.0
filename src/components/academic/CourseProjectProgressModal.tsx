@@ -40,6 +40,7 @@ import { ConfirmCompleteTaskModal } from '@/components/tasks/ConfirmCompleteTask
 import { ConfirmDeleteTaskModal } from '@/components/tasks/ConfirmDeleteTaskModal';
 import { ScheduleCourseModal } from './ScheduleCourseModal';
 import { EditTaskModal } from '@/components/tasks/EditTaskModal';
+import { canUserEditTask } from '@/lib/roleVisibilityUtils';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -70,7 +71,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onDeleteTask,
   onEditTask,
 }) => {
-  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea, editarTarea, cursos, proyectos } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual, nivelArea, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea, editarTarea, cursos, proyectos } = useAuth();
+  const canUserEdit = (t?: TareaCCV | null) => {
+    if (!t) return false;
+    return isAdmin() || canUserEditTask(usuarioActual, t, proyectos, areas, roles, nivelArea);
+  };
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [tareaAEliminar, setTareaAEliminar] = useState<TareaCCV | null>(null);
@@ -962,34 +967,38 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                                   <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
 
-                                {/* Acciones Exclusivas para Admin: Editar y Eliminar */}
-                                {isAdmin() && (
+                                {/* Acciones: Editar (Admin / Jefe / Líder) y Eliminar (Solo Admin) */}
+                                {(canUserEdit(t) || isAdmin()) && (
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setTareaAEditar(t);
-                                      }}
-                                      className="p-1.5 rounded-full text-stone-400 hover:text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all cursor-pointer shadow-2xs"
-                                      title="Editar tarea (Solo Administrador)"
-                                      aria-label="Editar tarea"
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </button>
+                                    {canUserEdit(t) && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setTareaAEditar(t);
+                                        }}
+                                        className="p-1.5 rounded-full text-stone-400 hover:text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all cursor-pointer shadow-2xs"
+                                        title={isAdmin() ? "Editar tarea (Solo Administrador)" : "Editar tarea (Permisos Autorizados)"}
+                                        aria-label="Editar tarea"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
 
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setTareaAEliminar(t);
-                                      }}
-                                      className="p-1.5 rounded-full text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
-                                      title="Eliminar tarea permanentemente (Solo Administrador)"
-                                      aria-label="Eliminar tarea"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    {isAdmin() && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setTareaAEliminar(t);
+                                        }}
+                                        className="p-1.5 rounded-full text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
+                                        title="Eliminar tarea permanentemente (Solo Administrador)"
+                                        aria-label="Eliminar tarea"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1032,27 +1041,31 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                     </p>
                   </div>
 
-                  {isAdmin() && (
+                  {(canUserEdit(tareaSeleccionadaLocal) || isAdmin()) && (
                     <div className="flex items-center gap-1.5 self-start shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setTareaAEditar(tareaSeleccionadaLocal)}
-                        className="w-8 h-8 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
-                        title="Editar tarea (Solo Administrador)"
-                        aria-label="Editar tarea"
-                      >
-                        <Pencil className="w-4 h-4 text-amber-600" />
-                      </button>
+                      {canUserEdit(tareaSeleccionadaLocal) && (
+                        <button
+                          type="button"
+                          onClick={() => setTareaAEditar(tareaSeleccionadaLocal)}
+                          className="w-8 h-8 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                          title={isAdmin() ? "Editar tarea (Solo Administrador)" : "Editar tarea (Permisos Autorizados)"}
+                          aria-label="Editar tarea"
+                        >
+                          <Pencil className="w-4 h-4 text-amber-600" />
+                        </button>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => setTareaAEliminar(tareaSeleccionadaLocal)}
-                        className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
-                        title="Eliminar tarea permanentemente (Solo Administrador)"
-                        aria-label="Eliminar tarea"
-                      >
-                        <Trash2 className="w-4 h-4 text-rose-600" />
-                      </button>
+                      {isAdmin() && (
+                        <button
+                          type="button"
+                          onClick={() => setTareaAEliminar(tareaSeleccionadaLocal)}
+                          className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                          title="Eliminar tarea permanentemente (Solo Administrador)"
+                          aria-label="Eliminar tarea"
+                        >
+                          <Trash2 className="w-4 h-4 text-rose-600" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

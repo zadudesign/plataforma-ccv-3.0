@@ -35,7 +35,7 @@ import { ProductivityDashboard } from '@/components/productivity/ProductivityDas
 import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
 import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
-import { getEntitiesVisibleByRole } from '@/lib/roleVisibilityUtils';
+import { getEntitiesVisibleByRole, canUserEditTask } from '@/lib/roleVisibilityUtils';
 import { ShieldAlert } from 'lucide-react';
 
 export default function Home() {
@@ -314,8 +314,16 @@ export default function Home() {
   };
 
   const handleEditarTarea = async (tareaId: string, datosEditados: Partial<TareaCCV>): Promise<boolean> => {
-    if (!isAdmin()) {
-      alert('Solo los administradores tienen permiso para editar tareas.');
+    const tareaExistente = tareas.find(t => t.id === tareaId);
+    const tareaParaValidar: TareaCCV = {
+      ...(tareaExistente || {}),
+      ...datosEditados,
+      id: tareaId,
+    } as TareaCCV;
+
+    const puedeEditar = isAdmin() || canUserEditTask(usuarioActual, tareaParaValidar, proyectos, areas, roles, nivelArea);
+    if (!puedeEditar) {
+      alert('Solo los administradores o los jefes de las áreas/sub-áreas correspondientes y líderes de proyecto tienen permiso para editar esta tarea.');
       return false;
     }
     const ok = await updateTareaFullDB(tareaId, datosEditados);
@@ -598,10 +606,10 @@ export default function Home() {
             onAddHours={handleUpdateTaskHours}
             onOpenCursoOProyecto={(entidadId, tipo) => {
               if (tipo === 'curso') {
-                const c = cursos.find(x => x.id === entidadId);
+                const c = cursosVisiblesPorRol.find(x => x.id === entidadId) || (isAdmin() ? cursos.find(x => x.id === entidadId) : undefined);
                 if (c) setEntidadProgresoSeleccionada({ entidad: c, tipo: 'curso' });
               } else {
-                const p = proyectos.find(x => x.id === entidadId);
+                const p = proyectosVisiblesPorRol.find(x => x.id === entidadId) || (isAdmin() ? proyectos.find(x => x.id === entidadId) : undefined);
                 if (p) setEntidadProgresoSeleccionada({ entidad: p, tipo: 'proyecto' });
               }
             }}

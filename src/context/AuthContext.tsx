@@ -56,6 +56,7 @@ import {
   deleteTareaDB,
   updateTareaFullDB
 } from '@/lib/supabaseService';
+import { canUserEditTask } from '@/lib/roleVisibilityUtils';
 
 interface AuthContextType {
   usuarioActual: Usuario | null;
@@ -1109,8 +1110,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const editarTarea = async (id: string, updates: Partial<TareaCCV>): Promise<boolean> => {
     if (!isAdmin()) {
-      alert('Solo los administradores tienen permiso para editar tareas.');
-      return false;
+      const proyectoId = updates.proyecto_id;
+      let tienePermiso = false;
+
+      if (proyectoId || updates.tipo_tarea === 'Proyecto') {
+        const tareaSimulada: TareaCCV = {
+          id,
+          titulo: updates.titulo || '',
+          descripcion: updates.descripcion || '',
+          proyecto_id: proyectoId,
+          tipo_tarea: 'Proyecto',
+          estado: updates.estado || 'Pendiente',
+        } as TareaCCV;
+
+        tienePermiso = canUserEditTask(usuarioActual, tareaSimulada, proyectos, areas, roles, nivelArea);
+      }
+
+      if (!tienePermiso) {
+        alert('Solo los administradores o los jefes de las áreas/sub-áreas correspondientes y líderes de proyecto tienen permiso para editar esta tarea.');
+        return false;
+      }
     }
     return await updateTareaFullDB(id, updates);
   };

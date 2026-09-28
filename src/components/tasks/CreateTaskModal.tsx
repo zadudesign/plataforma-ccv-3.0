@@ -59,15 +59,17 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     if (!titulo.trim()) return;
 
     const cursoObj = cursos.find(c => c.id === activeCursoId);
-    const proyObj = proyectos.find(p => p.id === activeProyectoId);
+    const proyAreaObj = proyObj?.area_id ? areas.find(a => a.id === proyObj.area_id || a.nombre.toLowerCase() === proyObj.area_id?.toLowerCase()) : undefined;
+    const taskAreaId = tipoTarea === 'Proyecto' && proyAreaObj ? proyAreaObj.id : (respArea?.id || undefined);
+    const taskAreaNombre = tipoTarea === 'Proyecto' && proyAreaObj ? proyAreaObj.nombre : (respArea?.nombre || resp?.area_nombre || undefined);
 
     onCreateTask({
       titulo,
       descripcion,
       tipo_tarea: tipoTarea,
       categoria_proyecto: tipoTarea === 'Proyecto' ? categoriaProyecto : undefined,
-      area_id: respArea?.id || undefined,
-      area_nombre: respArea?.nombre || resp?.area_nombre || undefined,
+      area_id: taskAreaId,
+      area_nombre: taskAreaNombre,
       curso_id: tipoTarea === 'Curso Virtual' ? activeCursoId : undefined,
       curso_nombre: tipoTarea === 'Curso Virtual' ? cursoObj?.nombre : undefined,
       proyecto_id: tipoTarea === 'Proyecto' ? activeProyectoId : undefined,

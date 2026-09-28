@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea, CategoriaTareaProyecto, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { canUserEditTask } from '@/lib/roleVisibilityUtils';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -44,7 +45,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const { tarifasProyecto, isAdmin } = useAuth();
+  const { tarifasProyecto, isAdmin, usuarioActual, nivelArea, roles } = useAuth();
+  const canEdit = isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea) : false);
 
   // Estados locales pre-cargados con la información de la tarea existente
   const [titulo, setTitulo] = useState(tarea.titulo || '');
@@ -78,7 +80,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (!isOpen || !isAdmin()) return null;
+  if (!isOpen || !canEdit) return null;
 
   // Resolución de datos vinculados
   const activeCursoId = cursoId || cursos[0]?.id;
@@ -112,15 +114,17 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setErrorMsg(null);
 
     const cursoObj = cursos.find(c => c.id === activeCursoId);
-    const proyObj = proyectos.find(p => p.id === activeProyectoId);
+    const proyAreaObj = proyObj?.area_id ? areas.find(a => a.id === proyObj.area_id || a.nombre.toLowerCase() === proyObj.area_id?.toLowerCase()) : undefined;
+    const taskAreaId = tipoTarea === 'Proyecto' && proyAreaObj ? proyAreaObj.id : (respArea?.id || tarea.area_id || undefined);
+    const taskAreaNombre = tipoTarea === 'Proyecto' && proyAreaObj ? proyAreaObj.nombre : (respArea?.nombre || resp?.area_nombre || tarea.area_nombre || undefined);
 
     const updates: Partial<TareaCCV> = {
       titulo: titulo.trim(),
       descripcion: descripcion.trim(),
       tipo_tarea: tipoTarea,
       categoria_proyecto: tipoTarea === 'Proyecto' ? categoriaProyecto : undefined,
-      area_id: respArea?.id || tarea.area_id || undefined,
-      area_nombre: respArea?.nombre || resp?.area_nombre || tarea.area_nombre || undefined,
+      area_id: taskAreaId,
+      area_nombre: taskAreaNombre,
       curso_id: tipoTarea === 'Curso Virtual' ? (activeCursoId || undefined) : undefined,
       curso_nombre: tipoTarea === 'Curso Virtual' ? cursoObj?.nombre : undefined,
       proyecto_id: tipoTarea === 'Proyecto' ? (activeProyectoId || undefined) : undefined,
@@ -174,7 +178,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   Editar Tarea
                 </h3>
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
-                  <ShieldCheck className="w-3 h-3 text-amber-700" /> Solo Administrador
+                  <ShieldCheck className="w-3 h-3 text-amber-700" /> {isAdmin() ? 'Solo Administrador' : 'Edición Autorizada'}
                 </span>
               </div>
               <p className="text-xs text-charcoal-500 mt-0.5">
