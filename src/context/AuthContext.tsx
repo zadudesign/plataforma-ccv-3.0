@@ -53,7 +53,8 @@ import {
   inicializarTareasCursoDB,
   reajustarCronogramaCursoDB,
   forzarDesbloqueoAdminDB,
-  deleteTareaDB
+  deleteTareaDB,
+  updateTareaFullDB
 } from '@/lib/supabaseService';
 
 interface AuthContextType {
@@ -144,6 +145,7 @@ interface AuthContextType {
   reajustarCronogramaCurso: (cursoId: string, fechaInicio: string, duracionDias: number) => Promise<{ success: boolean; message: string }>;
   forzarDesbloqueoAdmin: (tareaId: string, adminId: string) => Promise<{ success: boolean; message: string }>;
   eliminarTarea: (id: string) => Promise<boolean>;
+  editarTarea: (id: string, updates: Partial<TareaCCV>) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -1105,6 +1107,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return await deleteTareaDB(id);
   };
 
+  const editarTarea = async (id: string, updates: Partial<TareaCCV>): Promise<boolean> => {
+    if (!isAdmin()) {
+      alert('Solo los administradores tienen permiso para editar tareas.');
+      return false;
+    }
+    return await updateTareaFullDB(id, updates);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -1140,6 +1150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         reajustarCronogramaCurso,
         forzarDesbloqueoAdmin,
         eliminarTarea,
+        editarTarea,
         hasPermission,
         canAccessLevel,
         isAdmin,

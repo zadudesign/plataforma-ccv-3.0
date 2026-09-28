@@ -1217,30 +1217,69 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
   try {
     if (!isGuid(id)) return true;
     const payload: any = { updated_at: new Date().toISOString() };
-    if (datos.titulo !== undefined) payload.titulo = datos.titulo;
+    if (datos.titulo !== undefined) payload.titulo = datos.titulo.trim();
     if (datos.descripcion !== undefined) payload.descripcion = datos.descripcion;
     if (datos.estado !== undefined) payload.estado = datos.estado;
+    if (datos.tipo_tarea !== undefined) {
+      payload.tipo_tarea = datos.tipo_tarea === 'Proyecto' ? 'Proyecto Especial' : datos.tipo_tarea;
+      if (datos.tipo_tarea === 'Curso Virtual') {
+        payload.proyecto_id = null;
+        if (datos.curso_id !== undefined) {
+          payload.curso_id = isGuid(datos.curso_id) ? datos.curso_id : null;
+        }
+        payload.categoria_proyecto = null;
+      } else if (datos.tipo_tarea === 'Proyecto') {
+        payload.curso_id = null;
+        if (datos.proyecto_id !== undefined) {
+          payload.proyecto_id = isGuid(datos.proyecto_id) ? datos.proyecto_id : null;
+        }
+        if (datos.categoria_proyecto !== undefined) {
+          payload.categoria_proyecto = datos.categoria_proyecto || 'Diseño';
+        }
+      }
+    } else {
+      if (datos.curso_id !== undefined) {
+        payload.curso_id = isGuid(datos.curso_id) ? datos.curso_id : null;
+        if (payload.curso_id) payload.proyecto_id = null;
+      }
+      if (datos.proyecto_id !== undefined) {
+        payload.proyecto_id = isGuid(datos.proyecto_id) ? datos.proyecto_id : null;
+        if (payload.proyecto_id) payload.curso_id = null;
+      }
+      if (datos.categoria_proyecto !== undefined) {
+        payload.categoria_proyecto = datos.categoria_proyecto || null;
+      }
+    }
+
+    if (datos.area_id !== undefined) payload.area_id = isGuid(datos.area_id) ? datos.area_id : null;
     if (datos.fecha_vencimiento !== undefined) payload.fecha_vencimiento = datos.fecha_vencimiento;
     if (datos.hora_vencimiento !== undefined) payload.hora_vencimiento = datos.hora_vencimiento;
     if (datos.fecha_completada !== undefined) payload.fecha_completada = datos.fecha_completada || null;
     if (datos.tiempo_estimado !== undefined) payload.tiempo_estimado = Number(datos.tiempo_estimado);
     if (datos.tiempo_invertido !== undefined) payload.tiempo_invertido = Number(datos.tiempo_invertido);
     if (datos.tiempo_invertido_secundario !== undefined) payload.tiempo_invertido_secundario = Number(datos.tiempo_invertido_secundario);
-    if (datos.tarifa_hora !== undefined) payload.tarifa_hora = datos.tarifa_hora;
-    if (datos.tarifa_tarea !== undefined) payload.tarifa_tarea = datos.tarifa_tarea;
-    if (datos.responsable_id !== undefined && isGuid(datos.responsable_id)) payload.responsable_id = datos.responsable_id;
-    if (datos.rol_destino !== undefined) payload.rol_destino = datos.rol_destino;
+    if (datos.tarifa_hora !== undefined) payload.tarifa_hora = datos.tarifa_hora !== null ? Number(datos.tarifa_hora) : null;
+    if (datos.tarifa_tarea !== undefined) payload.tarifa_tarea = datos.tarifa_tarea !== null ? Number(datos.tarifa_tarea) : null;
+    if (datos.responsable_id !== undefined) payload.responsable_id = isGuid(datos.responsable_id) ? datos.responsable_id : null;
+    if (datos.rol_destino !== undefined) payload.rol_destino = datos.rol_destino || null;
     if (datos.responsable_secundario_id !== undefined) payload.responsable_secundario_id = isGuid(datos.responsable_secundario_id) ? datos.responsable_secundario_id : null;
-    if (datos.rol_destino_secundario !== undefined) payload.rol_destino_secundario = datos.rol_destino_secundario;
+    if (datos.rol_destino_secundario !== undefined) payload.rol_destino_secundario = datos.rol_destino_secundario || null;
+    if (datos.enlace_recurso !== undefined) payload.enlace_recurso = datos.enlace_recurso ? datos.enlace_recurso.trim() : null;
+    if (datos.fecha_inicial !== undefined) payload.fecha_inicial = datos.fecha_inicial || null;
+    if (datos.numero_unidad !== undefined) payload.numero_unidad = datos.numero_unidad !== null ? Number(datos.numero_unidad) : null;
 
     let { error } = await supabase.from('tareas').update(payload).eq('id', id);
     if (error && error.code === 'PGRST204') {
       if (error.message.includes('responsable_secundario_id')) delete payload.responsable_secundario_id;
       if (error.message.includes('rol_destino_secundario')) delete payload.rol_destino_secundario;
+      if (error.message.includes('categoria_proyecto')) delete payload.categoria_proyecto;
       if (error.message.includes('tiempo_estimado')) delete payload.tiempo_estimado;
       if (error.message.includes('tiempo_invertido_secundario')) delete payload.tiempo_invertido_secundario;
       if (error.message.includes('hora_vencimiento')) delete payload.hora_vencimiento;
       if (error.message.includes('fecha_completada')) delete payload.fecha_completada;
+      if (error.message.includes('enlace_recurso')) delete payload.enlace_recurso;
+      if (error.message.includes('fecha_inicial')) delete payload.fecha_inicial;
+      if (error.message.includes('numero_unidad')) delete payload.numero_unidad;
       const res = await supabase.from('tareas').update(payload).eq('id', id);
       error = res.error;
     }

@@ -313,6 +313,27 @@ export default function Home() {
     return ok;
   };
 
+  const handleEditarTarea = async (tareaId: string, datosEditados: Partial<TareaCCV>): Promise<boolean> => {
+    if (!isAdmin()) {
+      alert('Solo los administradores tienen permiso para editar tareas.');
+      return false;
+    }
+    const ok = await updateTareaFullDB(tareaId, datosEditados);
+    if (ok) {
+      setTareas(prev => ordenarTareasPorVencimiento(prev.map(t => {
+        if (t.id === tareaId) {
+          return { ...t, ...datosEditados };
+        }
+        return t;
+      })));
+
+      if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
+        setTareaSeleccionada(prev => prev ? { ...prev, ...datosEditados } : null);
+      }
+    }
+    return ok;
+  };
+
   const handleUpdateFechaCompletada = async (tareaId: string, nuevaFecha: string): Promise<boolean> => {
     if (!isAdmin()) {
       alert('Solo los usuarios con rol de Administrador pueden modificar la fecha de finalización de una tarea.');
@@ -586,6 +607,7 @@ export default function Home() {
             }}
             onUpdateFechaCompletada={handleUpdateFechaCompletada}
             onDeleteTask={handleEliminarTarea}
+            onEditTask={handleEditarTarea}
           />
         )}
 
@@ -635,6 +657,7 @@ export default function Home() {
             onAddComentario={handleAddComment}
             onAddHours={handleUpdateTaskHours}
             onDeleteTask={handleEliminarTarea}
+            onEditTask={handleEditarTarea}
             onRefreshTareas={async () => {
               const dbTareas = await fetchTareasDB();
               setTareas(ordenarTareasPorVencimiento(dbTareas || []));

@@ -23,13 +23,15 @@ import {
   ShieldCheck,
   Save,
   Check,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { TaskTimeTracker } from './TaskTimeTracker';
 import { ConfirmCompleteTaskModal } from './ConfirmCompleteTaskModal';
 import { ConfirmDeleteTaskModal } from './ConfirmDeleteTaskModal';
+import { EditTaskModal } from './EditTaskModal';
 
 interface TaskDetailModalProps {
   tarea: TareaCCV | null;
@@ -42,6 +44,7 @@ interface TaskDetailModalProps {
   onOpenCursoOProyecto?: (entidadId: string, tipo: 'curso' | 'proyecto') => void;
   onUpdateFechaCompletada?: (tareaId: string, nuevaFecha: string) => Promise<any> | void;
   onDeleteTask?: (tareaId: string) => Promise<boolean>;
+  onEditTask?: (tareaId: string, updates: Partial<TareaCCV>) => Promise<boolean>;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -55,11 +58,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onOpenCursoOProyecto,
   onUpdateFechaCompletada,
   onDeleteTask,
+  onEditTask,
 }) => {
-  const { roles, usuarios, isAdmin, eliminarTarea } = useAuth();
+  const { roles, usuarios, areas, cursos, proyectos, isAdmin, eliminarTarea, editarTarea } = useAuth();
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [confirmarCompletadaOpen, setConfirmarCompletadaOpen] = useState(false);
   const [confirmarEliminarOpen, setConfirmarEliminarOpen] = useState(false);
+  const [isEditingOpen, setIsEditingOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [fechaCompletadaLocal, setFechaCompletadaLocal] = useState<string>('');
   const [isSavingFecha, setIsSavingFecha] = useState(false);
@@ -200,16 +205,28 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             {isAdmin() && (
-              <button
-                type="button"
-                onClick={() => setConfirmarEliminarOpen(true)}
-                disabled={isDeleting}
-                className="px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
-                title="Eliminar tarea permanentemente (Solo Administrador)"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                <span className="hidden sm:inline">Eliminar Tarea</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingOpen(true)}
+                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                  title="Editar tarea (Solo Administrador)"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="hidden sm:inline">Editar Tarea</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConfirmarEliminarOpen(true)}
+                  disabled={isDeleting}
+                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                  title="Eliminar tarea permanentemente (Solo Administrador)"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span className="hidden sm:inline">Eliminar Tarea</span>
+                </button>
+              </>
             )}
 
             <button
@@ -601,6 +618,23 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         }}
         isDeleting={isDeleting}
       />
+
+      {/* Modal para Editar Tarea (Solo Admin) */}
+      {isEditingOpen && tarea && (
+        <EditTaskModal
+          isOpen={isEditingOpen}
+          tarea={tarea}
+          areas={areas}
+          cursos={cursos}
+          proyectos={proyectos}
+          usuarios={usuarios}
+          onClose={() => setIsEditingOpen(false)}
+          onSave={async (tareaId, updates) => {
+            const ok = onEditTask ? await onEditTask(tareaId, updates) : await editarTarea(tareaId, updates);
+            return ok;
+          }}
+        />
+      )}
     </div>
   );
 };

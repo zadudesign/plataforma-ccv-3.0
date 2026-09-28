@@ -26,7 +26,8 @@ import {
   Unlock,
   ShieldAlert,
   AlertTriangle,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -38,6 +39,7 @@ import { validarRequisitosCargaPlantilla, obtenerTareasBloqueantes, ordenarTarea
 import { ConfirmCompleteTaskModal } from '@/components/tasks/ConfirmCompleteTaskModal';
 import { ConfirmDeleteTaskModal } from '@/components/tasks/ConfirmDeleteTaskModal';
 import { ScheduleCourseModal } from './ScheduleCourseModal';
+import { EditTaskModal } from '@/components/tasks/EditTaskModal';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -51,6 +53,7 @@ interface CourseProjectProgressModalProps {
   onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => void;
   onRefreshTareas?: () => Promise<void>;
   onDeleteTask?: (tareaId: string) => Promise<boolean>;
+  onEditTask?: (tareaId: string, updates: Partial<TareaCCV>) => Promise<boolean>;
 }
 
 export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProps> = ({
@@ -65,11 +68,13 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onAddHours,
   onRefreshTareas,
   onDeleteTask,
+  onEditTask,
 }) => {
-  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea, editarTarea, cursos, proyectos } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [tareaAEliminar, setTareaAEliminar] = useState<TareaCCV | null>(null);
+  const [tareaAEditar, setTareaAEditar] = useState<TareaCCV | null>(null);
   const [isDeletingTarea, setIsDeletingTarea] = useState(false);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'pendientes' | 'completadas' | 'todas'>('pendientes');
@@ -1012,15 +1017,27 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                   </div>
 
                   {isAdmin() && (
-                    <button
-                      type="button"
-                      onClick={() => setTareaAEliminar(tareaSeleccionadaLocal)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer self-start shrink-0"
-                      title="Eliminar tarea (Solo Administrador)"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Eliminar Tarea</span>
-                    </button>
+                    <div className="flex items-center gap-2 self-start shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setTareaAEditar(tareaSeleccionadaLocal)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                        title="Editar tarea (Solo Administrador)"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Editar Tarea</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTareaAEliminar(tareaSeleccionadaLocal)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                        title="Eliminar tarea (Solo Administrador)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Eliminar Tarea</span>
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -1314,6 +1331,30 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
           }}
           isDeleting={isDeletingTarea}
         />
+
+        {/* Modal de Edición de Tarea (Solo Admin) */}
+        {tareaAEditar && (
+          <EditTaskModal
+            isOpen={!!tareaAEditar}
+            tarea={tareaAEditar}
+            areas={areas}
+            cursos={cursos}
+            proyectos={proyectos}
+            usuarios={usuarios}
+            onClose={() => setTareaAEditar(null)}
+            onSave={async (tareaId, updates) => {
+              const ok = onEditTask ? await onEditTask(tareaId, updates) : await editarTarea(tareaId, updates);
+              if (ok) {
+                if (tareaSeleccionadaLocal?.id === tareaId) {
+                  setTareaSeleccionadaLocal(prev => prev ? { ...prev, ...updates } : null);
+                }
+                setTareaAEditar(null);
+                if (onRefreshTareas) await onRefreshTareas();
+              }
+              return ok;
+            }}
+          />
+        )}
       </div>
     </div>
   );
