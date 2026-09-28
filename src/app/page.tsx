@@ -635,6 +635,8 @@ export default function Home() {
           <TaskRequestModal
             isOpen={isTaskRequestOpen}
             onClose={() => setIsTaskRequestOpen(false)}
+            tareas={tareas}
+            proyectos={proyectos}
           />
         )}
 

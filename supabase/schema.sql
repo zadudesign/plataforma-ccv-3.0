@@ -496,6 +496,8 @@ CREATE TABLE IF NOT EXISTS public.solicitudes_tareas (
     estado TEXT NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Aprobada', 'Rechazada', 'En Evaluación')),
     motivo_rechazo TEXT,
     tarea_creada_id UUID REFERENCES public.tareas(id) ON DELETE SET NULL,
+    proyecto_id UUID REFERENCES public.proyectos_especiales(id) ON DELETE SET NULL,
+    proyecto_nombre TEXT,
     revisado_por UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     fecha_revision TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -503,6 +505,7 @@ CREATE TABLE IF NOT EXISTS public.solicitudes_tareas (
 
 CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON public.solicitudes_tareas(estado);
 CREATE INDEX IF NOT EXISTS idx_solicitudes_solicitante ON public.solicitudes_tareas(solicitante_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_proyecto_id ON public.solicitudes_tareas(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_solicitudes_created_at ON public.solicitudes_tareas(created_at DESC);
 
 ALTER TABLE public.solicitudes_tareas ENABLE ROW LEVEL SECURITY;

@@ -224,6 +224,8 @@ export interface SolicitudTareaCCV {
   estado: EstadoSolicitudTarea;
   motivo_rechazo?: string | null;
   tarea_creada_id?: string | null;
+  proyecto_id?: string | null;
+  proyecto_nombre?: string | null;
   revisado_por?: string | null;
   revisado_por_nombre?: string | null;
   fecha_revision?: string | null;

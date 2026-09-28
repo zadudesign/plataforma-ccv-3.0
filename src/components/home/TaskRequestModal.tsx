@@ -16,22 +16,48 @@ import {
   Shield,
   Layers,
   FilePlus,
-  Mail
+  Mail,
+  FolderKanban
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { PrioridadSolicitud } from '@/types';
+import { PrioridadSolicitud, TareaCCV, ProyectoEspecial } from '@/types';
+import { fetchTareasDB } from '@/lib/supabaseService';
 
 interface TaskRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
+  tareas?: TareaCCV[];
+  proyectos?: ProyectoEspecial[];
 }
 
-export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onClose }) => {
-  const { usuarioActual, roles, areas, enviarSolicitudTarea } = useAuth();
+export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ 
+  isOpen, 
+  onClose,
+  tareas: tareasProps,
+  proyectos: proyectosProps
+}) => {
+  const { usuarioActual, roles, areas, proyectos: authProyectos, isAdmin, enviarSolicitudTarea } = useAuth();
+
+  // Lista base de proyectos
+  const listaProyectos = proyectosProps || authProyectos || [];
+
+  // Tareas en memoria o cargadas desde DB para detectar tareas activas
+  const [tareasLocales, setTareasLocales] = useState<TareaCCV[]>(tareasProps || []);
+
+  useEffect(() => {
+    if (tareasProps && tareasProps.length > 0) {
+      setTareasLocales(tareasProps);
+    } else if (isOpen) {
+      fetchTareasDB().then(data => {
+        if (data && data.length > 0) setTareasLocales(data);
+      });
+    }
+  }, [isOpen, tareasProps]);
 
   // Estados del Formulario de Especificaciones de la Tarea
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [proyectoSeleccionadoId, setProyectoSeleccionadoId] = useState<string>('');
   const [fechaEstimada, setFechaEstimada] = useState('');
   const [horaEstimada, setHoraEstimada] = useState('');
   const [prioridad, setPrioridad] = useState<PrioridadSolicitud>('Normal');
@@ -40,6 +66,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [radicadoExitoso, setRadicadoExitoso] = useState<string | null>(null);
+  const [radicadoProyectoNombre, setRadicadoProyectoNombre] = useState<string | null>(null);
 
   // Fecha mínima: Hoy (YYYY-MM-DD)
   const hoyStr = new Date().toISOString().split('T')[0];
@@ -53,6 +80,34 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
     (usuarioRol?.area_id && a.id === usuarioRol.area_id)
   );
   const areaNombre = usuarioArea?.nombre || usuarioActual?.area_nombre || 'PrismaLab';
+
+  // Filtrar exclusivamente los proyectos a los que el usuario ya esté asignado o tenga alguna tarea activa
+  const proyectosDisponibles = React.useMemo(() => {
+    if (!usuarioActual || listaProyectos.length === 0) return [];
+
+    // IDs de proyectos donde el usuario tiene al menos una tarea activa (responsable o secundario, no completada)
+    const proyectosConTareaActivaIds = new Set(
+      tareasLocales
+        .filter(t => {
+          if (!t.proyecto_id) return false;
+          if (t.estado === 'Completada') return false;
+          const esResp = t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id;
+          return esResp;
+        })
+        .map(t => t.proyecto_id!)
+    );
+
+    return listaProyectos.filter(p => {
+      // 1. Asignado directamente al proyecto como Líder o Co-líder
+      const esLiderOAsignado = p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id;
+      // 2. Tiene alguna tarea activa asignada en dicho proyecto
+      const tieneTareaActiva = proyectosConTareaActivaIds.has(p.id);
+      // 3. Administrador tiene acceso a seleccionar cualquier proyecto
+      if (isAdmin && isAdmin()) return true;
+
+      return esLiderOAsignado || tieneTareaActiva;
+    });
+  }, [usuarioActual, listaProyectos, tareasLocales, isAdmin]);
   
   const getNivelJerarquia = () => {
     if (!usuarioArea) return 'Área Institucional';
@@ -93,10 +148,12 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
   const resetForm = () => {
     setTitulo('');
     setDescripcion('');
+    setProyectoSeleccionadoId('');
     setHoraEstimada('');
     setPrioridad('Normal');
     setErrorMsg(null);
     setRadicadoExitoso(null);
+    setRadicadoProyectoNombre(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,6 +183,8 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
       const tipoOrigen: 'Facultad' | 'Departamento/Área' = usuarioArea?.nivel === 3 ? 'Facultad' : 'Departamento/Área';
       const origenId = usuarioArea?.id || null;
 
+      const proySeleccionado = listaProyectos.find(p => p.id === proyectoSeleccionadoId);
+
       const payload = {
         titulo: titulo.trim(),
         descripcion: descripcion.trim(),
@@ -141,7 +200,9 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
         solicitante_contacto: usuarioActual.telefono || usuarioActual.email || 'PrismaLab',
         enlace_recurso: null,
         prioridad,
-        estado: 'Pendiente' as const
+        estado: 'Pendiente' as const,
+        proyecto_id: proySeleccionado ? proySeleccionado.id : null,
+        proyecto_nombre: proySeleccionado ? proySeleccionado.nombre : null,
       };
 
       const result = await enviarSolicitudTarea(payload);
@@ -149,6 +210,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
       if (result.success && result.data) {
         const radicadoCode = `RAD-${result.data.id.slice(0, 8).toUpperCase()}`;
         setRadicadoExitoso(radicadoCode);
+        setRadicadoProyectoNombre(proySeleccionado ? proySeleccionado.nombre : null);
       } else {
         setErrorMsg(result.error || 'Ocurrió un error al registrar la solicitud en la base de datos.');
       }
@@ -249,6 +311,15 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
                     {areaNombre} ({jerarquiaTexto})
                   </span>
                 </div>
+                {radicadoProyectoNombre && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-500">Proyecto Vinculado:</span>
+                    <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                      <FolderKanban className="w-3 h-3 text-amber-600" />
+                      {radicadoProyectoNombre}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-500">Fecha Deseada:</span>
                   <span className="font-bold text-slate-800">
@@ -340,6 +411,55 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({ isOpen, onCl
                   <FileText className="w-3.5 h-3.5 text-sky-600" />
                   Especificaciones del Requerimiento
                 </h4>
+
+                {/* Selector de Proyecto Asignado o con Tarea Activa */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <FolderKanban className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Proyecto Asociado / Vinculado</span>
+                      <span className="text-slate-400 font-normal">(Opcional)</span>
+                    </label>
+                    {proyectosDisponibles.length > 0 && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        {proyectosDisponibles.length} asignado{proyectosDisponibles.length > 1 ? 's' : ''} o activo{proyectosDisponibles.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  {proyectosDisponibles.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <div className="relative">
+                        <FolderKanban className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <select
+                          value={proyectoSeleccionadoId}
+                          onChange={(e) => setProyectoSeleccionadoId(e.target.value)}
+                          className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white shadow-2xs transition-all cursor-pointer"
+                        >
+                          <option value="">-- Sin vincular a proyecto (Requerimiento General) --</option>
+                          {proyectosDisponibles.map(p => (
+                            <option key={p.id} value={p.id}>
+                              📁 {p.nombre} {p.estado ? `• [${p.estado}]` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {proyectoSeleccionadoId && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50/80 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-medium animate-in fade-in">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>
+                            Esta tarea se vinculará al proyecto <strong className="font-black text-amber-950">{listaProyectos.find(p => p.id === proyectoSeleccionadoId)?.nombre}</strong>.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-500 flex items-center gap-2">
+                      <AlertCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>No tienes proyectos asignados ni tareas activas. Se radicará como requerimiento general.</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Título de la tarea */}
                 <div>

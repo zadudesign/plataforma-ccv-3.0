@@ -168,7 +168,10 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
     
     setCategoriaProyecto('Diseño');
 
-    if (cursos.length > 0) {
+    if (s.proyecto_id && proyectos.some(p => p.id === s.proyecto_id)) {
+      setTipoTarea('Proyecto');
+      setProyectoId(s.proyecto_id);
+    } else if (cursos.length > 0) {
       setTipoTarea('Curso Virtual');
       setCursoId(cursos[0].id);
     } else if (proyectos.length > 0) {
@@ -176,7 +179,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       setProyectoId(proyectos[0].id);
     }
 
-    if (proyectos.length > 0 && !proyectoId) {
+    if (proyectos.length > 0 && !proyectoId && !s.proyecto_id) {
       setProyectoId(proyectos[0].id);
     }
     if (cursos.length > 0 && !cursoId) {
@@ -454,6 +457,14 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                       {s.origen_nombre} ({s.tipo_origen})
                     </span>
 
+                    {/* Badge Proyecto si está vinculado */}
+                    {s.proyecto_nombre && (
+                      <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 font-extrabold text-[11px] border border-amber-300 flex items-center gap-1 shadow-2xs">
+                        <FolderKanban className="w-3 h-3 text-amber-600" />
+                        <span>Proyecto: {s.proyecto_nombre}</span>
+                      </span>
+                    )}
+
                     {/* Badge Prioridad */}
                     <span
                       className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
@@ -650,10 +661,16 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                 <p className="text-charcoal-800 font-bold text-xs truncate mt-0.5">
                   {solicitudSeleccionada.titulo}
                 </p>
-                <p className="text-[11px] text-charcoal-600 mt-0.5 flex items-center gap-2">
+                <p className="text-[11px] text-charcoal-600 mt-0.5 flex items-center gap-2 flex-wrap">
                   <span>👤 {solicitudSeleccionada.solicitante_nombre}</span>
                   <span>•</span>
                   <span>📞 {solicitudSeleccionada.solicitante_contacto}</span>
+                  {solicitudSeleccionada.proyecto_nombre && (
+                    <>
+                      <span>•</span>
+                      <span className="font-extrabold text-amber-800 bg-amber-100/80 px-2 py-0.2 rounded-md">📁 Proyecto: {solicitudSeleccionada.proyecto_nombre}</span>
+                    </>
+                  )}
                 </p>
               </div>
             </div>

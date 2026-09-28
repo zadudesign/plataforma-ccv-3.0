@@ -17,7 +17,8 @@ import {
   RotateCcw,
   Sparkles,
   FileText,
-  MessageSquare
+  MessageSquare,
+  FolderKanban
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { SolicitudTareaCCV, EstadoSolicitudTarea } from '@/types';
@@ -321,6 +322,14 @@ export const UserSolicitudesModal: React.FC<UserSolicitudesModalProps> = ({
                         <Building2 className="w-3 h-3 text-slate-500" />
                         <span>{s.origen_nombre}</span>
                       </span>
+
+                      {/* Proyecto Vinculado */}
+                      {s.proyecto_nombre && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
+                          <FolderKanban className="w-3 h-3 text-amber-600" />
+                          <span>{s.proyecto_nombre}</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Fecha de Radicación */}

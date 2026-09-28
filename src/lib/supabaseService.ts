@@ -1471,6 +1471,8 @@ export async function fetchSolicitudesTareasDB(): Promise<SolicitudTareaCCV[]> {
         estado: s.estado || 'Pendiente',
         motivo_rechazo: s.motivo_rechazo || null,
         tarea_creada_id: s.tarea_creada_id || null,
+        proyecto_id: s.proyecto_id || null,
+        proyecto_nombre: s.proyecto_nombre || null,
         revisado_por: s.revisado_por || null,
         fecha_revision: s.fecha_revision || null,
         created_at: s.created_at
@@ -1500,6 +1502,8 @@ export async function fetchSolicitudesTareasDB(): Promise<SolicitudTareaCCV[]> {
       estado: s.estado || 'Pendiente',
       motivo_rechazo: s.motivo_rechazo || null,
       tarea_creada_id: s.tarea_creada_id || null,
+      proyecto_id: s.proyecto_id || null,
+      proyecto_nombre: s.proyecto_nombre || null,
       revisado_por: s.revisado_por || null,
       revisado_por_nombre: s.revisor?.nombre_completo || null,
       fecha_revision: s.fecha_revision || null,
@@ -1515,7 +1519,7 @@ export async function crearSolicitudTareaDB(
   solicitud: Omit<SolicitudTareaCCV, 'id' | 'created_at'>
 ): Promise<{ success: boolean; data?: SolicitudTareaCCV; error?: string }> {
   try {
-    const payload = {
+    const payload: any = {
       titulo: solicitud.titulo.trim(),
       descripcion: solicitud.descripcion.trim(),
       tipo_origen: solicitud.tipo_origen,
@@ -1530,14 +1534,30 @@ export async function crearSolicitudTareaDB(
       solicitante_contacto: solicitud.solicitante_contacto.trim(),
       enlace_recurso: solicitud.enlace_recurso?.trim() || null,
       prioridad: solicitud.prioridad || 'Normal',
-      estado: 'Pendiente' as EstadoSolicitudTarea
+      estado: 'Pendiente' as EstadoSolicitudTarea,
+      proyecto_id: isGuid(solicitud.proyecto_id) ? solicitud.proyecto_id : null,
+      proyecto_nombre: solicitud.proyecto_nombre?.trim() || null,
     };
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('solicitudes_tareas')
       .insert(payload)
       .select()
       .single();
+
+    // Reintento resiliente si las columnas proyecto_id/proyecto_nombre aún no existen en la BD
+    if (error && (error.message.includes('column') || error.message.includes('proyecto') || (error as any).code === 'PGRST204')) {
+      const { proyecto_id, proyecto_nombre, ...payloadSinProyecto } = payload;
+      const retry = await supabase
+        .from('solicitudes_tareas')
+        .insert(payloadSinProyecto)
+        .select()
+        .single();
+      if (!retry.error && retry.data) {
+        data = { ...retry.data, proyecto_id, proyecto_nombre };
+        error = null;
+      }
+    }
 
     if (error) {
       console.warn('Error al insertar en Supabase solicitudes_tareas:', error.message);
@@ -1559,6 +1579,8 @@ export async function crearSolicitudTareaDB(
         enlace_recurso: payload.enlace_recurso,
         prioridad: payload.prioridad,
         estado: 'Pendiente',
+        proyecto_id: payload.proyecto_id,
+        proyecto_nombre: payload.proyecto_nombre,
         created_at: new Date().toISOString()
       };
       return { success: true, data: fallbackData };
@@ -1585,6 +1607,8 @@ export async function crearSolicitudTareaDB(
         estado: data.estado,
         motivo_rechazo: data.motivo_rechazo,
         tarea_creada_id: data.tarea_creada_id,
+        proyecto_id: data.proyecto_id || payload.proyecto_id,
+        proyecto_nombre: data.proyecto_nombre || payload.proyecto_nombre,
         revisado_por: data.revisado_por,
         fecha_revision: data.fecha_revision,
         created_at: data.created_at
