@@ -27,7 +27,8 @@ import {
   updateTareaFechaCompletadaDB,
   fetchComentariosDB, 
   addComentarioDB,
-  addRegistroHorasDB
+  addRegistroHorasDB,
+  deleteTareaDB
 } from '@/lib/supabaseService';
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
@@ -295,6 +296,21 @@ export default function Home() {
         };
       });
     }
+  };
+
+  const handleEliminarTarea = async (tareaId: string): Promise<boolean> => {
+    if (!isAdmin()) {
+      alert('Solo los administradores tienen permiso para eliminar tareas.');
+      return false;
+    }
+    const ok = await deleteTareaDB(tareaId);
+    if (ok) {
+      setTareas(prev => prev.filter(t => t.id !== tareaId));
+      if (tareaSeleccionada?.id === tareaId) {
+        setTareaSeleccionada(null);
+      }
+    }
+    return ok;
   };
 
   const handleUpdateFechaCompletada = async (tareaId: string, nuevaFecha: string): Promise<boolean> => {
@@ -569,6 +585,7 @@ export default function Home() {
               }
             }}
             onUpdateFechaCompletada={handleUpdateFechaCompletada}
+            onDeleteTask={handleEliminarTarea}
           />
         )}
 
@@ -617,6 +634,7 @@ export default function Home() {
             onUpdateStatus={handleUpdateStatus}
             onAddComentario={handleAddComment}
             onAddHours={handleUpdateTaskHours}
+            onDeleteTask={handleEliminarTarea}
             onRefreshTareas={async () => {
               const dbTareas = await fetchTareasDB();
               setTareas(ordenarTareasPorVencimiento(dbTareas || []));

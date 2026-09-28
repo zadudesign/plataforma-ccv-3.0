@@ -36,6 +36,7 @@ import { calcularProgresoTareas, PESOS_ESTADO_TAREA } from '@/lib/progressUtils'
 import { TaskTimeTracker } from '@/components/tasks/TaskTimeTracker';
 import { validarRequisitosCargaPlantilla, obtenerTareasBloqueantes, ordenarTareasSegunCatalogo } from '@/lib/courseTemplateUtils';
 import { ConfirmCompleteTaskModal } from '@/components/tasks/ConfirmCompleteTaskModal';
+import { ConfirmDeleteTaskModal } from '@/components/tasks/ConfirmDeleteTaskModal';
 import { ScheduleCourseModal } from './ScheduleCourseModal';
 
 interface CourseProjectProgressModalProps {
@@ -49,6 +50,7 @@ interface CourseProjectProgressModalProps {
   onAddComentario?: (tareaId: string, texto: string) => void;
   onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => void;
   onRefreshTareas?: () => Promise<void>;
+  onDeleteTask?: (tareaId: string) => Promise<boolean>;
 }
 
 export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProps> = ({
@@ -62,10 +64,13 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onAddComentario,
   onAddHours,
   onRefreshTareas,
+  onDeleteTask,
 }) => {
-  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea } = useAuth();
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
+  const [tareaAEliminar, setTareaAEliminar] = useState<TareaCCV | null>(null);
+  const [isDeletingTarea, setIsDeletingTarea] = useState(false);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'pendientes' | 'completadas' | 'todas'>('pendientes');
   const [filtroUnidad, setFiltroUnidad] = useState<number | 'todas' | 'transversal'>('todas');
@@ -951,6 +956,21 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                                   <span>Ver Información</span>
                                   <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
+
+                                {/* Eliminación Exclusiva para Admin */}
+                                {isAdmin() && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setTareaAEliminar(t);
+                                    }}
+                                    className="p-1.5 rounded-full text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer shadow-2xs shrink-0"
+                                    title="Eliminar tarea permanentemente (Solo Administrador)"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -970,24 +990,38 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
               <div className="space-y-5 animate-fadeIn">
 
                 {/* Header Information */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800">
-                      {tareaSeleccionadaLocal.tipo_tarea}
-                    </span>
-                    {tareaSeleccionadaLocal.categoria_proyecto && (
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-300 text-charcoal-800">
-                        {tareaSeleccionadaLocal.categoria_proyecto}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800">
+                        {tareaSeleccionadaLocal.tipo_tarea}
                       </span>
-                    )}
+                      {tareaSeleccionadaLocal.categoria_proyecto && (
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-stone-300 text-charcoal-800">
+                          {tareaSeleccionadaLocal.categoria_proyecto}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-xl font-extrabold text-charcoal-900">
+                      {tareaSeleccionadaLocal.titulo}
+                    </h3>
+                    <p className="text-xs text-charcoal-500 mt-1">
+                      Área: <span className="font-semibold text-charcoal-800">{tareaSeleccionadaLocal.area_nombre || 'CMU'}</span> • 
+                      {tareaSeleccionadaLocal.curso_nombre ? ` Curso: ${tareaSeleccionadaLocal.curso_nombre}` : ` Proyecto: ${tareaSeleccionadaLocal.proyecto_nombre}`}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-extrabold text-charcoal-900">
-                    {tareaSeleccionadaLocal.titulo}
-                  </h3>
-                  <p className="text-xs text-charcoal-500 mt-1">
-                    Área: <span className="font-semibold text-charcoal-800">{tareaSeleccionadaLocal.area_nombre || 'CMU'}</span> • 
-                    {tareaSeleccionadaLocal.curso_nombre ? ` Curso: ${tareaSeleccionadaLocal.curso_nombre}` : ` Proyecto: ${tareaSeleccionadaLocal.proyecto_nombre}`}
-                  </p>
+
+                  {isAdmin() && (
+                    <button
+                      type="button"
+                      onClick={() => setTareaAEliminar(tareaSeleccionadaLocal)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer self-start shrink-0"
+                      title="Eliminar tarea (Solo Administrador)"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Eliminar Tarea</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Description */}
@@ -1244,6 +1278,42 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
             onConfirm={handleConfirmarCronograma}
           />
         )}
+
+        {/* Modal de Confirmación para Eliminar Tarea (Solo Admin) */}
+        <ConfirmDeleteTaskModal
+          isOpen={!!tareaAEliminar}
+          tarea={tareaAEliminar}
+          onClose={() => setTareaAEliminar(null)}
+          onConfirm={async () => {
+            if (!tareaAEliminar) return;
+            if (!isAdmin()) {
+              alert('Solo los administradores tienen permiso para eliminar tareas.');
+              return;
+            }
+            setIsDeletingTarea(true);
+            try {
+              const ok = onDeleteTask 
+                ? await onDeleteTask(tareaAEliminar.id) 
+                : await eliminarTarea(tareaAEliminar.id);
+              if (ok) {
+                if (tareaSeleccionadaLocal?.id === tareaAEliminar.id) {
+                  setPestanaModal('resumen');
+                  setTareaSeleccionadaLocal(null);
+                }
+                setTareaAEliminar(null);
+                if (onRefreshTareas) await onRefreshTareas();
+              } else {
+                alert('No fue posible eliminar la tarea de la base de datos.');
+              }
+            } catch (err: any) {
+              console.error('Error al eliminar tarea:', err);
+              alert(err?.message || 'Error al eliminar la tarea');
+            } finally {
+              setIsDeletingTarea(false);
+            }
+          }}
+          isDeleting={isDeletingTarea}
+        />
       </div>
     </div>
   );

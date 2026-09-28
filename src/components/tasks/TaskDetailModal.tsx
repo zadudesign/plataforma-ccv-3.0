@@ -22,12 +22,14 @@ import {
   CalendarCheck,
   ShieldCheck,
   Save,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { TaskTimeTracker } from './TaskTimeTracker';
 import { ConfirmCompleteTaskModal } from './ConfirmCompleteTaskModal';
+import { ConfirmDeleteTaskModal } from './ConfirmDeleteTaskModal';
 
 interface TaskDetailModalProps {
   tarea: TareaCCV | null;
@@ -39,6 +41,7 @@ interface TaskDetailModalProps {
   onAddHours?: (tareaId: string, horas: number, esResponsableSecundario?: boolean, notas?: string) => void;
   onOpenCursoOProyecto?: (entidadId: string, tipo: 'curso' | 'proyecto') => void;
   onUpdateFechaCompletada?: (tareaId: string, nuevaFecha: string) => Promise<any> | void;
+  onDeleteTask?: (tareaId: string) => Promise<boolean>;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -51,10 +54,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onAddHours,
   onOpenCursoOProyecto,
   onUpdateFechaCompletada,
+  onDeleteTask,
 }) => {
-  const { roles, usuarios, isAdmin } = useAuth();
+  const { roles, usuarios, isAdmin, eliminarTarea } = useAuth();
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [confirmarCompletadaOpen, setConfirmarCompletadaOpen] = useState(false);
+  const [confirmarEliminarOpen, setConfirmarEliminarOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [fechaCompletadaLocal, setFechaCompletadaLocal] = useState<string>('');
   const [isSavingFecha, setIsSavingFecha] = useState(false);
   const [savedSuccessFecha, setSavedSuccessFecha] = useState(false);
@@ -192,12 +198,27 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white border border-stone-200 flex items-center justify-center text-charcoal-600 hover:bg-cream-100 transition-colors shadow-sm"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin() && (
+              <button
+                type="button"
+                onClick={() => setConfirmarEliminarOpen(true)}
+                disabled={isDeleting}
+                className="px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                title="Eliminar tarea permanentemente (Solo Administrador)"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span className="hidden sm:inline">Eliminar Tarea</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full bg-white border border-stone-200 flex items-center justify-center text-charcoal-600 hover:bg-cream-100 transition-colors shadow-sm cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
@@ -549,6 +570,36 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           if (tarea) onUpdateStatus(tarea.id, 'Completada');
           setConfirmarCompletadaOpen(false);
         }}
+      />
+
+      {/* Modal de Confirmación para Eliminar Tarea (Solo Admin) */}
+      <ConfirmDeleteTaskModal
+        isOpen={confirmarEliminarOpen}
+        tarea={tarea}
+        onClose={() => setConfirmarEliminarOpen(false)}
+        onConfirm={async () => {
+          if (!tarea) return;
+          if (!isAdmin()) {
+            alert('Solo los administradores tienen permiso para eliminar tareas.');
+            return;
+          }
+          setIsDeleting(true);
+          try {
+            const ok = onDeleteTask ? await onDeleteTask(tarea.id) : await eliminarTarea(tarea.id);
+            if (ok) {
+              setConfirmarEliminarOpen(false);
+              onClose();
+            } else {
+              alert('No fue posible eliminar la tarea de la base de datos.');
+            }
+          } catch (err: any) {
+            console.error('Error al eliminar tarea:', err);
+            alert(err?.message || 'Error al eliminar tarea');
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+        isDeleting={isDeleting}
       />
     </div>
   );
