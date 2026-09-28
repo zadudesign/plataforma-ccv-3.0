@@ -40,7 +40,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onUpdateStatus,
   onOpenCreateTask,
 }) => {
-  const { roles, areas, proyectos } = useAuth();
+  const { roles, areas, proyectos, usuarioActual } = useAuth();
 
   // Diccionario de mapeo rápido id -> nombre para resolver roles si vienen como UUID
   const rolesIdMap = useMemo(() => {
@@ -66,11 +66,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Roles operativos oficiales institucionales
   const ROLES_OFICIALES = useMemo(() => ['Diseño', 'Multimedia', 'Soporte', 'Producción', 'Pedagogía'], []);
 
+  // Rol operativo del usuario en sesión (si aplica)
+  const miRolOperativo = useMemo(() => {
+    if (!usuarioActual) return null;
+    const rNombre = usuarioActual.rol_nombre || resolveRolNombre(usuarioActual.rol_id) || '';
+    return ROLES_OFICIALES.find(oficial => isRoleMatch(rNombre, oficial)) || null;
+  }, [usuarioActual, ROLES_OFICIALES, rolesIdMap]);
+
   // Filtros interactivos del Kanban: Área, Rol, Tipo y Búsqueda
   const [filtroArea, setFiltroArea] = useState<string>('todas');
-  const [filtroRol, setFiltroRol] = useState<string>('todos');
+  const [filtroRol, setFiltroRol] = useState<string>(() => miRolOperativo || 'todos');
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'Curso Virtual' | 'Proyecto'>('todos');
   const [busquedaLocal, setBusquedaLocal] = useState<string>('');
+
+  // Sincronizar el filtro de rol con el rol operativo cuando cambia el usuario en sesión
+  React.useEffect(() => {
+    if (miRolOperativo) {
+      setFiltroRol(miRolOperativo);
+    } else {
+      setFiltroRol('todos');
+    }
+  }, [usuarioActual?.id]);
 
   const columnas: { 
     estado: EstadoTarea; 

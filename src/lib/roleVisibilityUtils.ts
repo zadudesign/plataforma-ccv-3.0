@@ -162,7 +162,7 @@ export function getSupervisedAreasForUser(
   const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
 
   // Administrador supervisa absolutamente todas las áreas
-  if (nivelArea === 6 || isRoleMatch(rolNombre, 'Administrador')) {
+  if (isRoleMatch(rolNombre, 'Administrador')) {
     areas.forEach(a => {
       if (a.id) areaIds.add(a.id);
       if (a.nombre) areaNombres.add(a.nombre.toLowerCase());
@@ -170,11 +170,23 @@ export function getSupervisedAreasForUser(
     return { areaIds, areaNombres, isJefe: true };
   }
 
+  // Si el usuario tiene rol operativo (Diseño, Multimedia, Soporte, Producción, Pedagogía), NUNCA supervisa como Jefe de Área
+  const isOperativo =
+    isRoleMatch(rolNombre, 'Diseño') ||
+    isRoleMatch(rolNombre, 'Multimedia') ||
+    isRoleMatch(rolNombre, 'Soporte') ||
+    isRoleMatch(rolNombre, 'Producción') ||
+    isRoleMatch(rolNombre, 'Pedagogía');
+
+  if (isOperativo) {
+    return { areaIds, areaNombres, isJefe: false };
+  }
+
   // 1. Identificar áreas donde está asignado explícitamente como jefe_id
   const areasJefeDirecto = areas.filter(a => a.jefe_id && a.jefe_id === usuarioActual.id);
 
-  // 2. Si no tiene asignación directa como jefe_id, pero tiene rol de Jefe o jerarquía 4/5
-  const esRolJefe = isRoleMatch(rolNombre, 'Jefe') || nivelArea === 4 || nivelArea === 5;
+  // 2. Si no tiene asignación directa como jefe_id, verificar si su rol es explícitamente de Jefe o Director
+  const esRolJefe = isRoleMatch(rolNombre, 'Jefe') || isRoleMatch(rolNombre, 'Director') || rolNombre.toLowerCase().includes('jefatura');
   const areasBase: Area[] = [...areasJefeDirecto];
 
   if (areasBase.length === 0 && esRolJefe) {
@@ -244,7 +256,7 @@ export function getUserAreaScope(
   const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
 
   // Administrador no tiene restricción
-  if (nivelArea === 6 || isRoleMatch(rolNombre, 'Administrador')) {
+  if (isRoleMatch(rolNombre, 'Administrador')) {
     areas.forEach(a => {
       if (a.id) areaIds.add(a.id);
       if (a.nombre) areaNombres.add(a.nombre.toLowerCase());
@@ -329,7 +341,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
 
   const rolObj = roles.find(r => r.id === usuarioActual.rol_id);
   const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
-  const isSupervisorGlobal = nivelArea === 6 || isRoleMatch(rolNombre, 'Administrador');
+  const isSupervisorGlobal = isRoleMatch(rolNombre, 'Administrador');
 
   if (isSupervisorGlobal) {
     return {
@@ -431,7 +443,33 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       return true;
     }
 
-    // B. Jefe de Área / Sub-área:
+    // B. Roles Operativos (Diseño, Multimedia, Soporte, Producción, Pedagogía):
+    // Un rol operativo SOLO puede ver tareas dirigidas a su especialidad dentro de su área/sub-área.
+    // NUNCA ve tareas de otras especialidades o áreas ajenas a menos que esté asignado directamente como responsable (Sección A).
+    if (isOperativoCMU) {
+      const matchPrincipal = t.rol_destino && isRoleMatch(t.rol_destino, rolNombre);
+      const matchSecundario = t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre);
+
+      if (matchPrincipal || matchSecundario) {
+        let perteneceArea = true;
+        if (tieneRestriccionAreaOperativa) {
+          if (t.area_id) {
+            perteneceArea = isAreaEnAmbitoOperativo(t.area_id);
+          } else if (t.proyecto_id) {
+            const proy = proyectos.find(p => p.id === t.proyecto_id);
+            if (proy?.area_id) {
+              perteneceArea = isAreaEnAmbitoOperativo(proy.area_id);
+            }
+          }
+        }
+        return perteneceArea;
+      }
+
+      // Denegar completamente visibilidad de tareas de otras especialidades para roles operativos
+      return false;
+    }
+
+    // C. Jefe de Área / Sub-área (no aplica para operativos):
     // - Ve tareas asignadas a la jefatura en sus áreas/sub-áreas supervisadas
     // - Ve TODAS las tareas correspondientes a proyectos adscritos a sus áreas/sub-áreas supervisadas
     if (esJefeDeArea) {
@@ -446,7 +484,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       }
     }
 
-    // C. Decano: Tareas con rol destino Decano dentro de su facultad
+    // D. Decano: Tareas con rol destino Decano dentro de su facultad
     if (facultadesDondeEsDecano.length > 0 || isRoleMatch(rolNombre, 'Decano')) {
       if (isRoleMatch(t.rol_destino, 'Decano') || isRoleMatch(t.rol_destino_secundario, 'Decano')) {
         if (!t.curso_id && !t.proyecto_id) return true;
@@ -465,7 +503,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       }
     }
 
-    // D. Coordinador: Tareas con rol destino Coordinador dentro de sus programas coordinados
+    // E. Coordinador: Tareas con rol destino Coordinador dentro de sus programas coordinados
     if (programasDondeEsCoordinador.length > 0 || isRoleMatch(rolNombre, 'Coordinador')) {
       if (isRoleMatch(t.rol_destino, 'Coordinador') || isRoleMatch(t.rol_destino_secundario, 'Coordinador')) {
         if (!t.curso_id) return true;
@@ -476,7 +514,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       }
     }
 
-    // E. Docente / Par Evaluador en cursos específicos
+    // F. Docente / Par Evaluador en cursos específicos
     if (t.curso_id && idsCursosAsignadosDirectamente.has(t.curso_id)) {
       const cursoDeTarea = cursos.find(c => c.id === t.curso_id);
       if (cursoDeTarea) {
@@ -503,39 +541,10 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
       }
     }
 
-    // F. Líder o Co-Líder de Proyecto ve tareas dirigidas al liderazgo del proyecto o asignadas a él
+    // G. Líder o Co-Líder de Proyecto ve tareas dirigidas al liderazgo del proyecto o asignadas a él
     if (t.proyecto_id && idsProyectosAsignadosDirectamente.has(t.proyecto_id)) {
       if (isRoleMatch(t.rol_destino, 'Líder') || isRoleMatch(t.rol_destino, 'Lider') || !t.responsable_id) {
         return true;
-      }
-    }
-
-    // G. Roles Operativos (Diseño, Multimedia, Soporte, Producción, Pedagogía):
-    // Se filtran estrictamente por ROL y por ÁREA/SUB-ÁREA jerárquica
-    if (isOperativoCMU) {
-      const matchPrincipal = t.rol_destino && isRoleMatch(t.rol_destino, rolNombre);
-      const matchSecundario = t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre);
-      if (matchPrincipal || matchSecundario) {
-        // Validar que la tarea o su proyecto pertenezca al área o sub-área correspondiente
-        let perteneceArea = true;
-        if (tieneRestriccionAreaOperativa) {
-          if (t.area_id) {
-            perteneceArea = isAreaEnAmbitoOperativo(t.area_id);
-          } else if (t.proyecto_id) {
-            const proy = proyectos.find(p => p.id === t.proyecto_id);
-            if (proy?.area_id) {
-              perteneceArea = isAreaEnAmbitoOperativo(proy.area_id);
-            }
-          }
-        }
-
-        if (perteneceArea) {
-          if (!t.responsable_id || t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id) {
-            return true;
-          }
-          // Visualización colaborativa dentro de la misma área/sub-área para el rol
-          return true;
-        }
       }
     }
 
@@ -670,8 +679,8 @@ export function canUserEditTask(
   const rolObj = roles.find(r => r.id === usuarioActual.rol_id);
   const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
 
-  // 1. Administrador (Nivel 6) tiene control total para editar cualquier tarea
-  if (nivelArea === 6 || isRoleMatch(rolNombre, 'Administrador')) {
+  // 1. Administrador tiene control total para editar cualquier tarea
+  if (isRoleMatch(rolNombre, 'Administrador')) {
     return true;
   }
 
