@@ -114,6 +114,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setErrorMsg(null);
 
     const cursoObj = cursos.find(c => c.id === activeCursoId);
+    const proyObj = proyectos.find(p => p.id === activeProyectoId);
     const proyAreaObj = proyObj?.area_id ? areas.find(a => a.id === proyObj.area_id || a.nombre.toLowerCase() === proyObj.area_id?.toLowerCase()) : undefined;
     const taskAreaId = tipoTarea === 'Proyecto' && proyAreaObj ? proyAreaObj.id : (respArea?.id || tarea.area_id || undefined);
     const taskAreaNombre = tipoTarea === 'Proyecto' && proyAreaObj ? proyAreaObj.nombre : (respArea?.nombre || resp?.area_nombre || tarea.area_nombre || undefined);

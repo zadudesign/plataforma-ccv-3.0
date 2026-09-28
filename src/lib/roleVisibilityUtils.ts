@@ -574,13 +574,14 @@ export function canUserEditTask(
     }
 
     // B. Jefe de Área o Sub-área adscrita al proyecto
-    if (proy.area_id) {
+    const proyAreaId = proy.area_id;
+    if (proyAreaId) {
       const { areaIds, areaNombres, isJefe } = getSupervisedAreasForUser(usuarioActual, areas, roles, nivelArea);
       if (isJefe) {
-        if (areaIds.has(proy.area_id) || areaNombres.has(proy.area_id.toLowerCase())) {
+        if (areaIds.has(proyAreaId) || areaNombres.has(proyAreaId.toLowerCase())) {
           return true;
         }
-        const a = areas.find(x => x.id === proy.area_id || x.nombre.toLowerCase() === proy.area_id.toLowerCase());
+        const a = areas.find(x => x.id === proyAreaId || x.nombre.toLowerCase() === proyAreaId.toLowerCase());
         if (a && (areaIds.has(a.id) || areaNombres.has(a.nombre.toLowerCase()))) {
           return true;
         }
