@@ -79,18 +79,39 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   const [filtroRangoEntregas, setFiltroRangoEntregas] = useState<'este_mes' | 'trimestre' | 'historico'>('este_mes');
   const [filtroPuntualidad, setFiltroPuntualidad] = useState<'todas' | 'a_tiempo' | 'con_retraso' | 'pendientes_atrasadas'>('todas');
 
+  // Helper para obtener el mes actual en formato YYYY-MM
+  const getMesActualISO = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  };
+
+  // Helper para obtener la fecha de hoy en formato YYYY-MM-DD
+  const getHoyFechaISO = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Clasificación del Gráfico de Horas: 'dias' (días del mes), 'semanas', 'meses'
   const [tipoAgrupacionHoras, setTipoAgrupacionHoras] = useState<'dias' | 'semanas' | 'meses'>('dias');
-  const [mesSeleccionadoHoras, setMesSeleccionadoHoras] = useState<string>('2026-08');
+  
+  // Mes actual vigente por defecto
+  const [mesSeleccionadoHoras, setMesSeleccionadoHoras] = useState<string>(() => getMesActualISO());
 
-  const hoyFechaStr = '2026-08-07'; // Fecha del sistema
+  // Fecha actual del sistema (en tiempo real)
+  const hoyFechaStr = useMemo(() => getHoyFechaISO(), []);
 
-  // Meses disponibles con tareas registradas
+  // Meses disponibles con tareas registradas + siempre incluye el mes actual vigente
   const mesesDisponibles = useMemo(() => {
-    const setMeses = new Set<string>(['2026-08', '2026-07', '2026-09']);
+    const mesActual = getMesActualISO();
+    const setMeses = new Set<string>([mesActual]);
     tareas.forEach(t => {
       const f = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : null);
-      if (f && f.length >= 7) {
+      if (f && f.length >= 7 && /^\d{4}-\d{2}/.test(f)) {
         setMeses.add(f.substring(0, 7));
       }
     });
@@ -213,7 +234,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   const datosGraficoHoras = useMemo(() => {
     if (tipoAgrupacionHoras === 'dias') {
       // 1. DÍAS DEL MES SELECCIONADO (Todos los días del mes: 1 al 28/30/31)
-      const [y, m] = (mesSeleccionadoHoras || '2026-08').split('-').map(Number);
+      const [y, m] = (mesSeleccionadoHoras || getMesActualISO()).split('-').map(Number);
       const numDias = new Date(y, m, 0).getDate(); // Total de días del mes
 
       const diasMap: Record<string, { clave: string; etiquetaCorta: string; etiquetaCompleta: string; totalHoras: number; conteoTareas: number; esFinDeSemana: boolean }> = {};
@@ -237,7 +258,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       }
 
       tareasFiltradas.forEach(t => {
-        const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : '2026-08-07');
+        const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : hoyFechaStr);
         if (fechaClave && diasMap[fechaClave]) {
           const horas = getHorasDeTarea(t);
           diasMap[fechaClave].totalHoras += horas;
@@ -260,7 +281,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
 
     if (tipoAgrupacionHoras === 'semanas') {
       // 2. SEMANAS DEL MES SELECCIONADO
-      const [y, m] = (mesSeleccionadoHoras || '2026-08').split('-').map(Number);
+      const [y, m] = (mesSeleccionadoHoras || getMesActualISO()).split('-').map(Number);
       const numDias = new Date(y, m, 0).getDate();
       const nombreMesCorto = new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month: 'short' });
 
@@ -273,7 +294,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       ];
 
       tareasFiltradas.forEach(t => {
-        const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : '2026-08-07');
+        const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : hoyFechaStr);
         if (fechaClave && fechaClave.startsWith(mesSeleccionadoHoras)) {
           const dia = parseInt(fechaClave.split('-')[2], 10);
           const horas = getHorasDeTarea(t);
@@ -324,7 +345,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
     });
 
     tareasFiltradas.forEach(t => {
-      const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : '2026-08-07');
+      const fechaClave = t.fecha_completada || t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : hoyFechaStr);
       if (fechaClave && fechaClave.length >= 7) {
         const mesKey = fechaClave.substring(0, 7);
         if (mesesMap[mesKey]) {
@@ -392,9 +413,15 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   // =========================================================================
 
   const tareasDumbbell = useMemo(() => {
+    const mesActual = hoyFechaStr.substring(0, 7);
+    const dTrimestre = new Date();
+    dTrimestre.setDate(dTrimestre.getDate() - 90);
+    const fechaLimiteTrimestre = dTrimestre.toISOString().split('T')[0];
+
     return tareasFiltradas.map(t => {
-      const fechaVenc = t.fecha_vencimiento || '2026-08-01';
+      const fechaVenc = t.fecha_vencimiento || (t.created_at ? t.created_at.split('T')[0] : hoyFechaStr);
       const esCompletada = t.estado === 'Completada' && !!t.fecha_completada;
+      // Para tareas no completadas, la fecha real de evaluación es la fecha actual (hoy)
       const fechaReal = esCompletada ? t.fecha_completada! : hoyFechaStr;
 
       // Calcular diferencia en días (fechaReal - fechaVenc)
@@ -429,12 +456,12 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
         tipoPuntualidad
       };
     }).filter(item => {
-      // Filtrar por Rango de Tiempo si aplica
+      // Filtrar por Rango de Tiempo considerando la fecha actual
       if (filtroRangoEntregas === 'este_mes') {
-        return item.fechaVenc.startsWith('2026-08') || item.fechaReal.startsWith('2026-08');
+        return item.fechaVenc.startsWith(mesActual) || item.fechaReal.startsWith(mesActual);
       }
       if (filtroRangoEntregas === 'trimestre') {
-        return item.fechaVenc >= '2026-06-01' || item.fechaReal >= '2026-06-01';
+        return item.fechaVenc >= fechaLimiteTrimestre || item.fechaReal >= fechaLimiteTrimestre;
       }
       // 'historico' incluye todas
       return true;
@@ -445,7 +472,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       if (filtroPuntualidad === 'pendientes_atrasadas') return item.tipoPuntualidad === 'pendiente_atrasada';
       return true;
     });
-  }, [tareasFiltradas, filtroRangoEntregas, filtroPuntualidad]);
+  }, [tareasFiltradas, filtroRangoEntregas, filtroPuntualidad, hoyFechaStr]);
 
   // Métricas del Dumbbell Plot
   const metricasEntregas = useMemo(() => {
@@ -495,10 +522,26 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
 
   // Rango global de fechas para la escala del Dumbbell Plot
   const escalaFechas = useMemo(() => {
-    if (tareasDumbbell.length === 0) return { fechaMin: '2026-07-15', fechaMax: '2026-08-20', minTimestamp: 0, maxTimestamp: 1, rangoTotal: 1 };
+    if (tareasDumbbell.length === 0) {
+      const now = new Date();
+      const min = new Date(now.getTime() - 15 * 86400000);
+      const max = new Date(now.getTime() + 15 * 86400000);
+      return {
+        fechaMin: min.toISOString().split('T')[0],
+        fechaMax: max.toISOString().split('T')[0],
+        minTimestamp: min.getTime(),
+        maxTimestamp: max.getTime(),
+        rangoTotal: max.getTime() - min.getTime() || 1
+      };
+    }
     
     let minTime = Infinity;
     let maxTime = -Infinity;
+
+    // Incluir la fecha actual en la escala para dar contexto temporal
+    const hoyTimestamp = new Date(hoyFechaStr + 'T00:00:00').getTime();
+    minTime = Math.min(minTime, hoyTimestamp);
+    maxTime = Math.max(maxTime, hoyTimestamp);
 
     tareasDumbbell.forEach(t => {
       const t1 = new Date(t.fechaVenc + 'T00:00:00').getTime();
@@ -520,7 +563,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       maxTimestamp: maxTime,
       rangoTotal: Math.max(maxTime - minTime, 1)
     };
-  }, [tareasDumbbell]);
+  }, [tareasDumbbell, hoyFechaStr]);
 
   return (
     <div className="space-y-6 animate-fadeIn font-sans pb-10">
@@ -1056,7 +1099,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                     onChange={e => setFiltroRangoEntregas(e.target.value as any)}
                     className="w-full px-3 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
                   >
-                    <option value="este_mes">Este Mes (Agosto 2026) — Por defecto</option>
+                    <option value="este_mes">Este Mes ({getNombreMes(hoyFechaStr.substring(0, 7))}) — Por defecto</option>
                     <option value="trimestre">Último Trimestre</option>
                     <option value="historico">Todas las Tareas (Histórico Completo para análisis de demoras)</option>
                   </select>
@@ -1150,10 +1193,15 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
           <div className="ccv-card p-6 bg-white space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200">
               <div>
-                <h3 className="text-lg font-black text-charcoal-900 flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-sage-600" />
-                  Dumbbell Plot (Comparativa Fecha Vencimiento vs Fecha Real/Completada)
-                </h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-lg font-black text-charcoal-900 flex items-center gap-2">
+                    <Sliders className="w-5 h-5 text-sage-600" />
+                    Dumbbell Plot (Comparativa Fecha Vencimiento vs Fecha Real/Completada)
+                  </h3>
+                  <span className="bg-sage-100 text-sage-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-sage-200">
+                    Fecha actual: {hoyFechaStr}
+                  </span>
+                </div>
                 <p className="text-xs text-charcoal-500 mt-0.5">
                   Cada mancuerna compara el punto de **Vencimiento Planificado (Punto Azul)** con la **Entrega Real (Punto Verde/Rojo)** para evaluar la puntualidad.
                 </p>
@@ -1282,7 +1330,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                               style={{ left: `${posRealPct}%` }}
                             >
                               <div className="opacity-0 group-hover/dot:opacity-100 transition-opacity absolute -top-8 bg-charcoal-900 text-white text-[10px] font-bold py-1 px-2 rounded shadow-md pointer-events-none whitespace-nowrap">
-                                {tarea.esCompletada ? `Completada: ${tarea.fechaReal}` : `Estado Hoy: ${tarea.fechaReal}`}
+                                {tarea.esCompletada ? `Completada: ${tarea.fechaReal}` : `Estado a Hoy (${hoyFechaStr}): ${tarea.fechaReal}`}
                               </div>
                             </div>
                           </div>
@@ -1290,7 +1338,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                           {/* Leyendas de fechas debajo de la mancuerna */}
                           <div className="flex justify-between text-[10px] font-semibold text-charcoal-500 pt-2">
                             <span>Vencimiento: <strong className="text-blue-900 font-mono">{tarea.fechaVenc}</strong></span>
-                            <span>{tarea.esCompletada ? 'Entrega Real:' : 'Estado a la Fecha:'} <strong className="text-charcoal-900 font-mono">{tarea.fechaReal}</strong></span>
+                            <span>{tarea.esCompletada ? 'Entrega Real:' : `Estado a Hoy (${hoyFechaStr}):`} <strong className="text-charcoal-900 font-mono">{tarea.fechaReal}</strong></span>
                           </div>
                         </div>
                       </div>
