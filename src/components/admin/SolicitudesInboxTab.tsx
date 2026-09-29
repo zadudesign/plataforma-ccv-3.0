@@ -45,6 +45,7 @@ import {
   CategoriaTareaProyecto 
 } from '@/types';
 import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
+import { SearchableUserSelect } from '@/components/common/SearchableUserSelect';
 import { useAuth } from '@/context/AuthContext';
 
 interface SolicitudesInboxTabProps {
@@ -827,53 +828,31 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Responsable Principal */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block font-bold text-charcoal-800 text-[11px] flex items-center gap-1">
-                        <User className="w-3.5 h-3.5 text-sage-700" /> Responsable Principal *
-                      </label>
-                      {respArea && (
-                        <span className="text-[9px] font-extrabold text-sage-800 bg-sage-50 border border-sage-200 px-1.5 py-0.2 rounded-full">
-                          {respArea.nombre}
-                        </span>
-                      )}
-                    </div>
-                    <select
+                    <SearchableUserSelect
+                      usuarios={usuarios}
                       value={activeResponsableId}
-                      onChange={(e) => setResponsableId(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium bg-white"
-                    >
-                      {usuarios.map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre_completo} — {u.rol_nombre || 'Usuario'} ({u.area_nombre || 'CMU'})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(id) => setResponsableId(id)}
+                      label="Responsable Principal *"
+                      icon={<User className="w-3.5 h-3.5 text-sage-700" />}
+                      areaBadge={respArea?.nombre}
+                      accentColor="sage"
+                    />
                   </div>
 
                   {/* Segundo Responsable */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block font-bold text-charcoal-800 text-[11px] flex items-center gap-1">
-                        <UserCheck className="w-3.5 h-3.5 text-blue-600" /> Segundo Responsable (Opcional)
-                      </label>
-                      {resp2Area && (
-                        <span className="text-[9px] font-extrabold text-blue-800 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded-full">
-                          {resp2Area.nombre}
-                        </span>
-                      )}
-                    </div>
-                    <select
+                    <SearchableUserSelect
+                      usuarios={usuarios}
                       value={responsableSecundarioId}
-                      onChange={(e) => setResponsableSecundarioId(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium bg-white"
-                    >
-                      <option value="">-- Sin Segundo Responsable (Solo 1 Asignado) --</option>
-                      {usuarios.filter(u => u.id !== activeResponsableId).map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre_completo} — {u.rol_nombre || 'Usuario'} ({u.area_nombre || 'CMU'})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(id) => setResponsableSecundarioId(id)}
+                      label="Segundo Responsable (Opcional)"
+                      icon={<UserCheck className="w-3.5 h-3.5 text-blue-600" />}
+                      areaBadge={resp2Area?.nombre}
+                      optional={true}
+                      optionalLabel="-- Sin Segundo Responsable (Solo 1 Asignado) --"
+                      excludeUserId={activeResponsableId}
+                      accentColor="blue"
+                    />
                   </div>
                 </div>
               </div>
