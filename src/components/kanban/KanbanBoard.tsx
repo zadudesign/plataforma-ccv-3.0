@@ -373,13 +373,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
             Mostrando: <strong className="text-slate-900">{tareasFiltradas.length}</strong> de {tareas.length} tareas
           </span>
-          <button
-            onClick={onOpenCreateTask}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nueva Tarea</span>
-          </button>
         </div>
       </div>
 
