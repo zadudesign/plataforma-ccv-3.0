@@ -44,6 +44,7 @@ import {
   TipoTarea, 
   CategoriaTareaProyecto 
 } from '@/types';
+import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
 import { useAuth } from '@/context/AuthContext';
 
 interface SolicitudesInboxTabProps {
@@ -720,7 +721,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto Especial
+                  <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto
                 </button>
               </div>
 
@@ -786,16 +787,13 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-charcoal-800 mb-1">Proyecto Especial Asociado</label>
-                    <select
+                    <SearchableProjectSelect
+                      proyectos={proyectos}
                       value={activeProyectoId}
-                      onChange={(e) => setProyectoId(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium"
-                    >
-                      {proyectos.map(p => (
-                        <option key={p.id} value={p.id}>{p.nombre}</option>
-                      ))}
-                    </select>
+                      onChange={(id) => setProyectoId(id)}
+                      label="Proyecto Asociado"
+                      accentColor="sage"
+                    />
                   </div>
 
                   <div>

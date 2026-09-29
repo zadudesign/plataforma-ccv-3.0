@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Plus, Calendar, DollarSign, Clock, Timer, Layers, BookOpen, FolderKanban, Link as LinkIcon, ExternalLink, Users, User, UserCheck } from 'lucide-react';
 import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea, CategoriaTareaProyecto } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
 
 interface CreateTaskModalProps {
   areas: Area[];
@@ -28,8 +29,21 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [enlaceRecurso, setEnlaceRecurso] = useState('');
   const [tipoTarea, setTipoTarea] = useState<TipoTarea>('Curso Virtual');
   const [categoriaProyecto, setCategoriaProyecto] = useState<CategoriaTareaProyecto>('Diseño');
+
+  const sortedProyectos = useMemo(() => {
+    return [...proyectos].sort((a, b) =>
+      (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
+    );
+  }, [proyectos]);
+
   const [cursoId, setCursoId] = useState(cursos[0]?.id || '');
-  const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || '');
+  const [proyectoId, setProyectoId] = useState(() => {
+    if (!proyectos || proyectos.length === 0) return '';
+    const sorted = [...proyectos].sort((a, b) =>
+      (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
+    );
+    return sorted[0]?.id || '';
+  });
   const [responsableId, setResponsableId] = useState(usuarios[0]?.id || '');
   const [responsableSecundarioId, setResponsableSecundarioId] = useState('');
   const [tiempoEstimado, setTiempoEstimado] = useState<number | string>('');
@@ -41,7 +55,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [horaVencimiento, setHoraVencimiento] = useState('18:00');
 
   const activeCursoId = cursoId || cursos[0]?.id;
-  const activeProyectoId = proyectoId || proyectos[0]?.id;
+  const activeProyectoId = proyectoId || sortedProyectos[0]?.id || proyectos[0]?.id || '';
   const activeResponsableId = responsableId || usuarios[0]?.id;
 
   const resp = usuarios.find(u => u.id === activeResponsableId);
@@ -142,7 +156,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto Especial
+              <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto
             </button>
           </div>
 
@@ -208,16 +222,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-charcoal-800 mb-1">Proyecto Especial Asociado</label>
-                <select
-                  value={proyectoId}
-                  onChange={(e) => setProyectoId(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-medium"
-                >
-                  {proyectos.map(p => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </select>
+                <SearchableProjectSelect
+                  proyectos={proyectos}
+                  value={activeProyectoId}
+                  onChange={(id) => setProyectoId(id)}
+                  label="Proyecto Asociado"
+                  accentColor="sage"
+                />
               </div>
 
               <div>

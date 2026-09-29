@@ -23,6 +23,7 @@ import {
 import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea, CategoriaTareaProyecto, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { canUserEditTask } from '@/lib/roleVisibilityUtils';
+import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -229,7 +230,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   : 'bg-stone-50 text-charcoal-700 border-stone-200 hover:bg-stone-100'
               }`}
             >
-              <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto Especial
+              <FolderKanban className="w-4 h-4 text-amber-400" /> Tarea de Proyecto
             </button>
           </div>
 
@@ -311,16 +312,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-charcoal-900 mb-1">Proyecto Especial Asociado</label>
-                <select
+                <SearchableProjectSelect
+                  proyectos={proyectos}
                   value={proyectoId}
-                  onChange={(e) => setProyectoId(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-amber-500 focus:outline-none text-charcoal-900 text-xs font-medium bg-white"
-                >
-                  {proyectos.map(p => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </select>
+                  onChange={(id) => setProyectoId(id)}
+                  label="Proyecto Asociado"
+                  accentColor="amber"
+                />
               </div>
 
               <div>
