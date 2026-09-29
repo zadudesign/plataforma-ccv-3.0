@@ -78,6 +78,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
   // Filtros específicos para el Dumbbell Plot de Entregas
   const [filtroRangoEntregas, setFiltroRangoEntregas] = useState<'este_mes' | 'trimestre' | 'historico'>('este_mes');
   const [filtroPuntualidad, setFiltroPuntualidad] = useState<'todas' | 'a_tiempo' | 'con_retraso' | 'pendientes_atrasadas'>('todas');
+  const [ordenDumbbell, setOrdenDumbbell] = useState<'retraso_desc' | 'anticipacion_desc' | 'vencimiento_asc' | 'vencimiento_desc'>('retraso_desc');
 
   // Helper para obtener el mes actual en formato YYYY-MM
   const getMesActualISO = () => {
@@ -471,8 +472,14 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       if (filtroPuntualidad === 'con_retraso') return item.tipoPuntualidad === 'con_retraso';
       if (filtroPuntualidad === 'pendientes_atrasadas') return item.tipoPuntualidad === 'pendiente_atrasada';
       return true;
+    }).sort((a, b) => {
+      if (ordenDumbbell === 'retraso_desc') return b.diffDias - a.diffDias;
+      if (ordenDumbbell === 'anticipacion_desc') return a.diffDias - b.diffDias;
+      if (ordenDumbbell === 'vencimiento_asc') return a.fechaVenc.localeCompare(b.fechaVenc);
+      if (ordenDumbbell === 'vencimiento_desc') return b.fechaVenc.localeCompare(a.fechaVenc);
+      return 0;
     });
-  }, [tareasFiltradas, filtroRangoEntregas, filtroPuntualidad, hoyFechaStr]);
+  }, [tareasFiltradas, filtroRangoEntregas, filtroPuntualidad, hoyFechaStr, ordenDumbbell]);
 
   // Métricas del Dumbbell Plot
   const metricasEntregas = useMemo(() => {
@@ -564,6 +571,39 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
       rangoTotal: Math.max(maxTime - minTime, 1)
     };
   }, [tareasDumbbell, hoyFechaStr]);
+
+  // Marcas del Eje X (Timeline compartido del Dumbbell Plot)
+  const ticksEjeX = useMemo(() => {
+    const { minTimestamp, maxTimestamp } = escalaFechas;
+    if (!minTimestamp || !maxTimestamp || minTimestamp >= maxTimestamp) return [];
+    
+    const count = 7;
+    const step = (maxTimestamp - minTimestamp) / (count - 1);
+    const ticks = [];
+    
+    for (let i = 0; i < count; i++) {
+      const time = minTimestamp + i * step;
+      const d = new Date(time);
+      const dia = d.getDate();
+      const mes = d.toLocaleDateString('es-CO', { month: 'short' });
+      const label = `${dia} ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
+      const pct = (i / (count - 1)) * 100;
+      ticks.push({
+        time,
+        label,
+        pct: Math.min(Math.max(pct, 0), 100),
+        iso: d.toISOString().split('T')[0]
+      });
+    }
+    return ticks;
+  }, [escalaFechas]);
+
+  // Posición porcentual de la fecha de hoy en el eje X
+  const hoyPct = useMemo(() => {
+    const hoyTime = new Date(hoyFechaStr + 'T00:00:00').getTime();
+    const pct = ((hoyTime - escalaFechas.minTimestamp) / escalaFechas.rangoTotal) * 100;
+    return Math.min(Math.max(pct, 0), 100);
+  }, [hoyFechaStr, escalaFechas]);
 
   return (
     <div className="space-y-6 animate-fadeIn font-sans pb-10">
@@ -1090,7 +1130,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                 <span>Filtros de Control de Entregas:</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {/* Filtro Rango de Tiempo (Por defecto Este Mes, con opción Histórica para ver todas) */}
                 <div>
                   <label className="block text-[10px] font-bold text-charcoal-500 uppercase mb-0.5">Periodo Temporal</label>
@@ -1132,6 +1172,21 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                     {rolesDestinoDisponibles.map(r => (
                       <option key={r} value={r}>Rol: {r}</option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Ordenar Dumbbell */}
+                <div>
+                  <label className="block text-[10px] font-bold text-charcoal-500 uppercase mb-0.5">Ordenar Gráfica</label>
+                  <select
+                    value={ordenDumbbell}
+                    onChange={e => setOrdenDumbbell(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                  >
+                    <option value="retraso_desc">🔴 Mayor Retraso Primero</option>
+                    <option value="anticipacion_desc">🟢 Mayor Anticipación Primero</option>
+                    <option value="vencimiento_asc">📅 Vencimiento Próximo</option>
+                    <option value="vencimiento_desc">📅 Vencimiento Lejano</option>
                   </select>
                 </div>
               </div>
@@ -1191,39 +1246,41 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
 
           {/* Gráfico de Mancuernas (Dumbbell Plot) Principal */}
           <div className="ccv-card p-6 bg-white space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-stone-200">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-lg font-black text-charcoal-900 flex items-center gap-2">
                     <Sliders className="w-5 h-5 text-sage-600" />
-                    Dumbbell Plot (Comparativa Fecha Vencimiento vs Fecha Real/Completada)
+                    Dumbbell Plot — Control de Entregas & Puntualidad
                   </h3>
                   <span className="bg-sage-100 text-sage-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-sage-200">
                     Fecha actual: {hoyFechaStr}
                   </span>
                 </div>
-                <p className="text-xs text-charcoal-500 mt-0.5">
-                  Cada mancuerna compara el punto de **Vencimiento Planificado (Punto Azul)** con la **Entrega Real (Punto Verde/Rojo)** para evaluar la puntualidad.
+                <p className="text-xs text-charcoal-500 mt-1">
+                  Mancuerna comparativa: punto de <strong>Vencimiento Planificado (Punto Azul)</strong> vs <strong>Entrega Real (Punto Verde/Rojo)</strong>. La longitud de la línea refleja los días de diferencia.
                 </p>
               </div>
 
-              {/* Leyenda explicativa del Dumbbell */}
-              <div className="flex items-center gap-3 text-[11px] font-bold shrink-0 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-blue-600 border border-blue-700"></div>
-                  <span>Vencimiento Planificado</span>
+              {/* Leyenda Visual Explicativa idéntica al requerimiento */}
+              <div className="flex items-center gap-3 text-xs font-bold shrink-0 flex-wrap bg-cream-50 p-2.5 rounded-xl border border-stone-200">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3.5 h-3.5 rounded-full bg-sky-400 border-2 border-white shadow-xs"></div>
+                  <span className="text-charcoal-700">Vencimiento Planificado</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 border border-emerald-600"></div>
-                  <span>A Tiempo</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white shadow-xs"></div>
+                    <div className="w-3.5 h-1 bg-emerald-500 -ml-0.5"></div>
+                  </div>
+                  <span className="text-emerald-800">Entrega ANTES / A Tiempo (Verde)</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-coral-500 border border-coral-600"></div>
-                  <span>Con Retraso</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-amber-500 border border-amber-600"></div>
-                  <span>Pendiente Atrasada</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center">
+                    <div className="w-3.5 h-1 bg-rose-500 -mr-0.5"></div>
+                    <div className="w-3 h-3 rounded-full bg-rose-500 border border-white shadow-xs"></div>
+                  </div>
+                  <span className="text-rose-800">Entrega DESPUÉS / Con Retraso (Rojo)</span>
                 </div>
               </div>
             </div>
@@ -1234,116 +1291,182 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                 <p className="text-sm font-semibold text-charcoal-600">No hay tareas que coincidan con los filtros de entregas seleccionados.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Lista de Filas del Dumbbell Plot */}
-                <div className="space-y-4 pt-2">
-                  {tareasDumbbell.map((tarea) => {
-                    const tVenc = new Date(tarea.fechaVenc + 'T00:00:00').getTime();
-                    const tReal = new Date(tarea.fechaReal + 'T00:00:00').getTime();
+              <div className="overflow-x-auto">
+                <div className="min-w-[850px] space-y-1">
+                  {/* Encabezado del Gráfico */}
+                  <div className="flex items-center text-xs font-bold text-charcoal-500 pb-2 px-3 border-b border-stone-200">
+                    <div className="w-[320px] shrink-0">Tarea / Responsable / Estado</div>
+                    <div className="flex-1 flex justify-between px-4">
+                      <span>Línea Temporal de Entregas (Mancuerna Dumbbell)</span>
+                      <span className="text-[11px] font-semibold text-charcoal-400">Rango: {escalaFechas.fechaMin} a {escalaFechas.fechaMax}</span>
+                    </div>
+                  </div>
 
-                    // Calcular posiciones porcentuales relativas en la escala de tiempo
-                    const posVencPct = Math.min(Math.max(Math.round(((tVenc - escalaFechas.minTimestamp) / escalaFechas.rangoTotal) * 100), 2), 98);
-                    const posRealPct = Math.min(Math.max(Math.round(((tReal - escalaFechas.minTimestamp) / escalaFechas.rangoTotal) * 100), 2), 98);
+                  {/* Lienzo del Dumbbell Plot con Filas Tipo Cebra como en la imagen */}
+                  <div className="relative border border-stone-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                    {/* Líneas Guía Verticales de Fondo para cada Tick */}
+                    <div className="absolute inset-0 left-[320px] pointer-events-none">
+                      {ticksEjeX.map((tick, idx) => (
+                        <div
+                          key={idx}
+                          className="absolute top-0 bottom-0 border-r border-stone-200/50"
+                          style={{ left: `${tick.pct}%` }}
+                        />
+                      ))}
+                      {/* Línea Vertical Referencial de "Hoy" */}
+                      {hoyPct >= 0 && hoyPct <= 100 && (
+                        <div
+                          className="absolute top-0 bottom-0 border-r-2 border-dashed border-amber-400 z-10"
+                          style={{ left: `${hoyPct}%` }}
+                        >
+                          <span className="absolute -top-1 -translate-x-1/2 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                            HOY
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
-                    const posMin = Math.min(posVencPct, posRealPct);
-                    const posMax = Math.max(posVencPct, posRealPct);
-                    const anchoBarraPct = Math.max(posMax - posMin, 2);
+                    {/* Contenedor de Filas */}
+                    <div className="divide-y divide-stone-100/80">
+                      {tareasDumbbell.map((tarea, idx) => {
+                        const tVenc = new Date(tarea.fechaVenc + 'T00:00:00').getTime();
+                        const tReal = new Date(tarea.fechaReal + 'T00:00:00').getTime();
 
-                    // Estilo según estado de puntualidad
-                    const esCompletada = tarea.esCompletada;
-                    const esATiempo = tarea.tipoPuntualidad === 'a_tiempo';
-                    const esRetraso = tarea.tipoPuntualidad === 'con_retraso';
-                    const esPendienteAtrasada = tarea.tipoPuntualidad === 'pendiente_atrasada';
+                        // Posición porcentual sobre la escala común
+                        const posVencPct = Math.min(Math.max(((tVenc - escalaFechas.minTimestamp) / escalaFechas.rangoTotal) * 100, 2), 98);
+                        const posRealPct = Math.min(Math.max(((tReal - escalaFechas.minTimestamp) / escalaFechas.rangoTotal) * 100, 2), 98);
 
-                    const colorLinea = esATiempo ? 'bg-emerald-500' : esRetraso ? 'bg-coral-500' : 'bg-amber-500';
-                    const colorPuntoReal = esATiempo ? 'bg-emerald-500 border-emerald-600' : esRetraso ? 'bg-coral-500 border-coral-600' : 'bg-amber-500 border-amber-600';
+                        const posMin = Math.min(posVencPct, posRealPct);
+                        const posMax = Math.max(posVencPct, posRealPct);
+                        const anchoBarraPct = posMax - posMin;
 
-                    return (
-                      <div key={tarea.id} className="p-4 bg-cream-50/60 rounded-2xl border border-stone-200 hover:border-sage-400 hover:bg-white transition-all space-y-2">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-stone-100 pb-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-extrabold text-charcoal-900 text-xs sm:text-sm">{tarea.titulo}</h4>
-                              <span className="bg-sage-100 text-sage-800 text-[10px] font-extrabold px-2 py-0.5 rounded-md border border-sage-200">
-                                {getNombreRol(tarea.rol_destino)}
-                              </span>
+                        const esAntes = tarea.diffDias < 0;
+                        const esATiempoExacto = tarea.diffDias === 0;
+                        const esDespues = tarea.diffDias > 0;
+
+                        // Colores según especificación estricta del usuario:
+                        // Si es antes/a tiempo: PUNTO VERDE y LÍNEA VERDE
+                        // Si es después (con retraso): PUNTO ROJO y LÍNEA ROJA
+                        const bgLinea = (esAntes || esATiempoExacto) ? 'bg-emerald-500' : 'bg-rose-500';
+                        const bgPuntoReal = (esAntes || esATiempoExacto) ? 'bg-emerald-500 ring-emerald-300' : 'bg-rose-500 ring-rose-300';
+                        const bgPuntoVenc = 'bg-sky-400 ring-sky-200';
+
+                        // Fondo alternado (Cebra) como en la imagen
+                        const bgFila = idx % 2 === 0 ? 'bg-stone-100/75' : 'bg-white';
+
+                        return (
+                          <div
+                            key={tarea.id}
+                            className={`flex items-center min-h-[58px] ${bgFila} hover:bg-amber-50/40 transition-colors group relative`}
+                          >
+                            {/* Columna Izquierda: Información de la Tarea */}
+                            <div className="w-[320px] shrink-0 p-3 pr-4 border-r border-stone-200/80 z-20 flex flex-col justify-center">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-[10px] font-mono font-bold text-charcoal-400 w-5 shrink-0">#{idx + 1}</span>
+                                <h4 className="font-extrabold text-charcoal-900 text-xs truncate max-w-[230px]" title={tarea.titulo}>
+                                  {tarea.titulo}
+                                </h4>
+                              </div>
+                              <div className="flex items-center justify-between text-[11px] text-charcoal-500 pl-6">
+                                <span className="truncate max-w-[170px]">
+                                  {tarea.responsable_nombre || 'Sin Asignar'} • <strong className="text-charcoal-700 font-semibold">{getNombreRol(tarea.rol_destino)}</strong>
+                                </span>
+                                {/* Badge de resultado en días */}
+                                {esAntes && (
+                                  <span className="shrink-0 text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                                    ↓ {Math.abs(tarea.diffDias)}d antes
+                                  </span>
+                                )}
+                                {esATiempoExacto && (
+                                  <span className="shrink-0 text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                                    ✔ A tiempo (0d)
+                                  </span>
+                                )}
+                                {esDespues && (
+                                  <span className="shrink-0 text-[10px] font-black text-rose-800 bg-rose-100 px-2 py-0.5 rounded-full border border-rose-300">
+                                    ↑ +{tarea.diffDias}d retraso
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-[11px] text-charcoal-500">
-                              {tarea.curso_nombre || tarea.proyecto_nombre || 'General'} • Responsable{tarea.responsable_secundario_nombre ? 's' : ''}: <strong className="text-charcoal-700">{tarea.responsable_nombre || 'Sin Asignar'}</strong>
-                              {tarea.responsable_secundario_nombre && (
-                                <span className="text-blue-700 font-bold"> & {tarea.responsable_secundario_nombre}</span>
+
+                            {/* Columna Derecha: Carril de la Mancuerna */}
+                            <div className="flex-1 relative h-[58px] flex items-center px-4">
+                              {/* Línea de Mancuerna (Longitud proporcional a la cantidad de días) */}
+                              {anchoBarraPct > 0 ? (
+                                <div
+                                  className={`absolute h-2 ${bgLinea} rounded-full shadow-xs transition-all duration-300 z-10`}
+                                  style={{ left: `${posMin}%`, width: `${anchoBarraPct}%` }}
+                                />
+                              ) : (
+                                <div
+                                  className="absolute h-2.5 w-2.5 bg-emerald-500 rounded-full z-10"
+                                  style={{ left: `${posVencPct}%`, transform: 'translateX(-50%)' }}
+                                />
                               )}
-                            </p>
-                          </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            {/* Badges de Resultado de Puntualidad */}
-                            {esATiempo && (
-                              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                {tarea.diffDias === 0 ? 'Entregado a Tiempo' : `Entregado ${Math.abs(tarea.diffDias)} días antes`}
-                              </span>
-                            )}
-                            {esRetraso && (
-                              <span className="bg-coral-50 text-coral-700 border border-coral-200 text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
-                                <AlertTriangle className="w-3.5 h-3.5" />
-                                Entregado con {tarea.diffDias} {tarea.diffDias === 1 ? 'día' : 'días'} de retraso
-                              </span>
-                            )}
-                            {esPendienteAtrasada && (
-                              <span className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                Pendiente ({tarea.diffDias} días de atraso)
-                              </span>
-                            )}
-                            {!esCompletada && !esPendienteAtrasada && (
-                              <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-3 py-1 rounded-full">
-                                En Plazo (Vence {tarea.fechaVenc})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Barra del Dumbbell Plot Horizontal */}
-                        <div className="relative pt-6 pb-4 px-3">
-                          {/* Línea base de tiempo */}
-                          <div className="w-full bg-stone-200 h-1.5 rounded-full relative">
-                            {/* Mancuerna / Conexión entre Vencimiento y Fecha Real */}
-                            <div 
-                              className={`absolute top-0 h-1.5 ${colorLinea} rounded-full transition-all duration-300 shadow-xs`}
-                              style={{ left: `${posMin}%`, width: `${anchoBarraPct}%` }}
-                            />
-
-                            {/* Punto A: Fecha de Vencimiento Planificada */}
-                            <div 
-                              className="absolute -top-2 w-5.5 h-5.5 rounded-full bg-blue-600 border-2 border-white shadow-md flex items-center justify-center -ml-2.5 z-10 cursor-pointer group/dot"
-                              style={{ left: `${posVencPct}%` }}
-                            >
-                              <div className="opacity-0 group-hover/dot:opacity-100 transition-opacity absolute -top-8 bg-blue-900 text-white text-[10px] font-bold py-1 px-2 rounded shadow-md pointer-events-none whitespace-nowrap">
-                                Vencimiento: {tarea.fechaVenc}
+                              {/* Punto de Vencimiento Planificado (PUNTO AZUL) */}
+                              <div
+                                className={`absolute w-5 h-5 rounded-full ${bgPuntoVenc} border-2 border-white shadow-md ring-2 flex items-center justify-center cursor-pointer group/venc z-20 -ml-2.5 transition-transform hover:scale-125`}
+                                style={{ left: `${posVencPct}%` }}
+                              >
+                                {/* Tooltip de Vencimiento */}
+                                <div className="opacity-0 group-hover/venc:opacity-100 transition-opacity pointer-events-none absolute -top-8 bg-sky-900 text-white text-[10px] font-bold py-1 px-2.5 rounded shadow-lg whitespace-nowrap z-30">
+                                  Vencimiento Planificado: {tarea.fechaVenc}
+                                </div>
                               </div>
-                            </div>
 
-                            {/* Punto B: Fecha Real de Entrega / Fecha Actual */}
-                            <div 
-                              className={`absolute -top-2 w-5.5 h-5.5 rounded-full ${colorPuntoReal} border-2 border-white shadow-md flex items-center justify-center -ml-2.5 z-10 cursor-pointer group/dot`}
-                              style={{ left: `${posRealPct}%` }}
-                            >
-                              <div className="opacity-0 group-hover/dot:opacity-100 transition-opacity absolute -top-8 bg-charcoal-900 text-white text-[10px] font-bold py-1 px-2 rounded shadow-md pointer-events-none whitespace-nowrap">
-                                {tarea.esCompletada ? `Completada: ${tarea.fechaReal}` : `Estado a Hoy (${hoyFechaStr}): ${tarea.fechaReal}`}
+                              {/* Punto de Entrega Real (PUNTO VERDE O ROJO) */}
+                              <div
+                                className={`absolute w-5 h-5 rounded-full ${bgPuntoReal} border-2 border-white shadow-md ring-2 flex items-center justify-center cursor-pointer group/real z-20 -ml-2.5 transition-transform hover:scale-125`}
+                                style={{ left: `${posRealPct}%` }}
+                              >
+                                {/* Tooltip de Entrega Real */}
+                                <div className="opacity-0 group-hover/real:opacity-100 transition-opacity pointer-events-none absolute -top-8 bg-charcoal-900 text-white text-[10px] font-bold py-1 px-2.5 rounded shadow-lg whitespace-nowrap z-30">
+                                  {tarea.esCompletada ? `Entrega Real: ${tarea.fechaReal}` : `Estado a Hoy (${hoyFechaStr}): ${tarea.fechaReal}`} ({esAntes ? `${Math.abs(tarea.diffDias)} días antes` : esDespues ? `${tarea.diffDias} días de retraso` : 'A tiempo'})
+                                </div>
                               </div>
+
+                              {/* Etiqueta flotante rápida sobre la mancuerna */}
+                              {anchoBarraPct >= 5 && (
+                                <div
+                                  className={`absolute -top-1 px-1.5 py-0.2 text-[9px] font-black rounded shadow-xs z-10 pointer-events-none ${
+                                    (esAntes || esATiempoExacto) ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+                                  }`}
+                                  style={{ left: `${posMin + anchoBarraPct / 2}%`, transform: 'translateX(-50%)' }}
+                                >
+                                  {esAntes ? `-${Math.abs(tarea.diffDias)}d` : `+${tarea.diffDias}d`}
+                                </div>
+                              )}
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
 
-                          {/* Leyendas de fechas debajo de la mancuerna */}
-                          <div className="flex justify-between text-[10px] font-semibold text-charcoal-500 pt-2">
-                            <span>Vencimiento: <strong className="text-blue-900 font-mono">{tarea.fechaVenc}</strong></span>
-                            <span>{tarea.esCompletada ? 'Entrega Real:' : `Estado a Hoy (${hoyFechaStr}):`} <strong className="text-charcoal-900 font-mono">{tarea.fechaReal}</strong></span>
-                          </div>
-                        </div>
+                    {/* EJE X INFERIOR (CON LÍNEA OSCURA Y MARCAS HACIA ABAJO COMO EN LA IMAGEN) */}
+                    <div className="flex items-center bg-stone-50 border-t-2 border-stone-700 py-2.5">
+                      <div className="w-[320px] shrink-0 px-4 text-[11px] font-extrabold text-charcoal-600 text-right uppercase tracking-wider">
+                        Línea de Tiempo (Días)
                       </div>
-                    );
-                  })}
+                      <div className="flex-1 relative h-7 px-4">
+                        {ticksEjeX.map((tick, idx) => (
+                          <div
+                            key={idx}
+                            className="absolute top-0 flex flex-col items-center -translate-x-1/2"
+                            style={{ left: `${tick.pct}%` }}
+                          >
+                            {/* Marca vertical (Tick hacia abajo como en la imagen) */}
+                            <div className="w-0.5 h-2.5 bg-stone-700" />
+                            {/* Etiqueta de Fecha */}
+                            <span className="text-[10px] font-extrabold text-charcoal-800 mt-1 whitespace-nowrap">
+                              {tick.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
