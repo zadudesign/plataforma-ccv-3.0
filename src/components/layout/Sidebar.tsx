@@ -24,7 +24,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual, tareasPendientesCount = 0 }) => {
-  const { usuarioActual, roles, isAdmin, isRealAdmin, setIsDevSimulatorOpen, logout } = useAuth();
+  const { usuarioActual, roles, isAdmin, isRealAdmin, setIsDevSimulatorOpen, logout, hasPermission } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Bloquear scroll de fondo cuando el menú móvil está abierto
@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ vistaActual, setVistaActual, t
 
   // Filter items based on user role (Admin section is exclusive to Admin; Parrilla is exclusive to Admin & CMU)
   const navItems = allNavItems.filter(item => {
-    if (item.requiresAdmin && !isAdmin()) return false;
+    if (item.requiresAdmin && !isAdmin() && !hasPermission('usuario:gestionar')) return false;
     if (item.requiresCmuOrAdmin && !isCmuOrAdmin()) return false;
     return true;
   });

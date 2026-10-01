@@ -62,8 +62,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onDeleteTask,
   onEditTask,
 }) => {
-  const { roles, usuarios, areas, cursos, proyectos, nivelArea, isAdmin, eliminarTarea, editarTarea } = useAuth();
-  const canEdit = isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea) : false);
+  const { roles, usuarios, areas, cursos, proyectos, nivelArea, isAdmin, eliminarTarea, editarTarea, hasPermission, rolesPermisosMap } = useAuth();
+  const canEdit = hasPermission('registro:editar') && (isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea, rolesPermisosMap) : false));
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [confirmarCompletadaOpen, setConfirmarCompletadaOpen] = useState(false);
   const [confirmarEliminarOpen, setConfirmarEliminarOpen] = useState(false);
@@ -94,6 +94,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
   const handleCambiarEstado = (est: EstadoTarea) => {
     if (!tarea) return;
+    if (est === 'Completada' && tarea.estado !== 'Completada' && !hasPermission('tarea:aprobar')) {
+      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+      return;
+    }
+    if (est !== tarea.estado && !hasPermission('registro:editar')) {
+      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de la tarea.`);
+      return;
+    }
     if (tarea.tipo_tarea === 'Curso Virtual' && tarea.estado_bloqueo === 'BLOQUEADA' && est !== 'Pendiente') {
       alert('Esta tarea está bloqueada en la secuencia del curso por dependencias previas no completadas.');
       return;
@@ -598,9 +606,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         tarea={tarea}
         onClose={() => setConfirmarEliminarOpen(false)}
         onConfirm={async () => {
-          if (!tarea) return;
-          if (!isAdmin()) {
-            alert('Solo los administradores tienen permiso para eliminar tareas.');
+          if (!hasPermission('registro:eliminar') && !isAdmin()) {
+            alert('Solo los usuarios con el permiso "registro:eliminar" o Administradores pueden eliminar tareas.');
             return;
           }
           setIsDeleting(true);

@@ -672,12 +672,21 @@ export function canUserEditTask(
   proyectos: ProyectoEspecial[],
   areas: Area[],
   roles: Rol[] = [],
-  nivelArea: NivelArea = 1
+  nivelArea: NivelArea = 1,
+  rolesPermisosMap?: Record<string, string[]>
 ): boolean {
   if (!usuarioActual) return false;
 
-  const rolObj = roles.find(r => r.id === usuarioActual.rol_id);
+  const rolObj = roles.find(r => r.id === usuarioActual.rol_id) || roles.find(r => r.nombre === usuarioActual.rol_nombre);
   const rolNombre = usuarioActual.rol_nombre || rolObj?.nombre || '';
+
+  // Validar si el rol tiene el permiso 'registro:editar' cuando hay mapa de permisos
+  if (rolesPermisosMap) {
+    const permisosRol = (rolObj && rolesPermisosMap[rolObj.id]) || rolesPermisosMap[rolNombre];
+    if (permisosRol && !permisosRol.includes('registro:editar')) {
+      return false;
+    }
+  }
 
   // 1. Administrador tiene control total para editar cualquier tarea
   if (isRoleMatch(rolNombre, 'Administrador')) {

@@ -93,7 +93,7 @@ interface AuthContextType {
   crearUsuario: (nuevo: Omit<Usuario, 'id'> & { password?: string }) => Promise<{ success: boolean; error?: string }>;
   actualizarUsuario: (id: string, datos: Partial<Usuario>) => void;
   eliminarUsuario: (id: string) => void;
-  actualizarPermisosRol: (rolId: string, permisos: string[]) => void;
+  actualizarPermisosRol: (rolId: string, permisos: string[]) => Promise<{ success: boolean; error?: string; remote?: boolean }>;
   crearRol: (nombre: string, areaId: string, permisos?: string[]) => void;
   crearArea: (nombre: string, nivel: NivelArea, parentId?: string | null, jefeId?: string | null, color?: string, icono?: string) => Promise<void>;
   actualizarIdentidadArea: (areaId: string, color: string, icono: string) => Promise<void>;
@@ -228,9 +228,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (dbProyectos.length > 0) setProyectos(dbProyectos);
       if (dbSolicitudes && dbSolicitudes.length > 0) setSolicitudesTareas(dbSolicitudes);
       if (dbPlantilla && dbPlantilla.length > 0) setPlantillaTareas(dbPlantilla);
-      if (Object.keys(dbPermisosMap).length > 0) {
-        setRolesPermisosMap(prev => ({ ...prev, ...dbPermisosMap }));
+      // 1. Unificar rolesPermisosMap indexando tanto por ID de rol como por Nombre de rol
+      let mergedPermisosMap: Record<string, string[]> = { ...ROLES_PERMISOS_MAP };
+      INITIAL_ROLES.forEach(r => {
+        if (ROLES_PERMISOS_MAP[r.id]) {
+          mergedPermisosMap[r.nombre] = ROLES_PERMISOS_MAP[r.id];
+        }
+      });
+
+      // Respaldo de cambios locales en localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('ccv_roles_permisos_map');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            mergedPermisosMap = { ...mergedPermisosMap, ...parsed };
+          }
+        } catch {
+          // ignore
+        }
       }
+
+      // Si llegaron permisos de Supabase, tienen máxima prioridad
+      if (Object.keys(dbPermisosMap).length > 0) {
+        mergedPermisosMap = { ...mergedPermisosMap, ...dbPermisosMap };
+      }
+
+      // Mapear los permisos a los roles finales (sean UUIDs de Supabase o mocks)
+      const rolesFinales = dbRoles.length > 0 ? dbRoles : INITIAL_ROLES;
+      rolesFinales.forEach(rol => {
+        if (!mergedPermisosMap[rol.id] && mergedPermisosMap[rol.nombre]) {
+          mergedPermisosMap[rol.id] = [...mergedPermisosMap[rol.nombre]];
+        } else if (mergedPermisosMap[rol.id] && !mergedPermisosMap[rol.nombre]) {
+          mergedPermisosMap[rol.nombre] = [...mergedPermisosMap[rol.id]];
+        }
+      });
+
+      setRolesPermisosMap(mergedPermisosMap);
+
       if (dbPermisosDef.length > 0) {
         setPermisosDef(dbPermisosDef);
       }
@@ -274,15 +309,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Calcular permisos y nivel de área del usuario actual
-  const rolActual = roles.find(r => r.id === usuarioActual?.rol_id);
+  const rolActual = roles.find(r => r.id === usuarioActual?.rol_id) || roles.find(r => r.nombre === usuarioActual?.rol_nombre);
   const areaActual = areas.find(a => a.nombre === (rolActual?.area_nombre || usuarioActual?.area_nombre));
   const nivelArea: NivelArea = (areaActual?.nivel || (rolActual?.nombre === 'Administrador' || usuarioActual?.rol_nombre === 'Administrador' ? 6 : 1)) as NivelArea;
-  const permisosUsuario: string[] = rolActual ? (rolesPermisosMap[rolActual.id] || []) : [];
+  
+  // Buscar permisos tanto por id como por nombre de rol
+  const permisosUsuario: string[] = rolActual 
+    ? (rolesPermisosMap[rolActual.id] || rolesPermisosMap[rolActual.nombre] || ROLES_PERMISOS_MAP[rolActual.id] || []) 
+    : [];
 
   const hasPermission = (clavePermiso: string): boolean => {
     if (!usuarioActual) return false;
-    // Administrador (Nivel 6) tiene todos los permisos por defecto
-    if (nivelArea === 6) return true;
+    
+    // Si el rol tiene permisos explícitamente configurados en rolesPermisosMap (por ID o nombre):
+    if (rolActual) {
+      const explicit = rolesPermisosMap[rolActual.id] || rolesPermisosMap[rolActual.nombre];
+      if (explicit) {
+        return explicit.includes(clavePermiso);
+      }
+    }
+    
+    // Fallback: Administrador (Nivel 6) tiene todos los permisos si no hay mapa explícito
+    if (nivelArea === 6 || rolActual?.nombre === 'Administrador' || usuarioActual?.rol_nombre === 'Administrador') {
+      return true;
+    }
     return permisosUsuario.includes(clavePermiso);
   };
 
@@ -641,13 +691,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const actualizarPermisosRol = async (rolId: string, permisos: string[]) => {
-    setRolesPermisosMap(prev => ({
-      ...prev,
-      [rolId]: permisos
-    }));
-    if (isGuid(rolId)) {
-      await updateRolPermisosDB(rolId, permisos);
+  const actualizarPermisosRol = async (rolId: string, permisos: string[]): Promise<{ success: boolean; error?: string; remote?: boolean }> => {
+    const rolObj = roles.find(r => r.id === rolId) || roles.find(r => r.nombre === rolId);
+    const rolNombre = rolObj?.nombre;
+
+    // Actualizar estado local inmediatamente para reactividad instantánea
+    setRolesPermisosMap(prev => {
+      const updated = {
+        ...prev,
+        [rolId]: permisos
+      };
+      if (rolNombre) {
+        updated[rolNombre] = permisos;
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ccv_roles_permisos_map', JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+      }
+      return updated;
+    });
+
+    try {
+      const res = await updateRolPermisosDB(rolId, permisos, rolNombre);
+      return res;
+    } catch (err: any) {
+      console.warn('Error al actualizar permisos en Supabase:', err);
+      return { success: false, error: err?.message || 'Error de sincronización con Supabase', remote: false };
     }
   };
 

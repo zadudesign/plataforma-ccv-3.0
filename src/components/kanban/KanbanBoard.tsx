@@ -40,7 +40,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onUpdateStatus,
   onOpenCreateTask,
 }) => {
-  const { roles, areas, proyectos, usuarioActual } = useAuth();
+  const { roles, areas, proyectos, usuarioActual, hasPermission } = useAuth();
 
   // Diccionario de mapeo rápido id -> nombre para resolver roles si vienen como UUID
   const rolesIdMap = useMemo(() => {
@@ -691,6 +691,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                     {col.estado !== 'Pendiente' && (
                                       <button
                                         onClick={() => {
+                                          if (!hasPermission('registro:editar')) {
+                                            alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar tareas.`);
+                                            return;
+                                          }
                                           const prev: EstadoTarea = col.estado === 'Completada' ? 'En Revisión' : col.estado === 'En Revisión' ? 'En Proceso' : 'Pendiente';
                                           onUpdateStatus(tarea.id, prev);
                                         }}
@@ -704,6 +708,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                       <button
                                         onClick={() => {
                                           const next: EstadoTarea = col.estado === 'Pendiente' ? 'En Proceso' : col.estado === 'En Proceso' ? 'En Revisión' : 'Completada';
+                                          if (next === 'Completada' && !hasPermission('tarea:aprobar')) {
+                                            alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+                                            return;
+                                          }
+                                          if (!hasPermission('registro:editar')) {
+                                            alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar tareas.`);
+                                            return;
+                                          }
                                           onUpdateStatus(tarea.id, next);
                                         }}
                                         className="w-5 h-5 rounded-full bg-charcoal-900 hover:bg-sage-700 text-white flex items-center justify-center text-[10px] shadow-2xs transition-colors"

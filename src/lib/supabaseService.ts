@@ -134,17 +134,27 @@ export async function fetchRolesPermisosMapDB(): Promise<Record<string, string[]
   try {
     const { data, error } = await supabase
       .from('roles_permisos')
-      .select('rol_id, permisos_def(clave)');
+      .select('rol_id, roles(nombre), permisos_def(clave)');
     if (error || !data) return {};
 
     const map: Record<string, string[]> = {};
     data.forEach((item: any) => {
       const rolId = item.rol_id;
-      const clave = item.permisos_def?.clave;
-      if (rolId && clave) {
-        if (!map[rolId]) map[rolId] = [];
-        if (!map[rolId].includes(clave)) {
-          map[rolId].push(clave);
+      const rolNombre = Array.isArray(item.roles) ? item.roles[0]?.nombre : item.roles?.nombre;
+      const clave = Array.isArray(item.permisos_def) ? item.permisos_def[0]?.clave : item.permisos_def?.clave;
+
+      if (clave) {
+        if (rolId) {
+          if (!map[rolId]) map[rolId] = [];
+          if (!map[rolId].includes(clave)) {
+            map[rolId].push(clave);
+          }
+        }
+        if (rolNombre) {
+          if (!map[rolNombre]) map[rolNombre] = [];
+          if (!map[rolNombre].includes(clave)) {
+            map[rolNombre].push(clave);
+          }
         }
       }
     });
@@ -220,30 +230,89 @@ export async function createRoleDB(
   }
 }
 
-export async function updateRolPermisosDB(rolId: string, permisos: string[]): Promise<boolean> {
+export async function updateRolPermisosDB(
+  rolId: string, 
+  permisos: string[], 
+  rolNombre?: string
+): Promise<{ success: boolean; error?: string; remote: boolean }> {
   try {
-    if (!isGuid(rolId)) return false;
+    let targetRolId: string | null = isGuid(rolId) ? rolId : null;
 
-    await supabase.from('roles_permisos').delete().eq('rol_id', rolId);
+    // Si el rolId no es UUID (ej: r-1, r-2), buscar el rol en Supabase por su nombre
+    if (!targetRolId && rolNombre) {
+      const { data: rolData } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('nombre', rolNombre)
+        .maybeSingle();
+      if (rolData?.id) {
+        targetRolId = rolData.id;
+      }
+    }
 
+    if (!targetRolId) {
+      // Si no hay UUID en Supabase para este rol (modo local/offline), retornar éxito local
+      return { success: true, remote: false };
+    }
+
+    // 1. Eliminar asignaciones previas del rol en la base de datos
+    const { error: delError } = await supabase
+      .from('roles_permisos')
+      .delete()
+      .eq('rol_id', targetRolId);
+
+    if (delError) {
+      console.error('Error al limpiar permisos previos en Supabase:', delError);
+      return { success: false, error: delError.message, remote: true };
+    }
+
+    // 2. Si se asignan permisos
     if (permisos.length > 0) {
-      const { data: defs } = await supabase
+      // Consultar definiciones existentes en permisos_def
+      let { data: defs } = await supabase
         .from('permisos_def')
         .select('id, clave')
         .in('clave', permisos);
 
+      const existingClaves = new Set((defs || []).map((d: any) => d.clave));
+      const missingClaves = permisos.filter(p => !existingClaves.has(p));
+
+      // Auto-insertar claves faltantes en permisos_def para evitar error de foreign key
+      if (missingClaves.length > 0) {
+        const payloadDefs = missingClaves.map(clave => ({
+          clave,
+          descripcion: `Permiso para ${clave}`
+        }));
+        const { data: newDefs, error: errInsertDefs } = await supabase
+          .from('permisos_def')
+          .insert(payloadDefs)
+          .select('id, clave');
+
+        if (!errInsertDefs && newDefs) {
+          defs = [...(defs || []), ...newDefs];
+        }
+      }
+
       if (defs && defs.length > 0) {
-        const payload = defs.map(p => ({
-          rol_id: rolId,
+        const payload = defs.map((p: any) => ({
+          rol_id: targetRolId,
           permiso_id: p.id
         }));
-        await supabase.from('roles_permisos').insert(payload);
+        const { error: insError } = await supabase
+          .from('roles_permisos')
+          .insert(payload);
+
+        if (insError) {
+          console.error('Error al registrar nuevos permisos en Supabase:', insError);
+          return { success: false, error: insError.message, remote: true };
+        }
       }
     }
-    return true;
-  } catch (err) {
+
+    return { success: true, remote: true };
+  } catch (err: any) {
     console.error('Excepción al actualizar permisos del rol en Supabase:', err);
-    return false;
+    return { success: false, error: err?.message || 'Error de comunicación con Supabase', remote: false };
   }
 }
 

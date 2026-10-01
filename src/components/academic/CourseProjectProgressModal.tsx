@@ -72,10 +72,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onDeleteTask,
   onEditTask,
 }) => {
-  const { areas, facultades, programas, roles, usuarios, usuarioActual, nivelArea, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea, editarTarea, cursos, proyectos } = useAuth();
+  const { areas, facultades, programas, roles, usuarios, usuarioActual, nivelArea, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea, editarTarea, cursos, proyectos, hasPermission, rolesPermisosMap } = useAuth();
   const canUserEdit = (t?: TareaCCV | null) => {
     if (!t) return false;
-    return isAdmin() || canUserEditTask(usuarioActual, t, proyectos, areas, roles, nivelArea);
+    if (!hasPermission('registro:editar')) return false;
+    return isAdmin() || canUserEditTask(usuarioActual, t, proyectos, areas, roles, nivelArea, rolesPermisosMap);
   };
   const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);

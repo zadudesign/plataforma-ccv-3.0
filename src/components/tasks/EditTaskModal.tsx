@@ -48,8 +48,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const { tarifasProyecto, isAdmin, usuarioActual, nivelArea, roles } = useAuth();
-  const canEdit = isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea) : false);
+  const { tarifasProyecto, isAdmin, usuarioActual, nivelArea, roles, hasPermission, rolesPermisosMap } = useAuth();
+  const canEdit = hasPermission('registro:editar') && (isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea, rolesPermisosMap) : false));
 
   // Estados locales pre-cargados con la información de la tarea existente
   const [titulo, setTitulo] = useState(tarea.titulo || '');
@@ -110,6 +110,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     e.preventDefault();
     if (!titulo.trim()) {
       setErrorMsg('El título del entregable es obligatorio.');
+      return;
+    }
+
+    if (estado === 'Completada' && tarea.estado !== 'Completada' && !hasPermission('tarea:aprobar')) {
+      setErrorMsg(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar la tarea como completada.`);
       return;
     }
 

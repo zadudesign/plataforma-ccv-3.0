@@ -2139,7 +2139,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((rol) => {
-              const permisosRol = rolesPermisosMap[rol.id] || [];
+              const permisosRol = rolesPermisosMap[rol.id] || rolesPermisosMap[rol.nombre] || [];
               const usuariosAsignados = usuarios.filter(u => u.rol_id === rol.id).length;
 
               return (
@@ -2326,7 +2326,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <RolePermissionsModal
           rol={rolPermisosEditar}
           permisosDef={permisosDef}
-          permisosActuales={rolesPermisosMap[rolPermisosEditar.id] || []}
+          permisosActuales={rolesPermisosMap[rolPermisosEditar.id] || rolesPermisosMap[rolPermisosEditar.nombre] || []}
           onClose={() => setRolPermisosEditar(null)}
           onSave={actualizarPermisosRol}
         />

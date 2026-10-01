@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, ShieldCheck, Key, CheckCircle2 } from 'lucide-react';
+import { X, Key, CheckCircle2, Loader2, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import { Rol, PermisoDef } from '@/types';
 
 interface RolePermissionsModalProps {
@@ -9,7 +9,7 @@ interface RolePermissionsModalProps {
   permisosDef: PermisoDef[];
   permisosActuales: string[];
   onClose: () => void;
-  onSave: (rolId: string, nuevosPermisos: string[]) => void;
+  onSave: (rolId: string, nuevosPermisos: string[]) => Promise<{ success: boolean; error?: string; remote?: boolean }> | void;
 }
 
 export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
@@ -20,8 +20,12 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
   onSave,
 }) => {
   const [permisosSeleccionados, setPermisosSeleccionados] = useState<string[]>(permisosActuales);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const togglePermiso = (clave: string) => {
+    if (isSaving) return;
     if (permisosSeleccionados.includes(clave)) {
       setPermisosSeleccionados(prev => prev.filter(p => p !== clave));
     } else {
@@ -29,9 +33,42 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
     }
   };
 
-  const handleSave = () => {
-    onSave(rol.id, permisosSeleccionados);
-    onClose();
+  const handleSeleccionarTodos = () => {
+    if (isSaving) return;
+    setPermisosSeleccionados(permisosDef.map(p => p.clave));
+  };
+
+  const handleDeseleccionarTodos = () => {
+    if (isSaving) return;
+    setPermisosSeleccionados([]);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setErrorMsg(null);
+    setSaveSuccess(null);
+
+    try {
+      const res = await onSave(rol.id, permisosSeleccionados);
+      if (res && res.success === false) {
+        setErrorMsg(res.error || 'No fue posible guardar los permisos en la base de datos.');
+        setIsSaving(false);
+        return;
+      }
+
+      const mensajeExito = res?.remote 
+        ? '¡Permisos guardados y sincronizados en Supabase!' 
+        : '¡Permisos guardados y activados en la sesión!';
+      
+      setSaveSuccess(mensajeExito);
+      setTimeout(() => {
+        onClose();
+      }, 750);
+    } catch (err: any) {
+      console.error('Error al guardar permisos del rol:', err);
+      setErrorMsg(err?.message || 'Error inesperado al intentar guardar los permisos.');
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -39,7 +76,8 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
       <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 relative">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all"
+          disabled={isSaving}
+          className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all disabled:opacity-50"
         >
           <X className="w-5 h-5" />
         </button>
@@ -58,28 +96,79 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
           </div>
         </div>
 
-        <div className="space-y-2.5 my-5 max-h-80 overflow-y-auto pr-1">
+        {/* Acciones rápidas de selección */}
+        <div className="flex items-center justify-between gap-2 pb-2 border-b border-stone-100 text-xs">
+          <span className="text-charcoal-500 font-medium text-[11px]">
+            {permisosSeleccionados.length} de {permisosDef.length} permisos activos
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSeleccionarTodos}
+              disabled={isSaving}
+              className="text-[11px] font-bold text-sage-700 hover:text-sage-900 hover:underline flex items-center gap-1"
+            >
+              <CheckSquare className="w-3.5 h-3.5" /> Marcar todos
+            </button>
+            <span className="text-stone-300">•</span>
+            <button
+              type="button"
+              onClick={handleDeseleccionarTodos}
+              disabled={isSaving}
+              className="text-[11px] font-bold text-charcoal-500 hover:text-charcoal-800 hover:underline flex items-center gap-1"
+            >
+              <Square className="w-3.5 h-3.5" /> Desmarcar todos
+            </button>
+          </div>
+        </div>
+
+        {/* Banner de error si existe */}
+        {errorMsg && (
+          <div className="mt-3 p-3 bg-coral-50 border border-coral-200 rounded-2xl flex items-center gap-2 text-xs text-coral-800 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 shrink-0 text-coral-600" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Banner de éxito */}
+        {saveSuccess && (
+          <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2 text-xs font-bold text-emerald-800 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            <span>{saveSuccess}</span>
+          </div>
+        )}
+
+        {/* Lista de permisos */}
+        <div className="space-y-2.5 my-4 max-h-80 overflow-y-auto pr-1">
           {permisosDef.map((perm) => {
             const isChecked = permisosSeleccionados.includes(perm.clave);
             return (
               <div
                 key={perm.id}
                 onClick={() => togglePermiso(perm.clave)}
-                className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
+                className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
                   isChecked
                     ? 'bg-sage-50 border-sage-400 shadow-sm'
-                    : 'bg-cream-50 hover:bg-cream-100 border-stone-200/80'
+                    : 'bg-cream-50 hover:bg-cream-100 border-stone-200/80 opacity-75'
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={isChecked}
-                  onChange={() => {}} // handled by parent div click
-                  className="mt-0.5 w-4 h-4 text-sage-600 rounded focus:ring-sage-500 border-stone-300"
+                  onChange={() => {}} // controlado por onClick del contenedor
+                  disabled={isSaving}
+                  className="mt-0.5 w-4 h-4 text-sage-600 rounded focus:ring-sage-500 border-stone-300 cursor-pointer"
                 />
-                <div>
-                  <h4 className="text-xs font-mono font-bold text-charcoal-900">{perm.clave}</h4>
-                  <p className="text-[11px] text-charcoal-500 mt-0.5">{perm.descripcion}</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono font-bold text-charcoal-900">{perm.clave}</h4>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                      isChecked ? 'bg-sage-200 text-sage-900' : 'bg-stone-200 text-charcoal-600'
+                    }`}>
+                      {isChecked ? 'ACTIVO' : 'INACTIVO'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-charcoal-500 mt-0.5 leading-snug">{perm.descripcion}</p>
                 </div>
               </div>
             );
@@ -87,21 +176,31 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
         </div>
 
         <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-          <span className="text-xs text-charcoal-500 font-medium">
-            {permisosSeleccionados.length} de {permisosDef.length} permisos asignados
+          <span className="text-[11px] text-charcoal-400">
+            Los cambios afectan inmediatamente la autorización en la plataforma.
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-charcoal-700 text-xs font-bold rounded-full transition-all"
+              disabled={isSaving}
+              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-charcoal-700 text-xs font-bold rounded-full transition-all disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
-              className="px-5 py-2 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow-sm hover:shadow transition-all flex items-center gap-1.5"
+              disabled={isSaving}
+              className="px-5 py-2 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow-sm hover:shadow transition-all flex items-center gap-1.5 disabled:opacity-60"
             >
-              <CheckCircle2 className="w-4 h-4" /> Guardar Permisos
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Guardando en Supabase...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" /> Guardar Permisos
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -46,6 +46,8 @@ export default function Home() {
     nivelArea, 
     isAdmin, 
     isRealAdmin,
+    hasPermission,
+    rolesPermisosMap,
     isDevSimulatorOpen, 
     setIsDevSimulatorOpen,
     facultades,
@@ -249,6 +251,17 @@ export default function Home() {
       return;
     }
 
+    // Validación estricta de permisos RBAC
+    if (nuevoEstado === 'Completada' && !hasPermission('tarea:aprobar')) {
+      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+      return;
+    }
+
+    if (!hasPermission('registro:editar')) {
+      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de tareas.`);
+      return;
+    }
+
     await updateTareaEstadoDB(tareaId, nuevoEstado);
 
     setTareas(prev => {
@@ -300,8 +313,8 @@ export default function Home() {
   };
 
   const handleEliminarTarea = async (tareaId: string): Promise<boolean> => {
-    if (!isAdmin()) {
-      alert('Solo los administradores tienen permiso para eliminar tareas.');
+    if (!hasPermission('registro:eliminar') && !isAdmin()) {
+      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:eliminar" para borrar tareas.`);
       return false;
     }
     const ok = await deleteTareaDB(tareaId);
@@ -322,7 +335,18 @@ export default function Home() {
       id: tareaId,
     } as TareaCCV;
 
-    const puedeEditar = isAdmin() || canUserEditTask(usuarioActual, tareaParaValidar, proyectos, areas, roles, nivelArea);
+    // Validación estricta de permisos RBAC
+    if (!hasPermission('registro:editar')) {
+      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para editar información de tareas.`);
+      return false;
+    }
+
+    if (datosEditados.estado === 'Completada' && tareaExistente?.estado !== 'Completada' && !hasPermission('tarea:aprobar')) {
+      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+      return false;
+    }
+
+    const puedeEditar = isAdmin() || canUserEditTask(usuarioActual, tareaParaValidar, proyectos, areas, roles, nivelArea, rolesPermisosMap);
     if (!puedeEditar) {
       alert('Solo los administradores o los jefes de las áreas/sub-áreas correspondientes y líderes de proyecto tienen permiso para editar esta tarea.');
       return false;
@@ -553,7 +577,7 @@ export default function Home() {
         )}
 
         {vistaActual === 'admin' && (
-          isAdmin() ? (
+          (isAdmin() || hasPermission('usuario:gestionar')) ? (
             <AdminDashboard
               areas={areas}
               roles={roles}
