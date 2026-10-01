@@ -27,7 +27,7 @@ import { getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
 import { FacultyIdentityModal } from '@/components/academic/FacultyIdentityModal';
 import { useAuth } from '@/context/AuthContext';
-import { calcularProgresoCurso, calcularProgresoProyecto } from '@/lib/progressUtils';
+import { calcularProgresoCurso, calcularProgresoProyecto, redondearHoras } from '@/lib/progressUtils';
 
 interface AcademicTreeProps {
   facultades: Facultad[];
@@ -110,11 +110,11 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
       }, 0);
 
       // Calcular horas totales invertidas en los proyectos del departamento
-      const horasTotalesDepartamento = data.proyectos.reduce((acc, proy) => {
+      const horasTotalesDepartamento = redondearHoras(data.proyectos.reduce((acc, proy) => {
         const tareasProy = tareas.filter(t => t.proyecto_id === proy.id);
         const horasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
         return acc + horasProy;
-      }, 0);
+      }, 0));
 
       return {
         departamentoId,
@@ -361,7 +361,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                             const pctProy = calcularProgresoProyecto(proy, tareas);
                             
                             // Cálculos Financieros y de Tiempo para el Proyecto
-                            const horasInvertidasProy = tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
+                            const horasInvertidasProy = redondearHoras(tareasProy.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0));
                             const costoTotalProy = tareasProy.reduce((sum, t) => {
                               const tarifa = t.tarifa_tarea !== undefined 
                                 ? t.tarifa_tarea 

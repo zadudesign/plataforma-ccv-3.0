@@ -29,6 +29,7 @@ import {
 import { TareaCCV, TareaComentario, Usuario, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { canUserEditTask } from '@/lib/roleVisibilityUtils';
+import { redondearHoras } from '@/lib/progressUtils';
 import { TaskTimeTracker } from './TaskTimeTracker';
 import { ConfirmCompleteTaskModal } from './ConfirmCompleteTaskModal';
 import { ConfirmDeleteTaskModal } from './ConfirmDeleteTaskModal';
@@ -333,20 +334,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-charcoal-600 font-medium">Principal ({rolPrincipal || 'General'}):</span>
-                      <strong className="text-charcoal-900">{tarea.tiempo_invertido || 0} hrs</strong>
+                      <strong className="text-charcoal-900">{redondearHoras(tarea.tiempo_invertido)} hrs</strong>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-blue-700 font-medium">Co-resp ({rolSecundario || 'General'}):</span>
-                      <strong className="text-blue-900">{tarea.tiempo_invertido_secundario || 0} hrs</strong>
+                      <strong className="text-blue-900">{redondearHoras(tarea.tiempo_invertido_secundario)} hrs</strong>
                     </div>
                     <div className="flex justify-between pt-1 border-t border-stone-100 text-[11px] font-bold text-charcoal-500">
                       <span>Total acumulado:</span>
-                      <span className="text-charcoal-900 font-extrabold">{(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs</span>
+                      <span className="text-charcoal-900 font-extrabold">{redondearHoras((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0))} hrs</span>
                     </div>
                   </div>
                 ) : (
                   <p className="text-sm font-extrabold text-charcoal-900">
-                    {tarea.tiempo_invertido || 0} hrs invertidas
+                    {redondearHoras(tarea.tiempo_invertido)} hrs invertidas
                   </p>
                 )}
               </div>
@@ -394,7 +395,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <h4 className="text-xs font-bold text-charcoal-500 uppercase tracking-wider">Cambiar Estado de la Tarea</h4>
               {tarea.tipo_tarea === 'Proyecto' && tarea.estado !== 'Completada' && (
                 <span className="text-[10px] text-amber-800 font-medium">
-                  Al marcar como <strong className="text-emerald-700">Completada</strong> se consolidarán {(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs invertidas.
+                  Al marcar como <strong className="text-emerald-700">Completada</strong> se consolidarán {redondearHoras((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0))} hrs invertidas.
                 </span>
               )}
             </div>

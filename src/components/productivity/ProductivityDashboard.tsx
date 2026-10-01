@@ -26,6 +26,7 @@ import { TareaCCV, Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { LogHoursModal } from './LogHoursModal';
 import { CmuWorkloadTab } from './CmuWorkloadTab';
+import { redondearHoras } from '@/lib/progressUtils';
 
 interface ProductivityDashboardProps {
   tareas: TareaCCV[];
@@ -220,7 +221,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
 
   // Métricas de la Pestaña 1 (Horas)
   const totalHorasInvertidas = useMemo(() => {
-    return tareasFiltradas.reduce((acc, t) => acc + getHorasDeTarea(t), 0);
+    return redondearHoras(tareasFiltradas.reduce((acc, t) => acc + getHorasDeTarea(t), 0));
   }, [tareasFiltradas, filtroUsuario, filtroRol]);
 
   const tareasConHorasRegistradas = useMemo(() => {
@@ -976,7 +977,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                 </thead>
                 <tbody className="divide-y divide-stone-100 text-xs font-medium text-charcoal-800">
                   {tareasFiltradas.map((tarea) => {
-                    const inv = tarea.tiempo_invertido || 0;
+                    const inv = redondearHoras(tarea.tiempo_invertido);
 
                     return (
                       <tr key={tarea.id} className="hover:bg-cream-50/50 transition-colors">
@@ -1044,7 +1045,7 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                               <div className="flex justify-between items-center text-[11px]">
                                 <span className="text-sage-900 font-bold truncate max-w-[100px]">{tarea.responsable_nombre?.split(' ')[0] || 'Principal'}:</span>
                                 <span className="font-extrabold text-sage-900 bg-sage-100/80 px-2 py-0.5 rounded-md border border-sage-200">
-                                  {tarea.tiempo_invertido || 0} hrs
+                                  {redondearHoras(tarea.tiempo_invertido)} hrs
                                 </span>
                               </div>
 
@@ -1052,13 +1053,13 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({
                               <div className="flex justify-between items-center text-[11px]">
                                 <span className="text-blue-900 font-bold truncate max-w-[100px]">{tarea.responsable_secundario_nombre.split(' ')[0]}:</span>
                                 <span className="font-extrabold text-blue-900 bg-blue-100/80 px-2 py-0.5 rounded-md border border-blue-200">
-                                  {tarea.tiempo_invertido_secundario || 0} hrs
+                                  {redondearHoras(tarea.tiempo_invertido_secundario)} hrs
                                 </span>
                               </div>
 
                               {/* Total combinado */}
                               <div className="text-[10px] text-charcoal-500 font-bold text-right pt-1 border-t border-stone-200/60">
-                                Total: <strong className="text-charcoal-900">{(tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)} hrs</strong>
+                                Total: <strong className="text-charcoal-900">{redondearHoras((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0))} hrs</strong>
                               </div>
                             </div>
                           ) : (

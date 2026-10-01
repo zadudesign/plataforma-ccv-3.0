@@ -21,6 +21,7 @@ import {
   PlantillaTareaDependencia
 } from '@/types';
 import { INITIAL_PLANTILLA_CURSOS } from './mockData';
+import { redondearHoras } from './progressUtils';
 
 
 // Helper para determinar si Supabase responde adecuadamente con diagnóstico detallado
@@ -944,9 +945,9 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
           fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
           hora_vencimiento: t.hora_vencimiento || '18:00',
           fecha_completada: t.fecha_completada,
-          tiempo_estimado: Number(t.tiempo_estimado || 0),
-          tiempo_invertido: Number(t.tiempo_invertido || 0),
-          tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? Number(t.tiempo_invertido_secundario) : undefined,
+          tiempo_estimado: redondearHoras(t.tiempo_estimado),
+          tiempo_invertido: redondearHoras(t.tiempo_invertido),
+          tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? redondearHoras(t.tiempo_invertido_secundario) : undefined,
           tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
           tarifa_tarea: Number(t.tarifa_tarea || 0),
           enlace_recurso: t.enlace_recurso || undefined,
@@ -983,9 +984,9 @@ export async function fetchTareasDB(): Promise<TareaCCV[]> {
       fecha_vencimiento: t.fecha_vencimiento || new Date().toISOString().split('T')[0],
       hora_vencimiento: t.hora_vencimiento || '18:00',
       fecha_completada: t.fecha_completada,
-      tiempo_estimado: Number(t.tiempo_estimado || 0),
-      tiempo_invertido: Number(t.tiempo_invertido || 0),
-      tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? Number(t.tiempo_invertido_secundario) : undefined,
+      tiempo_estimado: redondearHoras(t.tiempo_estimado),
+      tiempo_invertido: redondearHoras(t.tiempo_invertido),
+      tiempo_invertido_secundario: t.tiempo_invertido_secundario !== undefined && t.tiempo_invertido_secundario !== null ? redondearHoras(t.tiempo_invertido_secundario) : undefined,
       tarifa_hora: t.tarifa_hora !== null && t.tarifa_hora !== undefined ? Number(t.tarifa_hora) : undefined,
       tarifa_tarea: Number(t.tarifa_tarea || 0),
       enlace_recurso: t.enlace_recurso || undefined,
@@ -1130,9 +1131,9 @@ export async function createTareaDB(tarea: Omit<TareaCCV, 'id'>): Promise<{ succ
       fecha_vencimiento: tarea.fecha_vencimiento || new Date().toISOString().split('T')[0],
       hora_vencimiento: tarea.hora_vencimiento || '18:00',
       fecha_completada: tarea.fecha_completada || null,
-      tiempo_estimado: Number(tarea.tiempo_estimado) || 0,
-      tiempo_invertido: Number(tarea.tiempo_invertido) || 0,
-      tiempo_invertido_secundario: tarea.tiempo_invertido_secundario !== undefined && tarea.tiempo_invertido_secundario !== null ? Number(tarea.tiempo_invertido_secundario) : null,
+      tiempo_estimado: redondearHoras(tarea.tiempo_estimado),
+      tiempo_invertido: redondearHoras(tarea.tiempo_invertido),
+      tiempo_invertido_secundario: tarea.tiempo_invertido_secundario !== undefined && tarea.tiempo_invertido_secundario !== null ? redondearHoras(tarea.tiempo_invertido_secundario) : null,
       tarifa_hora: tarea.tarifa_hora !== undefined && tarea.tarifa_hora !== null ? Number(tarea.tarifa_hora) : null,
       tarifa_tarea: tarea.tarifa_tarea !== undefined && tarea.tarifa_tarea !== null ? Number(tarea.tarifa_tarea) : 0,
       enlace_recurso: tarea.enlace_recurso || null
@@ -1281,9 +1282,9 @@ export async function updateTareaFullDB(id: string, datos: Partial<TareaCCV>): P
     if (datos.fecha_vencimiento !== undefined) payload.fecha_vencimiento = datos.fecha_vencimiento;
     if (datos.hora_vencimiento !== undefined) payload.hora_vencimiento = datos.hora_vencimiento;
     if (datos.fecha_completada !== undefined) payload.fecha_completada = datos.fecha_completada || null;
-    if (datos.tiempo_estimado !== undefined) payload.tiempo_estimado = Number(datos.tiempo_estimado);
-    if (datos.tiempo_invertido !== undefined) payload.tiempo_invertido = Number(datos.tiempo_invertido);
-    if (datos.tiempo_invertido_secundario !== undefined) payload.tiempo_invertido_secundario = Number(datos.tiempo_invertido_secundario);
+    if (datos.tiempo_estimado !== undefined) payload.tiempo_estimado = redondearHoras(datos.tiempo_estimado);
+    if (datos.tiempo_invertido !== undefined) payload.tiempo_invertido = redondearHoras(datos.tiempo_invertido);
+    if (datos.tiempo_invertido_secundario !== undefined) payload.tiempo_invertido_secundario = redondearHoras(datos.tiempo_invertido_secundario);
     if (datos.tarifa_hora !== undefined) payload.tarifa_hora = datos.tarifa_hora !== null ? Number(datos.tarifa_hora) : null;
     if (datos.tarifa_tarea !== undefined) payload.tarifa_tarea = datos.tarifa_tarea !== null ? Number(datos.tarifa_tarea) : null;
     if (datos.responsable_id !== undefined) payload.responsable_id = isGuid(datos.responsable_id) ? datos.responsable_id : null;
@@ -1442,9 +1443,9 @@ export async function addRegistroHorasDB(registro: Omit<RegistroHoras, 'id'>, es
     if (tareaAtual) {
       const updatePayload: any = {};
       if (esResponsableSecundario || (tareaAtual.responsable_secundario_id && tareaAtual.responsable_secundario_id === registro.usuario_id)) {
-        updatePayload.tiempo_invertido_secundario = Number(tareaAtual.tiempo_invertido_secundario || 0) + Number(registro.horas_registradas);
+        updatePayload.tiempo_invertido_secundario = redondearHoras(Number(tareaAtual.tiempo_invertido_secundario || 0) + Number(registro.horas_registradas));
       } else {
-        updatePayload.tiempo_invertido = Number(tareaAtual.tiempo_invertido || 0) + Number(registro.horas_registradas);
+        updatePayload.tiempo_invertido = redondearHoras(Number(tareaAtual.tiempo_invertido || 0) + Number(registro.horas_registradas));
       }
       await supabase.from('tareas').update(updatePayload).eq('id', registro.tarea_id);
     }

@@ -34,7 +34,7 @@ import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario 
 import { useAuth } from '@/context/AuthContext';
 import { getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon } from '@/components/common/DynamicLucideIcon';
-import { calcularProgresoTareas, PESOS_ESTADO_TAREA } from '@/lib/progressUtils';
+import { calcularProgresoTareas, PESOS_ESTADO_TAREA, redondearHoras } from '@/lib/progressUtils';
 import { TaskTimeTracker } from '@/components/tasks/TaskTimeTracker';
 import { validarRequisitosCargaPlantilla, obtenerTareasBloqueantes, ordenarTareasSegunCatalogo } from '@/lib/courseTemplateUtils';
 import { ConfirmCompleteTaskModal } from '@/components/tasks/ConfirmCompleteTaskModal';
@@ -148,7 +148,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
 
   const porcentaje = calcularProgresoTareas(todasTareasEntidad);
 
-  const horasInvertidas = tareasEntidad.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0);
+  const horasInvertidas = redondearHoras(tareasEntidad.reduce((sum, t) => sum + (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0), 0));
 
   // Cálculos Financieros Exclusivos para Proyectos
   const costoTotalProyecto = tareasEntidad.reduce((sum, t) => {
@@ -1169,20 +1169,20 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                         <div className="space-y-1 text-xs">
                           <div className="flex justify-between">
                             <span className="text-charcoal-600 font-medium">Principal ({rolPrincipalLocal || 'General'}):</span>
-                            <strong className="text-charcoal-900">{tareaSeleccionadaLocal.tiempo_invertido || 0} hrs</strong>
+                            <strong className="text-charcoal-900">{redondearHoras(tareaSeleccionadaLocal.tiempo_invertido)} hrs</strong>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-blue-700 font-medium">Co-resp ({rolSecundarioLocal || 'General'}):</span>
-                            <strong className="text-blue-900">{tareaSeleccionadaLocal.tiempo_invertido_secundario || 0} hrs</strong>
+                            <strong className="text-blue-900">{redondearHoras(tareaSeleccionadaLocal.tiempo_invertido_secundario)} hrs</strong>
                           </div>
                           <div className="flex justify-between pt-1 border-t border-stone-100 text-[11px] font-bold text-charcoal-500">
                             <span>Total acumulado:</span>
-                            <span className="text-charcoal-900 font-extrabold">{(tareaSeleccionadaLocal.tiempo_invertido || 0) + (tareaSeleccionadaLocal.tiempo_invertido_secundario || 0)} hrs</span>
+                            <span className="text-charcoal-900 font-extrabold">{redondearHoras((tareaSeleccionadaLocal.tiempo_invertido || 0) + (tareaSeleccionadaLocal.tiempo_invertido_secundario || 0))} hrs</span>
                           </div>
                         </div>
                       ) : (
                         <p className="text-sm font-extrabold text-charcoal-900">
-                          {tareaSeleccionadaLocal.tiempo_invertido || 0} hrs invertidas
+                          {redondearHoras(tareaSeleccionadaLocal.tiempo_invertido)} hrs invertidas
                         </p>
                       )}
                     </div>

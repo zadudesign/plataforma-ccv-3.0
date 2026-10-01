@@ -23,6 +23,7 @@ import {
 import { Area, CursoVirtual, ProyectoEspecial, Usuario, TareaCCV, TipoTarea, CategoriaTareaProyecto, EstadoTarea } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { canUserEditTask } from '@/lib/roleVisibilityUtils';
+import { redondearHoras } from '@/lib/progressUtils';
 import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
 import { SearchableUserSelect } from '@/components/common/SearchableUserSelect';
 
@@ -100,7 +101,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     ? tarea.tarifa_hora 
     : (tarifaConfig ? tarifaConfig.tarifa_hora : 35000);
 
-  const totalHorasInvertidas = (tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0);
+  const totalHorasInvertidas = redondearHoras((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0));
   const costoTotalCalculado = tipoTarea === 'Proyecto' 
     ? (totalHorasInvertidas > 0 ? totalHorasInvertidas * tarifaHoraActual : tarifaHoraActual)
     : undefined;

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Clock, AlertCircle, CheckCircle2, User, Users, UserCheck } from 'lucide-react';
 import { TareaCCV, Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { redondearHoras } from '@/lib/progressUtils';
 
 interface LogHoursModalProps {
   tareas: TareaCCV[];
@@ -80,7 +81,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
   };
 
   const horasActualesResp = tareaSeleccionada
-    ? (esSecundario ? (tareaSeleccionada.tiempo_invertido_secundario || 0) : (tareaSeleccionada.tiempo_invertido || 0))
+    ? (esSecundario ? redondearHoras(tareaSeleccionada.tiempo_invertido_secundario) : redondearHoras(tareaSeleccionada.tiempo_invertido))
     : 0;
 
   const rolActivoImputacion = tareaSeleccionada
@@ -179,7 +180,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
                     <p className="text-[10px] text-charcoal-500 font-bold">Rol: {getNombreRol(tareaSeleccionada.rol_destino)}</p>
                   </div>
                   <div className="text-[10px] text-charcoal-600 font-semibold pt-1 border-t border-stone-100">
-                    Acumulado: <strong>{tareaSeleccionada.tiempo_invertido || 0} hrs</strong>
+                    Acumulado: <strong>{redondearHoras(tareaSeleccionada.tiempo_invertido)} hrs</strong>
                   </div>
                 </button>
 
@@ -204,7 +205,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
                     <p className="text-[10px] text-blue-700 font-bold">Rol: {getNombreRol(tareaSeleccionada.rol_destino_secundario || tareaSeleccionada.rol_destino)}</p>
                   </div>
                   <div className="text-[10px] text-charcoal-600 font-semibold pt-1 border-t border-stone-100">
-                    Acumulado: <strong>{tareaSeleccionada.tiempo_invertido_secundario || 0} hrs</strong>
+                    Acumulado: <strong>{redondearHoras(tareaSeleccionada.tiempo_invertido_secundario)} hrs</strong>
                   </div>
                 </button>
               </div>
@@ -241,12 +242,12 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
             <div className="relative">
               <input
                 type="number"
-                step="0.5"
-                min="0.5"
+                step="0.1"
+                min="0.1"
                 max="24"
                 value={horas}
                 onChange={e => setHoras(e.target.value)}
-                placeholder="2.5"
+                placeholder="1.5"
                 className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
                 required
               />

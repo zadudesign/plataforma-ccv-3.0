@@ -45,6 +45,7 @@ import {
 } from '@/lib/remisionUtils';
 import { CmuRemisionBadge } from './CmuRemisionBadge';
 import { CmuFacultyDepartmentBreakdown } from './CmuFacultyDepartmentBreakdown';
+import { redondearHoras } from '@/lib/progressUtils';
 
 interface CmuWorkloadTabProps {
   tareas: TareaCCV[];
@@ -277,6 +278,7 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
           horasInvertidasTotal += Number(t.tiempo_invertido_secundario || 0);
         }
       });
+      horasInvertidasTotal = redondearHoras(horasInvertidasTotal);
 
       const horasLimite = getLimiteRol(rolNormalizado);
       const porcentajeOcupacion = horasLimite > 0 ? Math.round((horasEstimadasTotal / horasLimite) * 100) : 0;

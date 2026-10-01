@@ -129,8 +129,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const now = Date.now();
     const totalSecs = Math.max(1, Math.floor((now - activeTimer.startTime) / 1000));
     
-    // Convertir segundos a horas con 2 decimales (mínimo 0.02 horas ~ 1 minuto para que siempre se compute)
-    const horasCalculadas = Math.max(0.02, Number((totalSecs / 3600).toFixed(2)));
+    // Convertir segundos a horas con 1 decimal (mínimo 0.1 horas para evitar fracciones microscópicas)
+    const horasCalculadas = Math.max(0.1, Math.round(((totalSecs / 3600) + Number.EPSILON) * 10) / 10);
     const tiempoTexto = formatTimerSeconds(totalSecs);
     const notaAvance = `Sesión de cronómetro: ${tiempoTexto} (${horasCalculadas} hrs)`;
 

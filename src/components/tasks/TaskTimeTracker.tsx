@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { TareaCCV, Usuario, EstadoTarea } from '@/types';
 import { useTaskTimer } from '@/context/TimerContext';
+import { redondearHoras } from '@/lib/progressUtils';
 
 interface TaskTimeTrackerProps {
   tarea: TareaCCV;
@@ -114,7 +115,7 @@ export const TaskTimeTracker: React.FC<TaskTimeTrackerProps> = ({
     }
   };
 
-  const totalHorasTarea = (tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0);
+  const totalHorasTarea = redondearHoras((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0));
 
   return (
     <div className="rounded-2xl bg-[#171717] border border-stone-800 text-white p-4 shadow-md space-y-3.5 transition-all">
@@ -125,7 +126,7 @@ export const TaskTimeTracker: React.FC<TaskTimeTrackerProps> = ({
             Tiempo registrado
           </span>
           <span className="text-xs text-stone-500 font-medium">
-            Total acumulado: <strong className="text-stone-200 font-mono">{totalHorasTarea.toFixed(2)} hrs</strong>
+            Total acumulado: <strong className="text-stone-200 font-mono">{totalHorasTarea} hrs</strong>
           </span>
         </div>
 
@@ -293,7 +294,7 @@ export const TaskTimeTracker: React.FC<TaskTimeTrackerProps> = ({
               </label>
               <input
                 type="number"
-                step="0.25"
+                step="0.1"
                 min="0.1"
                 max="24"
                 value={horasInput}

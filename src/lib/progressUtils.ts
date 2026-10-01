@@ -106,3 +106,13 @@ export function calcularProgresoGlobalProyectos(proyectos: ProyectoEspecial[], t
   const sumaProgresos = proyectos.reduce((acc, p) => acc + calcularProgresoProyecto(p, tareas), 0);
   return Math.round(sumaProgresos / proyectos.length);
 }
+
+/**
+ * Redondea un valor numérico de horas a exactamente un decimal,
+ * eliminando imprecisiones de coma flotante (ej. 2.2199999999999998 -> 2.2).
+ */
+export function redondearHoras(horas: number | undefined | null): number {
+  if (horas === undefined || horas === null || isNaN(Number(horas))) return 0;
+  return Math.round((Number(horas) + Number.EPSILON) * 10) / 10;
+}
+

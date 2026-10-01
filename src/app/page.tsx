@@ -36,6 +36,7 @@ import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
 import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
 import { getEntitiesVisibleByRole, canUserEditTask } from '@/lib/roleVisibilityUtils';
+import { redondearHoras } from '@/lib/progressUtils';
 import { ShieldAlert } from 'lucide-react';
 
 export default function Home() {
@@ -176,14 +177,14 @@ export default function Home() {
 
     // Calcular nuevos tiempos invertidos individuales
     const nuevoTPrincipal = esResponsableSecundario 
-      ? (tareaObj.tiempo_invertido || 0) 
-      : ((tareaObj.tiempo_invertido || 0) + horasAñadir);
+      ? redondearHoras(tareaObj.tiempo_invertido) 
+      : redondearHoras((tareaObj.tiempo_invertido || 0) + horasAñadir);
     const nuevoTSecundario = esResponsableSecundario 
-      ? ((tareaObj.tiempo_invertido_secundario || 0) + horasAñadir) 
-      : tareaObj.tiempo_invertido_secundario;
+      ? redondearHoras((tareaObj.tiempo_invertido_secundario || 0) + horasAñadir) 
+      : (tareaObj.tiempo_invertido_secundario !== undefined ? redondearHoras(tareaObj.tiempo_invertido_secundario) : undefined);
     
-    const totalHorasCalculadas = nuevoTPrincipal + (nuevoTSecundario || 0);
-    const nuevaTarifaTarea = tareaObj.tarifa_hora ? totalHorasCalculadas * tareaObj.tarifa_hora : tareaObj.tarifa_tarea;
+    const totalHorasCalculadas = redondearHoras(nuevoTPrincipal + (nuevoTSecundario || 0));
+    const nuevaTarifaTarea = tareaObj.tarifa_hora ? Math.round(totalHorasCalculadas * tareaObj.tarifa_hora) : tareaObj.tarifa_tarea;
 
     // Actualizar tarea en base de datos Supabase
     await updateTareaFullDB(tareaId, {
