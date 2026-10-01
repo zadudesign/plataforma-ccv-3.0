@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto, SolicitudTareaCCV, EstadoSolicitudTarea, TareaCCV, PlantillaTareaCurso } from '@/types';
 import { 
   INITIAL_PERMISOS, 
+  INITIAL_ROLES,
   ROLES_PERMISOS_MAP,
   INITIAL_TARIFAS_PROYECTO
 } from '@/lib/mockData';
