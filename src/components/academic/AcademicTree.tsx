@@ -18,7 +18,9 @@ import {
   Palette,
   DollarSign,
   Timer,
-  Trash2
+  Trash2,
+  FolderOpen,
+  ExternalLink
 } from 'lucide-react';
 import { Facultad, Programa, CursoVirtual, ProyectoEspecial, TareaCCV, Area } from '@/types';
 import { getFacultyTheme } from '@/lib/facultyThemes';
@@ -392,6 +394,22 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                     <p className="text-xs text-charcoal-500 line-clamp-2 leading-relaxed">
                                       {proy.descripcion}
                                     </p>
+                                  )}
+                                  {proy.link_onedrive && (
+                                    <div className="pt-0.5">
+                                      <a
+                                        href={proy.link_onedrive}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50/90 hover:bg-blue-100 hover:text-blue-900 px-2.5 py-1 rounded-xl border border-blue-200 transition-all shadow-2xs group/link"
+                                        title="Abrir carpeta de recursos en OneDrive"
+                                      >
+                                        <FolderOpen className="w-3.5 h-3.5 text-blue-600 group-hover/link:scale-110 transition-transform" />
+                                        <span>OneDrive Recursos</span>
+                                        <ExternalLink className="w-3 h-3 text-blue-400 group-hover/link:text-blue-600" />
+                                      </a>
+                                    </div>
                                   )}
                                 </div>
 

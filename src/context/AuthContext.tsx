@@ -854,6 +854,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nuevo: ProyectoEspecial = {
       ...datos,
       id: dbItem?.id || `pry-${Date.now()}`,
+      link_onedrive: dbItem?.link_onedrive ?? datos.link_onedrive,
       lider_nombre: lid ? lid.nombre_completo : (datos.lider_nombre || 'Sin Asignar'),
       lider_secundario_nombre: lidSec ? lidSec.nombre_completo : datos.lider_secundario_nombre,
       created_at: dbItem?.created_at || new Date().toISOString()

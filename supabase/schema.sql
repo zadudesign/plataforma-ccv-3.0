@@ -100,6 +100,8 @@ CREATE TABLE IF NOT EXISTS public.proyectos (
     descripcion TEXT,
     area_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
     lider_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    lider_secundario_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    link_onedrive TEXT,
     estado TEXT DEFAULT 'En Proceso', -- 'Planificación', 'En Proceso', 'Completado', 'Pausado'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -1046,6 +1048,15 @@ BEGIN
     RETURN jsonb_build_object('success', true, 'message', 'Tarea desbloqueada exitosamente por contingencia.');
 END;
 $$;
+
+-- ----------------------------------------------------------------------------
+-- MIGRACIÓN: Enlace a Carpeta de Recursos en OneDrive para Proyectos
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.proyectos 
+ADD COLUMN IF NOT EXISTS link_onedrive TEXT;
+
+COMMENT ON COLUMN public.proyectos.link_onedrive IS 'URL / Link a la carpeta compartida en OneDrive con la documentación y recursos del proyecto';
+
 
 
 

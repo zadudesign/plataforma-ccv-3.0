@@ -72,6 +72,7 @@ export interface ProyectoEspecial {
   lider_nombre?: string;
   lider_secundario_id?: string;
   lider_secundario_nombre?: string;
+  link_onedrive?: string;
   estado: 'Planificación' | 'En Proceso' | 'Completado' | 'Pausado';
   created_at?: string;
 }

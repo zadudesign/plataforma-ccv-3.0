@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Building2, GraduationCap, BookOpen, Layers, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Building2, GraduationCap, BookOpen, Layers, CheckCircle2, AlertCircle, FolderOpen, ExternalLink } from 'lucide-react';
 import { Facultad, Programa, CursoVirtual, ProyectoEspecial, Area, Usuario } from '@/types';
 
 export type TipoEntidad = 'facultad' | 'programa' | 'curso' | 'proyecto';
@@ -75,6 +75,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   );
   const [liderId, setLiderId] = useState((initialData as ProyectoEspecial)?.lider_id || '');
   const [liderSecundarioId, setLiderSecundarioId] = useState((initialData as ProyectoEspecial)?.lider_secundario_id || '');
+  const [linkOnedrive, setLinkOnedrive] = useState((initialData as ProyectoEspecial)?.link_onedrive || '');
   const [estadoProyecto, setEstadoProyecto] = useState<'Planificación' | 'En Proceso' | 'Completado' | 'Pausado'>(
     (initialData as ProyectoEspecial)?.estado || 'En Proceso'
   );
@@ -162,6 +163,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           area_id: areaId,
           lider_id: liderId || undefined,
           lider_secundario_id: liderSecundarioId || undefined,
+          link_onedrive: linkOnedrive.trim() || undefined,
           estado: estadoProyecto,
         });
       } else {
@@ -171,6 +173,7 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           area_id: areaId,
           lider_id: liderId || undefined,
           lider_secundario_id: liderSecundarioId || undefined,
+          link_onedrive: linkOnedrive.trim() || undefined,
           estado: estadoProyecto,
         });
       }
@@ -553,6 +556,38 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Enlace a Carpeta de Recursos en OneDrive */}
+              <div>
+                <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <FolderOpen className="w-3.5 h-3.5 text-blue-600" />
+                    Carpeta de Recursos OneDrive
+                  </span>
+                  {linkOnedrive.trim() && (
+                    <a
+                      href={linkOnedrive.trim()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline lowercase tracking-normal"
+                    >
+                      Probar enlace <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    value={linkOnedrive}
+                    onChange={e => setLinkOnedrive(e.target.value)}
+                    placeholder="https://uned-my.sharepoint.com/... o https://onedrive.live.com/..."
+                    className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500 placeholder:text-stone-400"
+                  />
+                </div>
+                <p className="text-[11px] text-charcoal-500 mt-1 leading-snug">
+                  Pega aquí el enlace a la carpeta compartida en OneDrive para subir y consultar toda la documentación necesaria del proyecto.
+                </p>
               </div>
             </>
           )}

@@ -34,7 +34,9 @@ import {
   Tag,
   ChevronRight,
   Inbox,
-  ListTodo
+  ListTodo,
+  FolderOpen,
+  ExternalLink
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto, PestanaAdmin, CategoriaAdmin, TareaCCV } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -2000,6 +2002,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         <span>• Co-Líder: <strong className="text-blue-700 font-bold">{pry.lider_secundario_nombre}</strong></span>
                                       )}
                                     </div>
+                                    {pry.link_onedrive ? (
+                                      <div className="mt-2">
+                                        <a
+                                          href={pry.link_onedrive}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-xl border border-blue-200 transition-all shadow-2xs group"
+                                          title="Abrir carpeta de recursos en OneDrive"
+                                        >
+                                          <FolderOpen className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                                          <span>Carpeta OneDrive</span>
+                                          <ExternalLink className="w-3 h-3 text-blue-400 group-hover:text-blue-600" />
+                                        </a>
+                                      </div>
+                                    ) : (
+                                      <div className="mt-1.5 text-[11px] text-stone-400 italic flex items-center gap-1">
+                                        <FolderOpen className="w-3 h-3" />
+                                        <span>Sin carpeta OneDrive vinculada</span>
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">

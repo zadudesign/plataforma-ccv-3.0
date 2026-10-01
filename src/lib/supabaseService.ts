@@ -566,17 +566,32 @@ export async function createProyectoDB(proyecto: Omit<ProyectoEspecial, 'id'>): 
     if (proyecto.area_id && isGuid(proyecto.area_id)) payload.area_id = proyecto.area_id;
     if (proyecto.lider_id && isGuid(proyecto.lider_id)) payload.lider_id = proyecto.lider_id;
     if (proyecto.lider_secundario_id && isGuid(proyecto.lider_secundario_id)) payload.lider_secundario_id = proyecto.lider_secundario_id;
+    if (proyecto.link_onedrive !== undefined) payload.link_onedrive = proyecto.link_onedrive || null;
 
     let { data, error } = await supabase.from('proyectos').insert(payload).select().single();
-    if (error && error.code === 'PGRST204' && error.message.includes('lider_secundario_id')) {
-      delete payload.lider_secundario_id;
-      const res = await supabase.from('proyectos').insert(payload).select().single();
-      data = res.data;
-      error = res.error;
+    if (error && error.code === 'PGRST204') {
+      let modified = false;
+      if (error.message.includes('lider_secundario_id')) {
+        delete payload.lider_secundario_id;
+        modified = true;
+      }
+      if (error.message.includes('link_onedrive')) {
+        delete payload.link_onedrive;
+        modified = true;
+      }
+      if (modified) {
+        const res = await supabase.from('proyectos').insert(payload).select().single();
+        data = res.data;
+        error = res.error;
+      }
     }
-    if (error) return null;
+    if (error) {
+      console.error('Error al crear proyecto en Supabase:', error);
+      return null;
+    }
     return data;
-  } catch {
+  } catch (err) {
+    console.error('Excepción al crear proyecto:', err);
     return null;
   }
 }
@@ -812,13 +827,24 @@ export async function updateProyectoFullDB(id: string, datos: Partial<ProyectoEs
     if (datos.area_id !== undefined) payload.area_id = isGuid(datos.area_id) ? datos.area_id : null;
     if (datos.lider_id !== undefined) payload.lider_id = isGuid(datos.lider_id) ? datos.lider_id : null;
     if (datos.lider_secundario_id !== undefined) payload.lider_secundario_id = isGuid(datos.lider_secundario_id) ? datos.lider_secundario_id : null;
+    if (datos.link_onedrive !== undefined) payload.link_onedrive = datos.link_onedrive || null;
     if (datos.estado) payload.estado = datos.estado;
 
     let { error } = await supabase.from('proyectos').update(payload).eq('id', id);
-    if (error && error.code === 'PGRST204' && error.message.includes('lider_secundario_id')) {
-      delete payload.lider_secundario_id;
-      const res = await supabase.from('proyectos').update(payload).eq('id', id);
-      error = res.error;
+    if (error && error.code === 'PGRST204') {
+      let modified = false;
+      if (error.message.includes('lider_secundario_id')) {
+        delete payload.lider_secundario_id;
+        modified = true;
+      }
+      if (error.message.includes('link_onedrive')) {
+        delete payload.link_onedrive;
+        modified = true;
+      }
+      if (modified) {
+        const res = await supabase.from('proyectos').update(payload).eq('id', id);
+        error = res.error;
+      }
     }
     if (error) console.error('Error al actualizar proyecto en Supabase:', error);
     return !error;
