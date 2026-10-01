@@ -36,7 +36,8 @@ import {
   Inbox,
   ListTodo,
   FolderOpen,
-  ExternalLink
+  ExternalLink,
+  UserPlus
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto, PestanaAdmin, CategoriaAdmin, TareaCCV } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -49,6 +50,7 @@ import { CreateAreaModal } from './CreateAreaModal';
 import { ConfirmDeleteAreaModal } from './ConfirmDeleteAreaModal';
 import { SolicitudesInboxTab } from './SolicitudesInboxTab';
 import { PlantillaCursosTab } from './PlantillaCursosTab';
+import { InscribirUsuariosRolModal } from './InscribirUsuariosRolModal';
 
 interface AreaHierarchyNodeProps {
   area: Area;
@@ -60,6 +62,7 @@ interface AreaHierarchyNodeProps {
   onOpenCreateRole: (areaId: string) => void;
   onOpenDeleteArea: (area: Area) => void;
   onAsignarJefeArea?: (areaId: string, jefeId: string | null) => void;
+  onOpenInscribirUsuariosRol?: (area: Area, rol?: Rol) => void;
   depth?: number;
 }
 
@@ -73,6 +76,7 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
   onOpenCreateRole,
   onOpenDeleteArea,
   onAsignarJefeArea,
+  onOpenInscribirUsuariosRol,
   depth = 0,
 }) => {
   const subareas = allAreas.filter(a => a.parent_id === area.id);
@@ -131,7 +135,16 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {onOpenInscribirUsuariosRol && (
+              <button
+                onClick={() => onOpenInscribirUsuariosRol(area)}
+                className="px-3 py-1.5 bg-sage-50 hover:bg-sage-100 text-sage-800 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 border border-sage-200 shadow-2xs hover:shadow-xs"
+                title="Inscribir o asignar usuarios a los roles adscritos de este área para darles acceso a tareas"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-sage-600" /> Inscribir Usuarios
+              </button>
+            )}
             <button
               onClick={() => onOpenCreateRole(area.id)}
               className="px-3 py-1.5 bg-cream-100 hover:bg-cream-200 text-charcoal-800 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 border border-stone-200"
@@ -200,17 +213,46 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
                 <ShieldCheck className="w-4 h-4 text-sage-600" />
                 Roles Adscritos ({rolesArea.length})
               </span>
+              {onOpenInscribirUsuariosRol && (
+                <button
+                  onClick={() => onOpenInscribirUsuariosRol(area)}
+                  className="text-[10px] font-bold text-sage-700 hover:text-sage-900 bg-sage-100 hover:bg-sage-200 px-2 py-0.5 rounded-full transition-all flex items-center gap-1 shadow-2xs"
+                  title="Gestionar e inscribir usuarios en roles de este área"
+                >
+                  <UserPlus className="w-3 h-3" />
+                  Inscribir
+                </button>
+              )}
             </div>
             {rolesArea.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
-                {rolesArea.map(r => (
-                  <span key={r.id} className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-stone-200 text-charcoal-800 shadow-xs">
-                    {r.nombre}
-                  </span>
-                ))}
+                {rolesArea.map(r => {
+                  const usuariosEnEsteRol = usuarios.filter(u => u.rol_id === r.id || (u.rol_nombre === r.nombre && u.area_nombre === area.nombre));
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => onOpenInscribirUsuariosRol ? onOpenInscribirUsuariosRol(area, r) : onOpenCreateRole(area.id)}
+                      className="group text-[10px] font-bold px-2 py-1 rounded-lg bg-white hover:bg-sage-50 border border-stone-200 hover:border-sage-300 text-charcoal-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer text-left"
+                      title={`Haz clic para ver o inscribir usuarios con el rol '${r.nombre}' en esta unidad`}
+                    >
+                      <span>{r.nombre}</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-extrabold ${usuariosEnEsteRol.length > 0 ? 'bg-sage-100 text-sage-800' : 'bg-stone-100 text-stone-500'}`}>
+                        {usuariosEnEsteRol.length} {usuariosEnEsteRol.length === 1 ? 'usr' : 'usrs'}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-[11px] text-charcoal-400 italic">Sin roles específicos asignados</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-charcoal-400 italic">Sin roles específicos asignados</p>
+                <button
+                  onClick={() => onOpenCreateRole(area.id)}
+                  className="text-[10px] font-bold text-sage-600 hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Crear rol
+                </button>
+              </div>
             )}
           </div>
 
@@ -280,6 +322,7 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
               onOpenCreateRole={onOpenCreateRole}
               onOpenDeleteArea={onOpenDeleteArea}
               onAsignarJefeArea={onAsignarJefeArea}
+              onOpenInscribirUsuariosRol={onOpenInscribirUsuariosRol}
               depth={depth + 1}
             />
           ))}
@@ -536,7 +579,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [defaultParentIdForAreaModal, setDefaultParentIdForAreaModal] = useState<string | undefined>(undefined);
   const [defaultAreaIdForRoleModal, setDefaultAreaIdForRoleModal] = useState<string | undefined>(undefined);
   const [areaAEliminar, setAreaAEliminar] = useState<Area | null>(null);
+  const [areaRolInscribir, setAreaRolInscribir] = useState<{ area: Area; rol?: Rol } | null>(null);
   const [filtroAreaAsignaciones, setFiltroAreaAsignaciones] = useState<string>('todas');
+
+  const handleOpenInscribirUsuariosRol = (area: Area, rol?: Rol) => {
+    setAreaRolInscribir({ area, rol });
+  };
+
+  const handleAsignarUsuarioRol = async (usuarioId: string, rolId: string, areaNombre?: string) => {
+    const rolEncontrado = roles.find(r => r.id === rolId);
+    const targetAreaNombre = areaNombre || rolEncontrado?.area_nombre || areaRolInscribir?.area.nombre;
+    const targetRolNombre = rolEncontrado ? rolEncontrado.nombre : undefined;
+
+    await actualizarUsuario(usuarioId, {
+      rol_id: rolId,
+      rol_nombre: targetRolNombre,
+      area_nombre: targetAreaNombre
+    });
+  };
+
+  const handleDesvincularUsuarioRol = async (usuarioId: string) => {
+    await actualizarUsuario(usuarioId, {
+      rol_id: null as any,
+      rol_nombre: '',
+      area_nombre: ''
+    });
+  };
 
   // Lógica de Clasificación & Filtro Jerárquico por Área para la pestaña Asignaciones
   const areaSeleccionadaObj = areas.find(
@@ -2220,6 +2288,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onOpenCreateRole={handleOpenCreateRoleForArea}
                   onOpenDeleteArea={handleOpenDeleteArea}
                   onAsignarJefeArea={asignarJefeArea}
+                  onOpenInscribirUsuariosRol={handleOpenInscribirUsuariosRol}
                 />
               ))}
           </div>
@@ -2410,6 +2479,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           proyectos={proyectos}
           onClose={() => setAreaAEliminar(null)}
           onConfirmDelete={eliminarArea}
+        />
+      )}
+
+      {areaRolInscribir && (
+        <InscribirUsuariosRolModal
+          area={areaRolInscribir.area}
+          rolesArea={roles.filter(r => r.area_id === areaRolInscribir.area.id || r.area_nombre === areaRolInscribir.area.nombre)}
+          rolSeleccionadoInicial={areaRolInscribir.rol}
+          usuarios={usuarios}
+          rolesPermisosMap={rolesPermisosMap}
+          onClose={() => setAreaRolInscribir(null)}
+          onAsignarUsuarioRol={handleAsignarUsuarioRol}
+          onDesvincularUsuarioRol={handleDesvincularUsuarioRol}
+          onOpenCreateRole={(areaId) => {
+            setAreaRolInscribir(null);
+            handleOpenCreateRoleForArea(areaId);
+          }}
         />
       )}
     </div>

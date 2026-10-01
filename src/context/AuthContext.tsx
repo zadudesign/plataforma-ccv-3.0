@@ -654,14 +654,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const actualizarUsuario = async (id: string, datos: Partial<Usuario>) => {
+    const rolActualizado = datos.rol_id ? roles.find(r => r.id === datos.rol_id) : undefined;
+    const computedRolNombre = rolActualizado
+      ? rolActualizado.nombre
+      : (datos.rol_id === null ? '' : (datos.rol_nombre !== undefined ? datos.rol_nombre : undefined));
+    const computedAreaNombre = rolActualizado
+      ? (rolActualizado.area_nombre || datos.area_nombre)
+      : (datos.rol_id === null ? '' : (datos.area_nombre !== undefined ? datos.area_nombre : undefined));
+
     setUsuarios(prev => prev.map(u => {
       if (u.id === id) {
-        const rolActualizado = datos.rol_id ? roles.find(r => r.id === datos.rol_id) : undefined;
         return {
           ...u,
           ...datos,
-          rol_nombre: rolActualizado ? rolActualizado.nombre : u.rol_nombre,
-          area_nombre: rolActualizado ? rolActualizado.area_nombre : u.area_nombre
+          rol_id: datos.rol_id === null ? '' : (datos.rol_id !== undefined ? datos.rol_id : u.rol_id),
+          rol_nombre: computedRolNombre !== undefined ? computedRolNombre : u.rol_nombre,
+          area_nombre: computedAreaNombre !== undefined ? computedAreaNombre : u.area_nombre
         };
       }
       return u;
@@ -669,13 +677,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Actualizar usuario en sesión si es el mismo
     if (usuarioActual && usuarioActual.id === id) {
-      setUsuarioActual(prev => prev ? { ...prev, ...datos } : null);
+      setUsuarioActual(prev => prev ? {
+        ...prev,
+        ...datos,
+        rol_id: datos.rol_id === null ? '' : (datos.rol_id !== undefined ? datos.rol_id : prev.rol_id),
+        rol_nombre: computedRolNombre !== undefined ? computedRolNombre : prev.rol_nombre,
+        area_nombre: computedAreaNombre !== undefined ? computedAreaNombre : prev.area_nombre
+      } : null);
     }
     if (usuarioReal && usuarioReal.id === id) {
-      setUsuarioReal(prev => prev ? { ...prev, ...datos } : null);
+      setUsuarioReal(prev => prev ? {
+        ...prev,
+        ...datos,
+        rol_id: datos.rol_id === null ? '' : (datos.rol_id !== undefined ? datos.rol_id : prev.rol_id),
+        rol_nombre: computedRolNombre !== undefined ? computedRolNombre : prev.rol_nombre,
+        area_nombre: computedAreaNombre !== undefined ? computedAreaNombre : prev.area_nombre
+      } : null);
     }
 
-    // Persistir directamente en Supabase (public.usuarios -> avatar_url y demás datos)
+    // Persistir directamente en Supabase (public.usuarios -> rol_id, avatar_url y demás datos)
     try {
       await updateUsuarioDB(id, datos);
     } catch (e) {

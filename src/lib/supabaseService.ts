@@ -355,8 +355,22 @@ export async function updateUsuarioDB(id: string, datos: Partial<Usuario>): Prom
     const payload: any = {};
     if (datos.nombre_completo !== undefined) payload.nombre_completo = datos.nombre_completo;
     if (datos.email !== undefined) payload.email = datos.email;
-    if (datos.rol_id !== undefined && isGuid(datos.rol_id)) payload.rol_id = datos.rol_id;
-    if (datos.telefono !== undefined) payload.telefono = datos.telefono;
+    if (datos.rol_id !== undefined) {
+      if (isGuid(datos.rol_id)) {
+        payload.rol_id = datos.rol_id;
+      } else if (!datos.rol_id) {
+        payload.rol_id = null;
+      } else if (datos.rol_nombre) {
+        const { data: rFound } = await supabase
+          .from('roles')
+          .select('id')
+          .eq('nombre', datos.rol_nombre)
+          .maybeSingle();
+        if (rFound?.id) {
+          payload.rol_id = rFound.id;
+        }
+      }
+    }
     if (datos.activo !== undefined) payload.activo = datos.activo;
     if (datos.avatar_url !== undefined) payload.avatar_url = datos.avatar_url;
     if (datos.firma_digital !== undefined) payload.firma_digital = datos.firma_digital;
