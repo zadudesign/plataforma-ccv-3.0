@@ -654,35 +654,31 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 </div>
               </div>
 
-              {/* Banner Ponderación Oficial de Avance por Tareas (10%, 40%, 25%, 25%) */}
+              {/* Banner Ponderación Oficial de Avance por Tareas */}
               <div className="p-4 rounded-2xl bg-cream-50/90 border border-stone-200 shadow-2xs space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-bold text-charcoal-800">
                   <span className="flex items-center gap-1.5 text-sage-800">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                     Ponderación de Avance por Estado de Tarea (Modelo Oficial)
                   </span>
-                  <span className="text-[11px] text-charcoal-500 font-medium">Total: 100%</span>
+                  <span className="text-[11px] text-charcoal-500 font-medium">Total: {totalTareas} {totalTareas === 1 ? 'tarea' : 'tareas'}</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200">
-                    <p className="text-[10px] font-extrabold text-rose-700 uppercase">1. Pendiente</p>
-                    <p className="text-sm font-black text-rose-900 mt-0.5">10%</p>
-                    <p className="text-[10px] font-medium text-rose-600 mt-0.5">{pendientes} {pendientes === 1 ? 'tarea' : 'tareas'}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-2.5 bg-rose-50/70 rounded-xl border border-rose-200/60 flex items-center justify-between gap-2 shadow-2xs">
+                    <p className="text-[11px] font-extrabold text-rose-700 uppercase tracking-wide">Pendientes</p>
+                    <p className="text-lg sm:text-xl font-black text-rose-900 leading-none">{pendientes}</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200">
-                    <p className="text-[10px] font-extrabold text-blue-700 uppercase">2. En Proceso</p>
-                    <p className="text-sm font-black text-blue-900 mt-0.5">+40% (50%)</p>
-                    <p className="text-[10px] font-medium text-blue-600 mt-0.5">{enProceso} {enProceso === 1 ? 'tarea' : 'tareas'}</p>
+                  <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-200/60 flex items-center justify-between gap-2 shadow-2xs">
+                    <p className="text-[11px] font-extrabold text-blue-700 uppercase tracking-wide">En Proceso</p>
+                    <p className="text-lg sm:text-xl font-black text-blue-900 leading-none">{enProceso}</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-                    <p className="text-[10px] font-extrabold text-amber-700 uppercase">3. En Revisión</p>
-                    <p className="text-sm font-black text-amber-900 mt-0.5">+25% (75%)</p>
-                    <p className="text-[10px] font-medium text-amber-600 mt-0.5">{enRevision} {enRevision === 1 ? 'tarea' : 'tareas'}</p>
+                  <div className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/60 flex items-center justify-between gap-2 shadow-2xs">
+                    <p className="text-[11px] font-extrabold text-amber-700 uppercase tracking-wide">En Revisión</p>
+                    <p className="text-lg sm:text-xl font-black text-amber-900 leading-none">{enRevision}</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
-                    <p className="text-[10px] font-extrabold text-emerald-700 uppercase">4. Completada</p>
-                    <p className="text-sm font-black text-emerald-900 mt-0.5">+25% (100%)</p>
-                    <p className="text-[10px] font-medium text-emerald-600 mt-0.5">{completadas} {completadas === 1 ? 'tarea' : 'tareas'}</p>
+                  <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/60 flex items-center justify-between gap-2 shadow-2xs">
+                    <p className="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wide">Completadas</p>
+                    <p className="text-lg sm:text-xl font-black text-emerald-900 leading-none">{completadas}</p>
                   </div>
                 </div>
               </div>
