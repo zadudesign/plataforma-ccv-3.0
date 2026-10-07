@@ -1583,6 +1583,10 @@ export async function fetchSolicitudesTareasDB(): Promise<SolicitudTareaCCV[]> {
         tarea_creada_id: s.tarea_creada_id || null,
         proyecto_id: s.proyecto_id || null,
         proyecto_nombre: s.proyecto_nombre || null,
+        es_nuevo_proyecto: s.es_nuevo_proyecto || false,
+        nuevo_proyecto_nombre: s.nuevo_proyecto_nombre || null,
+        nuevo_proyecto_descripcion: s.nuevo_proyecto_descripcion || null,
+        nuevo_proyecto_link: s.nuevo_proyecto_link || null,
         revisado_por: s.revisado_por || null,
         fecha_revision: s.fecha_revision || null,
         created_at: s.created_at
@@ -1614,6 +1618,10 @@ export async function fetchSolicitudesTareasDB(): Promise<SolicitudTareaCCV[]> {
       tarea_creada_id: s.tarea_creada_id || null,
       proyecto_id: s.proyecto_id || null,
       proyecto_nombre: s.proyecto_nombre || null,
+      es_nuevo_proyecto: s.es_nuevo_proyecto || false,
+      nuevo_proyecto_nombre: s.nuevo_proyecto_nombre || null,
+      nuevo_proyecto_descripcion: s.nuevo_proyecto_descripcion || null,
+      nuevo_proyecto_link: s.nuevo_proyecto_link || null,
       revisado_por: s.revisado_por || null,
       revisado_por_nombre: s.revisor?.nombre_completo || null,
       fecha_revision: s.fecha_revision || null,
@@ -1647,6 +1655,10 @@ export async function crearSolicitudTareaDB(
       estado: 'Pendiente' as EstadoSolicitudTarea,
       proyecto_id: isGuid(solicitud.proyecto_id) ? solicitud.proyecto_id : null,
       proyecto_nombre: solicitud.proyecto_nombre?.trim() || null,
+      es_nuevo_proyecto: solicitud.es_nuevo_proyecto ?? false,
+      nuevo_proyecto_nombre: solicitud.nuevo_proyecto_nombre?.trim() || null,
+      nuevo_proyecto_descripcion: solicitud.nuevo_proyecto_descripcion?.trim() || null,
+      nuevo_proyecto_link: solicitud.nuevo_proyecto_link?.trim() || null,
     };
 
     let { data, error } = await supabase
@@ -1655,16 +1667,31 @@ export async function crearSolicitudTareaDB(
       .select()
       .single();
 
-    // Reintento resiliente si las columnas proyecto_id/proyecto_nombre aún no existen en la BD
+    // Reintento resiliente si columnas no existen aún en la BD de Supabase
     if (error && (error.message.includes('column') || error.message.includes('proyecto') || (error as any).code === 'PGRST204')) {
-      const { proyecto_id, proyecto_nombre, ...payloadSinProyecto } = payload;
+      const payloadLimpio = { ...payload };
+      delete payloadLimpio.es_nuevo_proyecto;
+      delete payloadLimpio.nuevo_proyecto_nombre;
+      delete payloadLimpio.nuevo_proyecto_descripcion;
+      delete payloadLimpio.nuevo_proyecto_link;
+      delete payloadLimpio.proyecto_id;
+      delete payloadLimpio.proyecto_nombre;
+
       const retry = await supabase
         .from('solicitudes_tareas')
-        .insert(payloadSinProyecto)
+        .insert(payloadLimpio)
         .select()
         .single();
       if (!retry.error && retry.data) {
-        data = { ...retry.data, proyecto_id, proyecto_nombre };
+        data = { 
+          ...retry.data, 
+          proyecto_id: payload.proyecto_id, 
+          proyecto_nombre: payload.proyecto_nombre,
+          es_nuevo_proyecto: payload.es_nuevo_proyecto,
+          nuevo_proyecto_nombre: payload.nuevo_proyecto_nombre,
+          nuevo_proyecto_descripcion: payload.nuevo_proyecto_descripcion,
+          nuevo_proyecto_link: payload.nuevo_proyecto_link,
+        };
         error = null;
       }
     }
@@ -1691,6 +1718,10 @@ export async function crearSolicitudTareaDB(
         estado: 'Pendiente',
         proyecto_id: payload.proyecto_id,
         proyecto_nombre: payload.proyecto_nombre,
+        es_nuevo_proyecto: payload.es_nuevo_proyecto,
+        nuevo_proyecto_nombre: payload.nuevo_proyecto_nombre,
+        nuevo_proyecto_descripcion: payload.nuevo_proyecto_descripcion,
+        nuevo_proyecto_link: payload.nuevo_proyecto_link,
         created_at: new Date().toISOString()
       };
       return { success: true, data: fallbackData };
@@ -1719,6 +1750,10 @@ export async function crearSolicitudTareaDB(
         tarea_creada_id: data.tarea_creada_id,
         proyecto_id: data.proyecto_id || payload.proyecto_id,
         proyecto_nombre: data.proyecto_nombre || payload.proyecto_nombre,
+        es_nuevo_proyecto: data.es_nuevo_proyecto !== undefined ? data.es_nuevo_proyecto : payload.es_nuevo_proyecto,
+        nuevo_proyecto_nombre: data.nuevo_proyecto_nombre || payload.nuevo_proyecto_nombre,
+        nuevo_proyecto_descripcion: data.nuevo_proyecto_descripcion || payload.nuevo_proyecto_descripcion,
+        nuevo_proyecto_link: data.nuevo_proyecto_link || payload.nuevo_proyecto_link,
         revisado_por: data.revisado_por,
         fecha_revision: data.fecha_revision,
         created_at: data.created_at

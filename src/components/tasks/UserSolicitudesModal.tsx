@@ -323,13 +323,18 @@ export const UserSolicitudesModal: React.FC<UserSolicitudesModalProps> = ({
                         <span>{s.origen_nombre}</span>
                       </span>
 
-                      {/* Proyecto Vinculado */}
-                      {s.proyecto_nombre && (
+                      {/* Proyecto Vinculado o Propuesta de Creación */}
+                      {s.es_nuevo_proyecto ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-900 border border-indigo-200 text-[11px] font-extrabold shadow-2xs">
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          <span>Nuevo Proyecto Propuesto: {s.nuevo_proyecto_nombre || s.proyecto_nombre}</span>
+                        </span>
+                      ) : s.proyecto_nombre ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
                           <FolderKanban className="w-3 h-3 text-amber-600" />
                           <span>{s.proyecto_nombre}</span>
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     {/* Fecha de Radicación */}

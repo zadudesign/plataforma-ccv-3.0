@@ -227,6 +227,10 @@ export interface SolicitudTareaCCV {
   tarea_creada_id?: string | null;
   proyecto_id?: string | null;
   proyecto_nombre?: string | null;
+  es_nuevo_proyecto?: boolean;
+  nuevo_proyecto_nombre?: string | null;
+  nuevo_proyecto_descripcion?: string | null;
+  nuevo_proyecto_link?: string | null;
   revisado_por?: string | null;
   revisado_por_nombre?: string | null;
   fecha_revision?: string | null;

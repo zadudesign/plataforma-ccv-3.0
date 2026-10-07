@@ -849,6 +849,10 @@ export const INITIAL_SOLICITUDES_TAREAS: SolicitudTareaCCV[] = [
     enlace_recurso: 'https://drive.google.com/drive/folders/capsulas-bioetica-ccv',
     prioridad: 'Alta',
     estado: 'Pendiente',
+    es_nuevo_proyecto: true,
+    nuevo_proyecto_nombre: 'Laboratorio de Simulación Médica Virtual',
+    nuevo_proyecto_descripcion: 'Iniciativa institucional para el desarrollo de simulaciones clínicas interactivas y material de apoyo.',
+    nuevo_proyecto_link: 'https://uned-my.sharepoint.com/:f:/g/personal/lab_simulacion',
     created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
   },
   {

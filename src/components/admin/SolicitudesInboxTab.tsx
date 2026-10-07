@@ -30,7 +30,9 @@ import {
   Timer,
   FolderKanban,
   Users,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles,
+  FolderPlus
 } from 'lucide-react';
 import { 
   SolicitudTareaCCV, 
@@ -47,6 +49,7 @@ import {
 import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
 import { SearchableUserSelect } from '@/components/common/SearchableUserSelect';
 import { useAuth } from '@/context/AuthContext';
+import { createProyectoDB } from '@/lib/supabaseService';
 
 interface SolicitudesInboxTabProps {
   solicitudes: SolicitudTareaCCV[];
@@ -74,7 +77,8 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
     aprobarYConvertirSolicitud, 
     solicitudesLoading, 
     cargarSolicitudesTareas,
-    tarifasProyecto
+    tarifasProyecto,
+    crearProyecto
   } = useAuth();
 
   // Estados de filtros y búsqueda
@@ -170,7 +174,14 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
     
     setCategoriaProyecto('Diseño');
 
-    if (s.proyecto_id && proyectos.some(p => p.id === s.proyecto_id)) {
+    if (s.es_nuevo_proyecto) {
+      setTipoTarea('Proyecto');
+      const nombreProp = (s.nuevo_proyecto_nombre || s.proyecto_nombre || '').toLowerCase();
+      const matchPry = proyectos.find(p => p.nombre.toLowerCase() === nombreProp);
+      if (matchPry) {
+        setProyectoId(matchPry.id);
+      }
+    } else if (s.proyecto_id && proyectos.some(p => p.id === s.proyecto_id)) {
       setTipoTarea('Proyecto');
       setProyectoId(s.proyecto_id);
     } else if (cursos.length > 0) {
@@ -181,7 +192,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       setProyectoId(proyectos[0].id);
     }
 
-    if (proyectos.length > 0 && !proyectoId && !s.proyecto_id) {
+    if (proyectos.length > 0 && !proyectoId && !s.proyecto_id && !s.es_nuevo_proyecto) {
       setProyectoId(proyectos[0].id);
     }
     if (cursos.length > 0 && !cursoId) {
@@ -244,7 +255,43 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
     setFeedbackMsg(null);
 
     const cursoObj = cursos.find(c => c.id === activeCursoId);
-    const proyObj = proyectos.find(p => p.id === activeProyectoId);
+    let proyObj = proyectos.find(p => p.id === activeProyectoId);
+    let finalProyectoId = activeProyectoId;
+    let finalProyectoNombre = proyObj?.nombre;
+
+    // Si la solicitud requiere crear un nuevo proyecto y se aprueba como tipo Proyecto:
+    if (tipoTarea === 'Proyecto' && solicitudSeleccionada.es_nuevo_proyecto) {
+      const nombrePropuesto = (solicitudSeleccionada.nuevo_proyecto_nombre || solicitudSeleccionada.proyecto_nombre || '').trim();
+      const existePry = proyectos.find(p => p.id === activeProyectoId || p.nombre.toLowerCase() === nombrePropuesto.toLowerCase());
+
+      if (!existePry && nombrePropuesto) {
+        const nuevoPry = await createProyectoDB({
+          nombre: nombrePropuesto,
+          descripcion: solicitudSeleccionada.nuevo_proyecto_descripcion || `Proyecto institucional generado desde solicitud ${solicitudSeleccionada.id}`,
+          area_id: respArea?.id || solicitudSeleccionada.origen_id || undefined,
+          lider_id: activeResponsableId || undefined,
+          link_onedrive: solicitudSeleccionada.nuevo_proyecto_link || undefined,
+          estado: 'En Proceso'
+        });
+        if (nuevoPry) {
+          finalProyectoId = nuevoPry.id;
+          finalProyectoNombre = nuevoPry.nombre;
+          if (crearProyecto) {
+            crearProyecto({
+              nombre: nuevoPry.nombre,
+              descripcion: nuevoPry.descripcion,
+              area_id: nuevoPry.area_id,
+              lider_id: nuevoPry.lider_id,
+              link_onedrive: nuevoPry.link_onedrive,
+              estado: nuevoPry.estado
+            });
+          }
+        }
+      } else if (existePry) {
+        finalProyectoId = existePry.id;
+        finalProyectoNombre = existePry.nombre;
+      }
+    }
 
     const descFinal = [
       descripcion.trim(),
@@ -260,8 +307,8 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       area_nombre: respArea?.nombre || resp?.area_nombre || undefined,
       curso_id: tipoTarea === 'Curso Virtual' ? activeCursoId : undefined,
       curso_nombre: tipoTarea === 'Curso Virtual' ? cursoObj?.nombre : undefined,
-      proyecto_id: tipoTarea === 'Proyecto' ? activeProyectoId : undefined,
-      proyecto_nombre: tipoTarea === 'Proyecto' ? proyObj?.nombre : undefined,
+      proyecto_id: tipoTarea === 'Proyecto' ? finalProyectoId : undefined,
+      proyecto_nombre: tipoTarea === 'Proyecto' ? finalProyectoNombre : undefined,
       responsable_id: activeResponsableId || undefined,
       responsable_nombre: resp?.nombre_completo || undefined,
       responsable_avatar: resp?.avatar_url,
@@ -459,13 +506,18 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                       {s.origen_nombre} ({s.tipo_origen})
                     </span>
 
-                    {/* Badge Proyecto si está vinculado */}
-                    {s.proyecto_nombre && (
+                    {/* Badge Proyecto si está vinculado o solicita creación */}
+                    {s.es_nuevo_proyecto ? (
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-900 font-extrabold text-[11px] border border-indigo-300 flex items-center gap-1.5 shadow-2xs">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                        <span>✨ Solicita Crear Proyecto: {s.nuevo_proyecto_nombre || s.proyecto_nombre}</span>
+                      </span>
+                    ) : s.proyecto_nombre ? (
                       <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 font-extrabold text-[11px] border border-amber-300 flex items-center gap-1 shadow-2xs">
                         <FolderKanban className="w-3 h-3 text-amber-600" />
                         <span>Proyecto: {s.proyecto_nombre}</span>
                       </span>
-                    )}
+                    ) : null}
 
                     {/* Badge Prioridad */}
                     <span
@@ -649,32 +701,69 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
             </div>
 
             {/* Contexto de la Solicitud de Origen */}
-            <div className="mx-6 mt-4 p-3.5 bg-sage-50/70 border border-sage-200/80 rounded-2xl flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-sage-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                <FileText className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-extrabold text-sage-900 text-[11px] uppercase tracking-wider">Solicitud de Origen</span>
-                  <span className="text-[10px] text-sage-700 bg-sage-100/80 px-2 py-0.5 rounded-full font-bold">
-                    {solicitudSeleccionada.origen_nombre}
-                  </span>
+            <div className="mx-6 mt-4 space-y-2.5">
+              <div className="p-3.5 bg-sage-50/70 border border-sage-200/80 rounded-2xl flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-sage-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                  <FileText className="w-4 h-4" />
                 </div>
-                <p className="text-charcoal-800 font-bold text-xs truncate mt-0.5">
-                  {solicitudSeleccionada.titulo}
-                </p>
-                <p className="text-[11px] text-charcoal-600 mt-0.5 flex items-center gap-2 flex-wrap">
-                  <span>👤 {solicitudSeleccionada.solicitante_nombre}</span>
-                  <span>•</span>
-                  <span>📞 {solicitudSeleccionada.solicitante_contacto}</span>
-                  {solicitudSeleccionada.proyecto_nombre && (
-                    <>
-                      <span>•</span>
-                      <span className="font-extrabold text-amber-800 bg-amber-100/80 px-2 py-0.2 rounded-md">📁 Proyecto: {solicitudSeleccionada.proyecto_nombre}</span>
-                    </>
-                  )}
-                </p>
+                <div className="flex-1 min-w-0 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-sage-900 text-[11px] uppercase tracking-wider">Solicitud de Origen</span>
+                    <span className="text-[10px] text-sage-700 bg-sage-100/80 px-2 py-0.5 rounded-full font-bold">
+                      {solicitudSeleccionada.origen_nombre}
+                    </span>
+                  </div>
+                  <p className="text-charcoal-800 font-bold text-xs truncate mt-0.5">
+                    {solicitudSeleccionada.titulo}
+                  </p>
+                  <p className="text-[11px] text-charcoal-600 mt-0.5 flex items-center gap-2 flex-wrap">
+                    <span>👤 {solicitudSeleccionada.solicitante_nombre}</span>
+                    <span>•</span>
+                    <span>📞 {solicitudSeleccionada.solicitante_contacto}</span>
+                    {solicitudSeleccionada.proyecto_nombre && !solicitudSeleccionada.es_nuevo_proyecto && (
+                      <>
+                        <span>•</span>
+                        <span className="font-extrabold text-amber-800 bg-amber-100/80 px-2 py-0.2 rounded-md">📁 Proyecto: {solicitudSeleccionada.proyecto_nombre}</span>
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
+
+              {/* Banner si solicita creación de nuevo proyecto */}
+              {solicitudSeleccionada.es_nuevo_proyecto && (
+                <div className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs space-y-1.5 shadow-2xs animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-indigo-950 flex items-center gap-1.5 text-xs">
+                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                      <span>Requiere Creación de Nuevo Proyecto</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white font-black text-[10px]">
+                      Nuevo Proyecto
+                    </span>
+                  </div>
+                  <div className="text-indigo-900 font-bold">
+                    📁 Nombre propuesto: <span className="font-black underline">{solicitudSeleccionada.nuevo_proyecto_nombre || solicitudSeleccionada.proyecto_nombre}</span>
+                  </div>
+                  {solicitudSeleccionada.nuevo_proyecto_descripcion && (
+                    <div className="text-indigo-800 text-[11px] bg-white/70 p-2 rounded-xl border border-indigo-100 leading-relaxed">
+                      <strong>Objetivo:</strong> {solicitudSeleccionada.nuevo_proyecto_descripcion}
+                    </div>
+                  )}
+                  {solicitudSeleccionada.nuevo_proyecto_link && (
+                    <div className="text-[11px] text-indigo-900 flex items-center gap-1 pt-0.5">
+                      <LinkIcon className="w-3.5 h-3.5 text-indigo-600" />
+                      <a href={solicitudSeleccionada.nuevo_proyecto_link} target="_blank" rel="noopener noreferrer" className="underline font-bold text-indigo-700 hover:text-indigo-950 truncate flex items-center gap-1">
+                        <span>Recursos vinculados</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-indigo-700 font-medium pt-1">
+                    ℹ️ Al aprobar, el proyecto se creará automáticamente en la plataforma y esta tarea se vinculará a él.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Formulario */}
@@ -1067,6 +1156,42 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                   <span className="font-bold text-charcoal-800">{solicitudSeleccionada.hora_estimada || 'No especificada'}</span>
                 </div>
               </div>
+
+              {/* Proyecto Vinculado o Propuesta de Nuevo Proyecto */}
+              {solicitudSeleccionada.es_nuevo_proyecto ? (
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-1">
+                  <span className="font-extrabold text-indigo-950 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                    Propuesta de Nuevo Proyecto Institucional
+                  </span>
+                  <div className="font-bold text-indigo-900 text-xs">
+                    {solicitudSeleccionada.nuevo_proyecto_nombre || solicitudSeleccionada.proyecto_nombre}
+                  </div>
+                  {solicitudSeleccionada.nuevo_proyecto_descripcion && (
+                    <p className="text-[11px] text-indigo-800">
+                      <strong>Objetivo:</strong> {solicitudSeleccionada.nuevo_proyecto_descripcion}
+                    </p>
+                  )}
+                  {solicitudSeleccionada.nuevo_proyecto_link && (
+                    <a
+                      href={solicitudSeleccionada.nuevo_proyecto_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-indigo-700 underline font-semibold flex items-center gap-1 truncate pt-0.5"
+                    >
+                      <span>Recursos del proyecto</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                  )}
+                </div>
+              ) : solicitudSeleccionada.proyecto_nombre ? (
+                <div>
+                  <span className="font-bold text-charcoal-400 block text-[10px] uppercase">Proyecto Asociado</span>
+                  <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 inline-block mt-0.5">
+                    📁 {solicitudSeleccionada.proyecto_nombre}
+                  </span>
+                </div>
+              ) : null}
 
               {solicitudSeleccionada.enlace_recurso && (
                 <div>

@@ -17,7 +17,9 @@ import {
   Layers,
   FilePlus,
   Mail,
-  FolderKanban
+  FolderKanban,
+  FolderPlus,
+  Link2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { PrioridadSolicitud, TareaCCV, ProyectoEspecial } from '@/types';
@@ -58,6 +60,13 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [proyectoSeleccionadoId, setProyectoSeleccionadoId] = useState<string>('');
+  
+  // Modo Proyecto: 'existente' o 'nuevo'
+  const [modoProyecto, setModoProyecto] = useState<'existente' | 'nuevo'>('existente');
+  const [nuevoProyectoNombre, setNuevoProyectoNombre] = useState('');
+  const [nuevoProyectoDescripcion, setNuevoProyectoDescripcion] = useState('');
+  const [nuevoProyectoLink, setNuevoProyectoLink] = useState('');
+
   const [fechaEstimada, setFechaEstimada] = useState('');
   const [horaEstimada, setHoraEstimada] = useState('');
   const [prioridad, setPrioridad] = useState<PrioridadSolicitud>('Normal');
@@ -67,6 +76,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [radicadoExitoso, setRadicadoExitoso] = useState<string | null>(null);
   const [radicadoProyectoNombre, setRadicadoProyectoNombre] = useState<string | null>(null);
+  const [radicadoEsNuevoProyecto, setRadicadoEsNuevoProyecto] = useState(false);
 
   // Fecha mínima: Hoy (YYYY-MM-DD)
   const hoyStr = new Date().toISOString().split('T')[0];
@@ -149,11 +159,16 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
     setTitulo('');
     setDescripcion('');
     setProyectoSeleccionadoId('');
+    setModoProyecto('existente');
+    setNuevoProyectoNombre('');
+    setNuevoProyectoDescripcion('');
+    setNuevoProyectoLink('');
     setHoraEstimada('');
     setPrioridad('Normal');
     setErrorMsg(null);
     setRadicadoExitoso(null);
     setRadicadoProyectoNombre(null);
+    setRadicadoEsNuevoProyecto(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -164,6 +179,19 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
       setErrorMsg('Debes tener una sesión activa para radicar una solicitud.');
       return;
     }
+
+    // Validar proyecto si se solicita uno nuevo
+    if (modoProyecto === 'nuevo') {
+      if (!nuevoProyectoNombre.trim()) {
+        setErrorMsg('Por favor ingresa el nombre del nuevo proyecto a solicitar.');
+        return;
+      }
+      if (!nuevoProyectoDescripcion.trim()) {
+        setErrorMsg('Por favor describe brevemente el objetivo o alcance del nuevo proyecto.');
+        return;
+      }
+    }
+
     if (!titulo.trim()) {
       setErrorMsg('Por favor ingresa el título del requerimiento o tarea.');
       return;
@@ -183,7 +211,11 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
       const tipoOrigen: 'Facultad' | 'Departamento/Área' = usuarioArea?.nivel === 3 ? 'Facultad' : 'Departamento/Área';
       const origenId = usuarioArea?.id || null;
 
-      const proySeleccionado = listaProyectos.find(p => p.id === proyectoSeleccionadoId);
+      const esNuevo = modoProyecto === 'nuevo';
+      const proySeleccionado = !esNuevo ? listaProyectos.find(p => p.id === proyectoSeleccionadoId) : null;
+      const proyNombreFinal = esNuevo 
+        ? nuevoProyectoNombre.trim() 
+        : (proySeleccionado ? proySeleccionado.nombre : null);
 
       const payload = {
         titulo: titulo.trim(),
@@ -198,11 +230,15 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
         solicitante_email: usuarioActual.email || null,
         solicitante_rol: rolNombre,
         solicitante_contacto: usuarioActual.telefono || usuarioActual.email || 'PrismaLab',
-        enlace_recurso: null,
+        enlace_recurso: esNuevo ? (nuevoProyectoLink.trim() || null) : null,
         prioridad,
         estado: 'Pendiente' as const,
         proyecto_id: proySeleccionado ? proySeleccionado.id : null,
-        proyecto_nombre: proySeleccionado ? proySeleccionado.nombre : null,
+        proyecto_nombre: proyNombreFinal,
+        es_nuevo_proyecto: esNuevo,
+        nuevo_proyecto_nombre: esNuevo ? nuevoProyectoNombre.trim() : null,
+        nuevo_proyecto_descripcion: esNuevo ? nuevoProyectoDescripcion.trim() : null,
+        nuevo_proyecto_link: esNuevo ? (nuevoProyectoLink.trim() || null) : null,
       };
 
       const result = await enviarSolicitudTarea(payload);
@@ -210,7 +246,8 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
       if (result.success && result.data) {
         const radicadoCode = `RAD-${result.data.id.slice(0, 8).toUpperCase()}`;
         setRadicadoExitoso(radicadoCode);
-        setRadicadoProyectoNombre(proySeleccionado ? proySeleccionado.nombre : null);
+        setRadicadoProyectoNombre(proyNombreFinal);
+        setRadicadoEsNuevoProyecto(esNuevo);
       } else {
         setErrorMsg(result.error || 'Ocurrió un error al registrar la solicitud en la base de datos.');
       }
@@ -283,7 +320,9 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
                   ¡Solicitud Radicada con Éxito!
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                  Tu requerimiento ha sido registrado en la base de datos de la plataforma para la revisión y asignación del Administrador.
+                  {radicadoEsNuevoProyecto
+                    ? 'Tu propuesta de nuevo proyecto y su primera tarea vinculada han sido radicadas en la plataforma para la revisión y aprobación del Administrador.'
+                    : 'Tu requerimiento ha sido registrado en la base de datos de la plataforma para la revisión y asignación del Administrador.'}
                 </p>
               </div>
 
@@ -313,9 +352,19 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
                 </div>
                 {radicadoProyectoNombre && (
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-500">Proyecto Vinculado:</span>
-                    <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
-                      <FolderKanban className="w-3 h-3 text-amber-600" />
+                    <span className="font-bold text-slate-500">
+                      {radicadoEsNuevoProyecto ? 'Nuevo Proyecto Solicitado:' : 'Proyecto Vinculado:'}
+                    </span>
+                    <span className={`font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${
+                      radicadoEsNuevoProyecto
+                        ? 'text-indigo-800 bg-indigo-50 border-indigo-200'
+                        : 'text-amber-800 bg-amber-50 border-amber-200'
+                    }`}>
+                      {radicadoEsNuevoProyecto ? (
+                        <Sparkles className="w-3 h-3 text-indigo-600" />
+                      ) : (
+                        <FolderKanban className="w-3 h-3 text-amber-600" />
+                      )}
                       {radicadoProyectoNombre}
                     </span>
                   </div>
@@ -412,51 +461,184 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
                   Especificaciones del Requerimiento
                 </h4>
 
-                {/* Selector de Proyecto Asignado o con Tarea Activa */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                {/* Módulo de Proyecto Asociado / Vinculado o Solicitud de Nuevo Proyecto */}
+                <div className="space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                     <label className="block text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
                       <FolderKanban className="w-3.5 h-3.5 text-amber-600" />
                       <span>Proyecto Asociado / Vinculado</span>
                       <span className="text-slate-400 font-normal">(Opcional)</span>
                     </label>
-                    {proyectosDisponibles.length > 0 && (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        {proyectosDisponibles.length} asignado{proyectosDisponibles.length > 1 ? 's' : ''} o activo{proyectosDisponibles.length > 1 ? 's' : ''}
-                      </span>
-                    )}
+
+                    {/* Conmutador de Modo: Existente vs. Nuevo */}
+                    <div className="inline-flex p-0.5 bg-slate-100 rounded-xl border border-slate-200 shadow-2xs self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setModoProyecto('existente')}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                          modoProyecto === 'existente'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <FolderKanban className="w-3 h-3 text-amber-600" />
+                        <span>Asignado {proyectosDisponibles.length > 0 ? `(${proyectosDisponibles.length})` : ''}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModoProyecto('nuevo')}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                          modoProyecto === 'nuevo'
+                            ? 'bg-indigo-600 text-white shadow-xs font-black'
+                            : 'text-indigo-600 hover:text-indigo-800'
+                        }`}
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>+ Solicitar Nuevo Proyecto</span>
+                      </button>
+                    </div>
                   </div>
 
-                  {proyectosDisponibles.length > 0 ? (
-                    <div className="space-y-1.5">
-                      <div className="relative">
-                        <FolderKanban className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <select
-                          value={proyectoSeleccionadoId}
-                          onChange={(e) => setProyectoSeleccionadoId(e.target.value)}
-                          className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white shadow-2xs transition-all cursor-pointer"
-                        >
-                          <option value="">-- Sin vincular a proyecto (Requerimiento General) --</option>
-                          {proyectosDisponibles.map(p => (
-                            <option key={p.id} value={p.id}>
-                              📁 {p.nombre} {p.estado ? `• [${p.estado}]` : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {proyectoSeleccionadoId && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50/80 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-medium animate-in fade-in">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <span>
-                            Esta tarea se vinculará al proyecto <strong className="font-black text-amber-950">{listaProyectos.find(p => p.id === proyectoSeleccionadoId)?.nombre}</strong>.
-                          </span>
+                  {modoProyecto === 'existente' ? (
+                    <div className="space-y-2">
+                      {proyectosDisponibles.length > 0 ? (
+                        <div className="space-y-1.5">
+                          <div className="relative">
+                            <FolderKanban className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <select
+                              value={proyectoSeleccionadoId}
+                              onChange={(e) => setProyectoSeleccionadoId(e.target.value)}
+                              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white shadow-2xs transition-all cursor-pointer"
+                            >
+                              <option value="">-- Sin vincular a proyecto (Requerimiento General) --</option>
+                              {proyectosDisponibles.map(p => (
+                                <option key={p.id} value={p.id}>
+                                  📁 {p.nombre} {p.estado ? `• [${p.estado}]` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          {proyectoSeleccionadoId && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50/80 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-medium animate-in fade-in">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>
+                                Esta tarea se vinculará al proyecto <strong className="font-black text-amber-950">{listaProyectos.find(p => p.id === proyectoSeleccionadoId)?.nombre}</strong>.
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                            <span>No tienes proyectos asignados actualmente en el sistema.</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setModoProyecto('nuevo')}
+                            className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-[11px] flex items-center gap-1 cursor-pointer shrink-0"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Solicitar Nuevo Proyecto</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Enlace sutil para solicitar nuevo proyecto si no lo encuentra en la lista */}
+                      {proyectosDisponibles.length > 0 && (
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-indigo-50/50 border border-indigo-100 rounded-xl text-[11px] text-indigo-950">
+                          <span className="text-slate-600">¿No encuentras el proyecto requerido en la lista?</span>
+                          <button
+                            type="button"
+                            onClick={() => setModoProyecto('nuevo')}
+                            className="font-black text-indigo-700 hover:text-indigo-900 flex items-center gap-1 hover:underline cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Solicitar nuevo proyecto</span>
+                          </button>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-500 flex items-center gap-2">
-                      <AlertCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span>No tienes proyectos asignados ni tareas activas. Se radicará como requerimiento general.</span>
+                    /* Tarjeta de Formulario de Solicitud de Nuevo Proyecto */
+                    <div className="p-3.5 bg-gradient-to-br from-indigo-50/70 via-purple-50/30 to-amber-50/30 border border-indigo-200/90 rounded-2xl space-y-3 animate-in fade-in duration-200 shadow-2xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-indigo-100/90">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                            <FolderPlus className="w-3.5 h-3.5" />
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-black text-indigo-950 block leading-tight">
+                              Propuesta de Creación de Nuevo Proyecto
+                            </span>
+                            <span className="text-[10px] text-indigo-700/90 font-medium">
+                              Se radicará bajo el área {areaNombre} para aprobación del Admin
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setModoProyecto('existente')}
+                          className="text-[10px] font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                        >
+                          Elegir existente
+                        </button>
+                      </div>
+
+                      {/* Nombre del Proyecto */}
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-700 uppercase tracking-wider mb-1">
+                          Nombre del Nuevo Proyecto <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={modoProyecto === 'nuevo'}
+                          value={nuevoProyectoNombre}
+                          onChange={(e) => setNuevoProyectoNombre(e.target.value)}
+                          placeholder="Ej. Proyecto Innovación Curricular 2026 o Realidad Aumentada Lab"
+                          className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs placeholder:text-slate-400 placeholder:font-normal"
+                        />
+                      </div>
+
+                      {/* Objetivo / Descripción del Proyecto */}
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-700 uppercase tracking-wider mb-1">
+                          Objetivo o Alcance del Proyecto <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={2}
+                          required={modoProyecto === 'nuevo'}
+                          value={nuevoProyectoDescripcion}
+                          onChange={(e) => setNuevoProyectoDescripcion(e.target.value)}
+                          placeholder="Describe brevemente la finalidad de este proyecto y sus metas..."
+                          className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs resize-none placeholder:text-slate-400"
+                        />
+                      </div>
+
+                      {/* Enlace de Insumos / OneDrive / Drive */}
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                          <span>Enlace a Recursos / OneDrive o Drive</span>
+                          <span className="text-slate-400 font-normal lowercase">(opcional)</span>
+                        </label>
+                        <div className="relative">
+                          <Link2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="url"
+                            value={nuevoProyectoLink}
+                            onChange={(e) => setNuevoProyectoLink(e.target.value)}
+                            placeholder="https://uned-my.sharepoint.com/:f:/g/personal/..."
+                            className="w-full pl-8 pr-3 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs placeholder:text-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-2 bg-indigo-100/70 rounded-xl text-[10px] text-indigo-950 flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span>
+                          La tarea descrita a continuación quedará vinculada automáticamente como el <strong>primer requerimiento</strong> de este nuevo proyecto.
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
