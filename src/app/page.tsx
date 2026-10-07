@@ -462,22 +462,6 @@ export default function Home() {
     });
   }, [usuarioActual, nivelArea, roles, areas, facultades, programas, cursos, proyectos, tareas, comentarios]);
 
-  // Si no hay sesión iniciada, mostrar la Landing Institucional CCV con acceso al Login
-  if (!usuarioActual) {
-    return <LandingHome />;
-  }
-
-  // Filter tasks by search query
-  const tareasFiltradas = tareasVisiblesPorRol.filter(t => 
-    t.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
-    t.responsable_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    t.responsable_secundario_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    t.curso_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    t.proyecto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
-  const tareasPendientesCount = tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente' && t.estado_bloqueo !== 'BLOQUEADA').length;
-
   // Verificar si el rol o usuario actual tiene al menos una tarea asignada (requerido para ver la Parrilla de Publicaciones)
   const tieneTareasAsignadas = React.useMemo(() => {
     if (!usuarioActual) return false;
@@ -513,6 +497,22 @@ export default function Home() {
       setVistaActual('dashboard');
     }
   }, [vistaActual, isAdmin, tieneTareasAsignadas]);
+
+  // Si no hay sesión iniciada, mostrar la Landing Institucional CCV con acceso al Login
+  if (!usuarioActual) {
+    return <LandingHome />;
+  }
+
+  // Filter tasks by search query
+  const tareasFiltradas = tareasVisiblesPorRol.filter(t => 
+    t.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
+    t.responsable_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    t.responsable_secundario_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    t.curso_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    t.proyecto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const tareasPendientesCount = tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente' && t.estado_bloqueo !== 'BLOQUEADA').length;
 
   return (
     <TimerProvider>
