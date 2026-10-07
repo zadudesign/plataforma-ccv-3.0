@@ -90,6 +90,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   // Modales de Gestión
   const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudTareaCCV | null>(null);
   const [modoAccion, setModoAccion] = useState<'ver' | 'aprobar' | 'rechazar' | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Soporte de tecla Escape para cerrar cualquier modal activo
   useModalDismiss({
@@ -126,7 +127,6 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
 
   // Estado para rechazo y feedback
   const [motivoRechazo, setMotivoRechazo] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
 
   // Cálculos dinámicos idénticos a CreateTaskModal
