@@ -38,6 +38,7 @@ import {
 import { ContentCalendarGrid } from './ContentCalendarGrid';
 import { ContentTableView } from './ContentTableView';
 import { ContentModal } from './ContentModal';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface ContentPlannerViewProps {
   cursos: CursoVirtual[];
@@ -77,6 +78,11 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
   const [publicacionEditando, setPublicacionEditando] = useState<PublicacionParrilla | null>(null);
   const [fechaPreseleccionada, setFechaPreseleccionada] = useState<string | undefined>(undefined);
   const [publicacionAEliminar, setPublicacionAEliminar] = useState<PublicacionParrilla | null>(null);
+
+  useModalDismiss({
+    isOpen: !!publicacionAEliminar,
+    onClose: () => setPublicacionAEliminar(null)
+  });
 
   // Formato mes actual 'YYYY-MM'
   const mesActualStr = useMemo(() => {
@@ -605,8 +611,9 @@ export const ContentPlannerView: React.FC<ContentPlannerViewProps> = ({
 
       {/* Modal de Confirmación de Eliminación */}
       {publicacionAEliminar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs" onClick={() => setPublicacionAEliminar(null)} />
+          <div className="relative z-10 bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>

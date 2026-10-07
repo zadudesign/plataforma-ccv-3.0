@@ -34,6 +34,7 @@ import { TaskTimeTracker } from './TaskTimeTracker';
 import { ConfirmCompleteTaskModal } from './ConfirmCompleteTaskModal';
 import { ConfirmDeleteTaskModal } from './ConfirmDeleteTaskModal';
 import { EditTaskModal } from './EditTaskModal';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface TaskDetailModalProps {
   tarea: TareaCCV | null;
@@ -131,6 +132,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     return rolDestinoOrId;
   };
 
+  useModalDismiss({
+    isOpen: !!tarea && !isEditingOpen && !confirmarCompletadaOpen && !confirmarEliminarOpen,
+    onClose,
+    disabled: isDeleting
+  });
+
   if (!tarea) return null;
 
   const rolPrincipal = getNombreRol(tarea.rol_destino, tarea.responsable_id);
@@ -146,8 +153,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-      <div className="ccv-card w-full max-w-3xl bg-white max-h-[90vh] overflow-y-auto flex flex-col justify-between shadow-floating border-stone-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn" onClick={onClose} />
+      <div className="relative ccv-card w-full max-w-3xl bg-white max-h-[90vh] overflow-y-auto flex flex-col justify-between shadow-floating border-stone-300 z-10 my-auto">
         {/* Header */}
         <div className="p-6 border-b border-stone-200 flex justify-between items-start bg-cream-50/50">
           <div>

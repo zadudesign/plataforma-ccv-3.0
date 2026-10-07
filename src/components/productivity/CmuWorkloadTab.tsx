@@ -46,6 +46,7 @@ import {
 import { CmuRemisionBadge } from './CmuRemisionBadge';
 import { CmuFacultyDepartmentBreakdown } from './CmuFacultyDepartmentBreakdown';
 import { redondearHoras } from '@/lib/progressUtils';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface CmuWorkloadTabProps {
   tareas: TareaCCV[];
@@ -128,6 +129,12 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
   });
   const [guardandoConfig, setGuardandoConfig] = useState<boolean>(false);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+
+  useModalDismiss({
+    isOpen: isConfigModalOpen && userIsAdmin,
+    onClose: () => setIsConfigModalOpen(false),
+    disabled: guardandoConfig
+  });
 
   // Cargar capacidades desde Supabase
   useEffect(() => {
@@ -867,8 +874,9 @@ export const CmuWorkloadTab: React.FC<CmuWorkloadTabProps> = ({
 
       {/* MODAL DE CONFIGURACIÓN EXCLUSIVA DE ADMINISTRADOR */}
       {isConfigModalOpen && userIsAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="ccv-card w-full max-w-lg bg-white shadow-floating border border-stone-300 rounded-3xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={guardandoConfig ? undefined : () => setIsConfigModalOpen(false)} />
+          <div className="relative z-10 ccv-card w-full max-w-lg bg-white shadow-floating border border-stone-300 rounded-3xl overflow-hidden">
             {/* Cabecera */}
             <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-cream-50/60">
               <div className="flex items-center gap-2.5">

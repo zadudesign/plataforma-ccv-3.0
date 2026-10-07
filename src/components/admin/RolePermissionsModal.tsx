@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Key, CheckCircle2, Loader2, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import { Rol, PermisoDef } from '@/types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface RolePermissionsModalProps {
   rol: Rol;
@@ -23,6 +24,12 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useModalDismiss({
+    isOpen: true,
+    onClose,
+    disabled: isSaving
+  });
 
   const togglePermiso = (clave: string) => {
     if (isSaving) return;
@@ -72,8 +79,9 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 relative">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={isSaving ? undefined : onClose} />
+      <div className="relative z-10 bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6">
         <button
           onClick={onClose}
           disabled={isSaving}

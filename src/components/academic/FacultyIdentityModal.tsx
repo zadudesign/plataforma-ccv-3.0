@@ -6,6 +6,7 @@ import { Facultad, Area } from '@/types';
 import { FACULTY_THEMES, POPULAR_LUCIDE_SUGGESTIONS, getFacultyTheme } from '@/lib/facultyThemes';
 import { DynamicLucideIcon, resolveLucideIcon, getValidLucideIconName } from '@/components/common/DynamicLucideIcon';
 import { useAuth } from '@/context/AuthContext';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface FacultyIdentityModalProps {
   isOpen: boolean;
@@ -31,6 +32,12 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
   const [selectedColor, setSelectedColor] = useState<string>(entidadActual?.color || (esDepartamento ? 'amber' : 'emerald'));
   const [selectedIconInput, setSelectedIconInput] = useState<string>(entidadActual?.icono || (esDepartamento ? 'FolderKanban' : 'Building2'));
   const [isSaving, setIsSaving] = useState(false);
+
+  useModalDismiss({
+    isOpen: isOpen && !!entidadActual && isAdmin(),
+    onClose,
+    disabled: isSaving
+  });
 
   // Sincronizar cuando cambia la entidad seleccionada
   React.useEffect(() => {
@@ -61,8 +68,9 @@ export const FacultyIdentityModal: React.FC<FacultyIdentityModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/60 backdrop-blur-xs animate-fadeIn">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-scaleIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+      <div className="fixed inset-0 bg-charcoal-950/60 backdrop-blur-xs" onClick={isSaving ? undefined : onClose} />
+      <div className="relative z-10 bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-scaleIn">
         
         {/* Header Modal */}
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">

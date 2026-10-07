@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
 import { SearchableUserSelect } from '@/components/common/SearchableUserSelect';
 
+import { useModalDismiss } from '@/hooks/useModalDismiss';
+
 interface CreateTaskModalProps {
   areas: Area[];
   cursos: CursoVirtual[];
@@ -25,6 +27,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onCreateTask,
 }) => {
   const { tarifasProyecto } = useAuth();
+  useModalDismiss({ onClose });
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [enlaceRecurso, setEnlaceRecurso] = useState('');
@@ -114,8 +117,9 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-      <div className="ccv-card w-full max-w-2xl bg-white max-h-[90vh] overflow-y-auto shadow-floating border-stone-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn" onClick={onClose} />
+      <div className="relative ccv-card w-full max-w-2xl bg-white max-h-[90vh] overflow-y-auto shadow-floating border-stone-300 z-10 my-auto">
         {/* Header */}
         <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-cream-50/60">
           <div>

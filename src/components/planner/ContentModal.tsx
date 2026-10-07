@@ -28,6 +28,7 @@ import {
   ProyectoEspecial, 
   Usuario 
 } from '@/types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface ContentModalProps {
   publicacionAEditar?: PublicacionParrilla | null;
@@ -115,6 +116,11 @@ export const ContentModal: React.FC<ContentModalProps> = ({
   const [guardando, setGuardando] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  useModalDismiss({
+    onClose,
+    disabled: guardando
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) {
@@ -165,8 +171,9 @@ export const ContentModal: React.FC<ContentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-      <div className="ccv-card w-full max-w-2xl bg-white max-h-[92vh] overflow-y-auto flex flex-col justify-between shadow-floating border-stone-300 rounded-3xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-xs animate-fadeIn" onClick={() => !guardando && onClose()} />
+      <div className="relative ccv-card w-full max-w-2xl bg-white max-h-[92vh] overflow-y-auto flex flex-col justify-between shadow-floating border-stone-300 rounded-3xl z-10 my-auto">
         {/* Cabecera del Modal */}
         <div className="p-6 border-b border-stone-200 flex justify-between items-start bg-slate-50/80 sticky top-0 z-10">
           <div className="flex items-center gap-3">

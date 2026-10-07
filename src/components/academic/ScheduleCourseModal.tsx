@@ -22,6 +22,7 @@ import {
   toLocalDateString, 
   formatearFechaConDia 
 } from '@/lib/courseScheduleUtils';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 import { fetchPlantillaTareasCursoDB } from '@/lib/supabaseService';
 
@@ -40,6 +41,13 @@ export const ScheduleCourseModal: React.FC<ScheduleCourseModalProps> = ({
   onClose,
   onConfirm
 }) => {
+  const [guardando, setGuardando] = useState(false);
+
+  useModalDismiss({
+    isOpen: true,
+    onClose,
+    disabled: guardando
+  });
   const [tareasMaestras, setTareasMaestras] = useState<PlantillaTareaCurso[]>(plantillaTareas || []);
 
   React.useEffect(() => {
@@ -61,7 +69,6 @@ export const ScheduleCourseModal: React.FC<ScheduleCourseModalProps> = ({
   });
 
   const [esDuracionPersonalizada, setEsDuracionPersonalizada] = useState(false);
-  const [guardando, setGuardando] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Cálculo en tiempo real de los hitos y fechas límite
@@ -109,8 +116,9 @@ export const ScheduleCourseModal: React.FC<ScheduleCourseModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="ccv-card w-full max-w-3xl bg-white max-h-[92vh] flex flex-col shadow-2xl border-slate-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={guardando ? undefined : onClose} />
+      <div className="relative z-10 ccv-card w-full max-w-3xl bg-white max-h-[92vh] flex flex-col shadow-2xl border-slate-200 overflow-hidden">
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 text-white flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">

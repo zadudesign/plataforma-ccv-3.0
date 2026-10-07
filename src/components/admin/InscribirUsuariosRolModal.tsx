@@ -17,6 +17,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import { Area, Rol, Usuario } from '@/types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface InscribirUsuariosRolModalProps {
   area: Area;
@@ -48,6 +49,12 @@ export const InscribirUsuariosRolModal: React.FC<InscribirUsuariosRolModalProps>
   const [candidatoSeleccionadoId, setCandidatoSeleccionadoId] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [feedbackMensaje, setFeedbackMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+
+  useModalDismiss({
+    isOpen: true,
+    onClose,
+    disabled: isProcessing
+  });
 
   const rolActivo = useMemo(() => {
     return rolesArea.find(r => r.id === rolActivoId) || rolesArea[0];
@@ -141,8 +148,9 @@ export const InscribirUsuariosRolModal: React.FC<InscribirUsuariosRolModalProps>
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col relative overflow-hidden">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={isProcessing ? undefined : onClose} />
+      <div className="relative z-10 bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="p-6 pb-4 border-b border-stone-100 flex items-start justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">

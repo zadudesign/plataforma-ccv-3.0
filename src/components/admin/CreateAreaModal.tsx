@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Layers, CheckCircle2, AlertCircle, GitMerge, UserCheck } from 'lucide-react';
 import { Area, Usuario } from '@/types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface CreateAreaModalProps {
   areas: Area[];
@@ -19,6 +20,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
   onClose,
   onCrearArea,
 }) => {
+  useModalDismiss({ onClose });
   const [nombre, setNombre] = useState('');
   const [nivel, setNivel] = useState<number>(() => {
     if (defaultParentId) {
@@ -57,8 +59,12 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-md p-6 relative">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div 
+        className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" 
+        onClick={onClose} 
+      />
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-md p-6 relative z-10 my-auto">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all"

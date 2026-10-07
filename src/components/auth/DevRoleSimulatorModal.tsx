@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, ShieldCheck, UserCheck, Sparkles, Layers, Search, UserX, Mail } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface DevRoleSimulatorModalProps {
   onClose: () => void;
@@ -12,6 +13,8 @@ export const DevRoleSimulatorModal: React.FC<DevRoleSimulatorModalProps> = ({ on
   const { usuarios, usuarioActual, cambiarUsuarioSimulado, isRealAdmin } = useAuth();
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('todos');
+
+  useModalDismiss({ onClose });
 
   const rolesConConteo = useMemo(() => {
     const conteo: Record<string, number> = {};
@@ -55,8 +58,12 @@ export const DevRoleSimulatorModal: React.FC<DevRoleSimulatorModalProps> = ({ on
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-xl p-6 relative flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div 
+        className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" 
+        onClick={onClose} 
+      />
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-xl p-6 relative flex flex-col max-h-[90vh] z-10 my-auto">
         {/* Botón de Cierre */}
         <button
           onClick={onClose}

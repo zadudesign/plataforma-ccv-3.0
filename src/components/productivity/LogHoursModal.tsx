@@ -5,6 +5,7 @@ import { X, Clock, AlertCircle, CheckCircle2, User, Users, UserCheck } from 'luc
 import { TareaCCV, Usuario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { redondearHoras } from '@/lib/progressUtils';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface LogHoursModalProps {
   tareas: TareaCCV[];
@@ -23,6 +24,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
   onClose,
   onUpdateTaskHours,
 }) => {
+  useModalDismiss({ onClose });
   const { roles, usuarios } = useAuth();
   const tareasProyecto = React.useMemo(() => tareas.filter(t => t.tipo_tarea === 'Proyecto'), [tareas]);
   const [tareaId, setTareaId] = useState<string>(initialTaskId || tareasProyecto[0]?.id || '');
@@ -93,8 +95,12 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
     : '';
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 relative">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div 
+        className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" 
+        onClick={onClose} 
+      />
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 relative z-10 my-auto">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all"

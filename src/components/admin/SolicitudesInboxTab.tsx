@@ -50,6 +50,7 @@ import { SearchableProjectSelect } from '@/components/common/SearchableProjectSe
 import { SearchableUserSelect } from '@/components/common/SearchableUserSelect';
 import { useAuth } from '@/context/AuthContext';
 import { createProyectoDB } from '@/lib/supabaseService';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface SolicitudesInboxTabProps {
   solicitudes: SolicitudTareaCCV[];
@@ -89,6 +90,18 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   // Modales de Gestión
   const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudTareaCCV | null>(null);
   const [modoAccion, setModoAccion] = useState<'ver' | 'aprobar' | 'rechazar' | null>(null);
+
+  // Soporte de tecla Escape para cerrar cualquier modal activo
+  useModalDismiss({
+    isOpen: !!modoAccion,
+    onClose: () => {
+      if (!isProcessing) {
+        setModoAccion(null);
+        setSolicitudSeleccionada(null);
+      }
+    },
+    disabled: isProcessing
+  });
 
   // Estados para formulario de conversión (Aprobar - Idéntico a CreateTaskModal)
   const [titulo, setTitulo] = useState('');
@@ -709,8 +722,12 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       {/* MODAL: APROBAR Y CONVERTIR EN TAREA DE PRODUCCIÓN (Idéntico a CreateTaskModal) */}
       {/* ------------------------------------------------------------------ */}
       {modoAccion === 'aprobar' && solicitudSeleccionada && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="ccv-card w-full max-w-2xl bg-white max-h-[90vh] overflow-y-auto shadow-floating border-stone-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn" 
+            onClick={() => !isProcessing && setModoAccion(null)} 
+          />
+          <div className="relative ccv-card w-full max-w-2xl bg-white max-h-[90vh] overflow-y-auto shadow-floating border-stone-300 z-10 my-auto">
             {/* Header */}
             <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-cream-50/60">
               <div>

@@ -42,6 +42,7 @@ import { ConfirmDeleteTaskModal } from '@/components/tasks/ConfirmDeleteTaskModa
 import { ScheduleCourseModal } from './ScheduleCourseModal';
 import { EditTaskModal } from '@/components/tasks/EditTaskModal';
 import { canUserEditTask } from '@/lib/roleVisibilityUtils';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -98,6 +99,12 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const [modoCronograma, setModoCronograma] = useState<'inicializar' | 'reajustar'>('inicializar');
   const [tareaParaConfirmar, setTareaParaConfirmar] = useState<TareaCCV | null>(null);
   const [forzandoId, setForzandoId] = useState<string | null>(null);
+
+  useModalDismiss({
+    isOpen: !tareaAEliminar && !tareaAEditar && !mostrarModalCronograma && !tareaParaConfirmar,
+    onClose,
+    disabled: cargandoPlantilla || isDeletingTarea
+  });
 
   // Helper para resolver el nombre legible del rol o limpiar IDs técnicos
   const getNombreRol = (rolDestinoOrId?: string, userId?: string) => {
@@ -376,8 +383,9 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col relative overflow-hidden">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={cargandoPlantilla || isDeletingTarea ? undefined : onClose} />
+      <div className="relative z-10 bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Modal Top Banner */}
         <div className={`p-6 bg-gradient-to-r ${theme.bgLight} via-white to-stone-50/50 border-b ${theme.borderLight} relative shrink-0`}>
           <div className="absolute top-5 right-5 flex items-center gap-2">

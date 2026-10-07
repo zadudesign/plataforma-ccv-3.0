@@ -25,6 +25,8 @@ import { useAuth } from '@/context/AuthContext';
 import { PrioridadSolicitud, TareaCCV, ProyectoEspecial } from '@/types';
 import { fetchTareasDB } from '@/lib/supabaseService';
 
+import { useModalDismiss } from '@/hooks/useModalDismiss';
+
 interface TaskRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,6 +41,15 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
   proyectos: proyectosProps
 }) => {
   const { usuarioActual, roles, areas, proyectos: authProyectos, isAdmin, enviarSolicitudTarea } = useAuth();
+
+  const [loading, setLoading] = useState(false);
+
+  // Soporte de cierre con tecla Esc
+  useModalDismiss({
+    isOpen,
+    onClose,
+    disabled: loading
+  });
 
   // Lista base de proyectos
   const listaProyectos = proyectosProps || authProyectos || [];
@@ -72,7 +83,6 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
   const [prioridad, setPrioridad] = useState<PrioridadSolicitud>('Normal');
 
   // Estados de feedback y proceso
-  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [radicadoExitoso, setRadicadoExitoso] = useState<string | null>(null);
   const [radicadoProyectoNombre, setRadicadoProyectoNombre] = useState<string | null>(null);

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PlantillaTareaCurso, TipoResponsablePlantilla, Usuario } from '@/types';
 import { resolverFasePlantilla } from '@/lib/courseScheduleUtils';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface PlantillaTareaModalProps {
   isOpen: boolean;
@@ -34,6 +35,13 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
   onSave,
   onClose
 }) => {
+  const [guardando, setGuardando] = useState(false);
+
+  useModalDismiss({
+    isOpen,
+    onClose,
+    disabled: guardando
+  });
   const [codigo, setCodigo] = useState('');
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -49,7 +57,6 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
   const [nombreFase, setNombreFase] = useState('');
   const [dependenciasSeleccionadas, setDependenciasSeleccionadas] = useState<string[]>([]);
   const [errorValidacion, setErrorValidacion] = useState<string | null>(null);
-  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -147,8 +154,9 @@ export const PlantillaTareaModal: React.FC<PlantillaTareaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-stone-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs" onClick={onClose} />
+      <div className="relative z-10 bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-stone-200 overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-stone-200 flex items-center justify-between bg-cream-50/50">
           <div className="flex items-center gap-3">

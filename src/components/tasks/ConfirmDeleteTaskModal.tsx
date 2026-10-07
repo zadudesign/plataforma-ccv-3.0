@@ -3,6 +3,7 @@
 import React from 'react';
 import { Trash2, AlertTriangle, X, ShieldAlert } from 'lucide-react';
 import { TareaCCV } from '@/types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface ConfirmDeleteTaskModalProps {
   isOpen: boolean;
@@ -19,11 +20,21 @@ export const ConfirmDeleteTaskModal: React.FC<ConfirmDeleteTaskModalProps> = ({
   onClose,
   isDeleting = false
 }) => {
+  useModalDismiss({
+    isOpen: isOpen && !!tarea,
+    onClose,
+    disabled: isDeleting
+  });
+
   if (!isOpen || !tarea) return null;
 
   return (
-    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-5 relative">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div 
+        className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs" 
+        onClick={() => !isDeleting && onClose()} 
+      />
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-5 relative z-10 my-auto">
         {/* Close Button */}
         <button
           onClick={onClose}

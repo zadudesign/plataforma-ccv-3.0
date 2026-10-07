@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, KeyRound, Eye, EyeOff, RefreshCw, Copy, Check, ShieldAlert } from 'lucide-react';
 import { Usuario } from '@/types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface AdminResetPasswordModalProps {
   usuario: Usuario;
@@ -21,6 +22,12 @@ export const AdminResetPasswordModal: React.FC<AdminResetPasswordModalProps> = (
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
   const [mensajeError, setMensajeError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+
+  useModalDismiss({
+    isOpen: true,
+    onClose,
+    disabled: loading
+  });
 
   // Función para generar contraseña aleatoria segura
   const generarPasswordSegura = () => {
@@ -65,8 +72,9 @@ export const AdminResetPasswordModal: React.FC<AdminResetPasswordModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-md p-6 relative">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={loading ? undefined : onClose} />
+      <div className="relative z-10 bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-md p-6">
         {/* Botón Cerrar */}
         <button
           onClick={onClose}

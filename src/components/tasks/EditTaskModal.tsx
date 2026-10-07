@@ -26,6 +26,7 @@ import { canUserEditTask } from '@/lib/roleVisibilityUtils';
 import { redondearHoras } from '@/lib/progressUtils';
 import { SearchableProjectSelect } from '@/components/common/SearchableProjectSelect';
 import { SearchableUserSelect } from '@/components/common/SearchableUserSelect';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -49,6 +50,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onSave,
 }) => {
   const { tarifasProyecto, isAdmin, usuarioActual, nivelArea, roles, hasPermission, rolesPermisosMap } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+
+  useModalDismiss({
+    isOpen,
+    onClose,
+    disabled: isSaving
+  });
   const canEdit = hasPermission('registro:editar') && (isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea, rolesPermisosMap) : false));
 
   // Estados locales pre-cargados con la información de la tarea existente
@@ -80,7 +88,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     tarea.numero_unidad !== undefined && tarea.numero_unidad !== null ? tarea.numero_unidad : ''
   );
 
-  const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen || !canEdit) return null;
@@ -173,8 +180,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-      <div className="ccv-card w-full max-w-2xl bg-white max-h-[90vh] overflow-y-auto shadow-floating border-stone-300 rounded-3xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-fadeIn" onClick={() => !isSaving && onClose()} />
+      <div className="relative ccv-card w-full max-w-2xl bg-white max-h-[90vh] overflow-y-auto shadow-floating border-stone-300 rounded-3xl z-10 my-auto">
         {/* Header */}
         <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-cream-50/60 sticky top-0 z-10 backdrop-blur-xs">
           <div className="flex items-center gap-3">

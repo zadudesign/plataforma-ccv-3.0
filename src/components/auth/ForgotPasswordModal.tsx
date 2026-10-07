@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Mail, KeyRound, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface ForgotPasswordModalProps {
   onClose: () => void;
@@ -13,6 +14,11 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onClos
   const [loading, setLoading] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useModalDismiss({
+    onClose,
+    disabled: loading
+  });
 
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +51,12 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onClos
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-md p-6 relative">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div 
+        className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" 
+        onClick={() => !loading && onClose()} 
+      />
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-md p-6 relative z-10 my-auto">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all"

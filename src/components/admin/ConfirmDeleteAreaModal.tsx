@@ -3,6 +3,7 @@
 import React from 'react';
 import { X, Trash2, AlertTriangle, ShieldCheck, Users, Briefcase, GitMerge } from 'lucide-react';
 import { Area, Rol, Usuario, ProyectoEspecial } from '@/types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface ConfirmDeleteAreaModalProps {
   area: Area;
@@ -23,6 +24,11 @@ export const ConfirmDeleteAreaModal: React.FC<ConfirmDeleteAreaModalProps> = ({
   onClose,
   onConfirmDelete,
 }) => {
+  useModalDismiss({
+    isOpen: true,
+    onClose,
+  });
+
   const subareas = allAreas.filter(a => a.parent_id === area.id);
   const rolesArea = roles.filter(r => r.area_id === area.id || r.area_nombre === area.nombre);
   const usuariosArea = usuarios.filter(u =>
@@ -36,8 +42,9 @@ export const ConfirmDeleteAreaModal: React.FC<ConfirmDeleteAreaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 relative space-y-5">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-fadeIn font-sans">
+      <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 bg-white rounded-3xl border border-stone-200 shadow-2xl w-full max-w-lg p-6 space-y-5">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-1.5 rounded-full text-charcoal-400 hover:text-charcoal-900 hover:bg-cream-100 transition-all"
