@@ -35,7 +35,7 @@ import { ProductivityDashboard } from '@/components/productivity/ProductivityDas
 import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
 import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
 import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
-import { getEntitiesVisibleByRole, canUserEditTask } from '@/lib/roleVisibilityUtils';
+import { getEntitiesVisibleByRole, canUserEditTask, isRoleMatch } from '@/lib/roleVisibilityUtils';
 import { redondearHoras } from '@/lib/progressUtils';
 import { ShieldAlert } from 'lucide-react';
 
@@ -478,6 +478,42 @@ export default function Home() {
 
   const tareasPendientesCount = tareasVisiblesPorRol.filter(t => t.estado === 'Pendiente' && t.estado_bloqueo !== 'BLOQUEADA').length;
 
+  // Verificar si el rol o usuario actual tiene al menos una tarea asignada (requerido para ver la Parrilla de Publicaciones)
+  const tieneTareasAsignadas = React.useMemo(() => {
+    if (!usuarioActual) return false;
+    if (isAdmin()) return true;
+
+    // 1. Tareas asignadas directamente al usuario como responsable principal o secundario
+    const tieneDirectas = tareas.some(
+      t => t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id
+    );
+    if (tieneDirectas) return true;
+
+    // 2. Tareas asignadas al rol del usuario como rol destino
+    const rolNombre = usuarioActual.rol_nombre || roles.find(r => r.id === usuarioActual.rol_id)?.nombre || '';
+    if (rolNombre) {
+      const tienePorRol = tareas.some(
+        t => (t.rol_destino && isRoleMatch(t.rol_destino, rolNombre)) ||
+             (t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre))
+      );
+      if (tienePorRol) return true;
+    }
+
+    // 3. Tareas en su ámbito visible (ej. jefes o líderes con entregables asignados bajo su supervisión)
+    if (tareasVisiblesPorRol.length > 0) {
+      return true;
+    }
+
+    return false;
+  }, [usuarioActual, isAdmin, tareas, roles, tareasVisiblesPorRol]);
+
+  // Redirigir a 'dashboard' si se intenta acceder a la Parrilla sin tener tareas asignadas ni ser Admin
+  useEffect(() => {
+    if (vistaActual === 'parrilla' && !isAdmin() && !tieneTareasAsignadas) {
+      setVistaActual('dashboard');
+    }
+  }, [vistaActual, isAdmin, tieneTareasAsignadas]);
+
   return (
     <TimerProvider>
       <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans relative">
@@ -486,6 +522,7 @@ export default function Home() {
           vistaActual={vistaActual} 
           setVistaActual={setVistaActual} 
           tareasPendientesCount={tareasPendientesCount}
+          tieneTareasAsignadas={tieneTareasAsignadas}
         />
 
         {/* Main App Container */}
@@ -566,7 +603,7 @@ export default function Home() {
           />
         )}
 
-        {vistaActual === 'parrilla' && (
+        {vistaActual === 'parrilla' && (isAdmin() || tieneTareasAsignadas) && (
           <ContentPlannerView
             cursos={cursosVisiblesPorRol}
             proyectos={proyectosVisiblesPorRol}
