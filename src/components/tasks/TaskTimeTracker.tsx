@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { 
   Play, 
+  Pause,
   Square, 
   Plus, 
   Clock, 
@@ -30,8 +31,11 @@ export const TaskTimeTracker: React.FC<TaskTimeTrackerProps> = ({
 }) => {
   const { 
     activeTimer, 
+    isPaused,
     formattedTime, 
     startTimer, 
+    pauseTimer,
+    resumeTimer,
     stopTimer, 
     isTimerForTask 
   } = useTaskTimer();
@@ -69,6 +73,20 @@ export const TaskTimeTracker: React.FC<TaskTimeTrackerProps> = ({
 
     setFeedbackSuccess('¡Cronómetro iniciado! Tarea en proceso.');
     setTimeout(() => setFeedbackSuccess(null), 3500);
+  };
+
+  // Manejador para Pausar el Cronómetro
+  const handlePause = () => {
+    pauseTimer();
+    setFeedbackSuccess('Cronómetro en pausa.');
+    setTimeout(() => setFeedbackSuccess(null), 3000);
+  };
+
+  // Manejador para Reanudar el Cronómetro
+  const handleResume = () => {
+    resumeTimer();
+    setFeedbackSuccess('¡Cronómetro reanudado!');
+    setTimeout(() => setFeedbackSuccess(null), 3000);
   };
 
   // Manejador para Detener el Cronómetro y Sumar Horas
@@ -169,41 +187,106 @@ export const TaskTimeTracker: React.FC<TaskTimeTrackerProps> = ({
         </div>
       )}
 
-      {/* Fila Principal: Cronómetro en Vivo (Estética exacta a la imagen de referencia) */}
+      {/* Fila Principal: Cronómetro en Vivo (Play / Pausa / Stop) */}
       <div className="space-y-2.5 pt-1">
         {isCurrentTaskRunning ? (
-          /* Estado ACTIVO: Botón rojo Stop con contador en vivo */
-          <div className="flex items-center justify-between p-2.5 bg-stone-900 rounded-xl border border-red-900/40">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleStop}
-                disabled={isSaving}
-                className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white flex items-center justify-center shadow-lg transition-all ring-4 ring-red-950/60 cursor-pointer"
-                title="Detener cronómetro y sumar tiempo a la tarea"
-              >
-                <Square className="w-3 h-3 fill-white text-white" />
-              </button>
+          /* Estado ACTIVO (Grabando o Pausado): Botones Pausar/Reanudar y Parar */
+          <div className={`p-3 rounded-2xl border transition-all ${
+            isPaused 
+              ? 'bg-stone-900/95 border-amber-800/60 shadow-inner' 
+              : 'bg-stone-900 border-red-900/50 shadow-md'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Lado izquierdo: Botones circulares + Reloj digital */}
+              <div className="flex items-center gap-3">
+                {/* Botón de Pausa / Reanudar */}
+                <button
+                  type="button"
+                  onClick={isPaused ? handleResume : handlePause}
+                  disabled={isSaving}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer shrink-0 ${
+                    isPaused
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white ring-4 ring-emerald-950/60'
+                      : 'bg-amber-600 hover:bg-amber-500 text-white ring-4 ring-amber-950/60'
+                  }`}
+                  title={isPaused ? "Reanudar cronómetro" : "Pausar cronómetro"}
+                >
+                  {isPaused ? (
+                    <Play className="w-4 h-4 fill-white text-white ml-0.5" />
+                  ) : (
+                    <Pause className="w-4 h-4 fill-white text-white" />
+                  )}
+                </button>
 
-              <div>
-                <div className="text-xl font-black font-mono tracking-wider text-white flex items-center gap-2">
-                  <span>{formattedTime}</span>
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                {/* Botón de Stop / Detener */}
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  disabled={isSaving}
+                  className="w-9 h-9 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white flex items-center justify-center shadow-md transition-all ring-4 ring-red-950/60 cursor-pointer shrink-0"
+                  title="Detener cronómetro y sumar tiempo acumulado a la tarea"
+                >
+                  <Square className="w-3.5 h-3.5 fill-white text-white" />
+                </button>
+
+                {/* Display digital */}
+                <div>
+                  <div className="text-xl font-black font-mono tracking-wider text-white flex items-center gap-2">
+                    <span className={isPaused ? 'text-amber-200' : 'text-white'}>
+                      {formattedTime}
+                    </span>
+                    {isPaused ? (
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400" title="En pausa" />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" title="Grabando en vivo" />
+                    )}
+                  </div>
+                  <span className={`text-[10px] block ${
+                    isPaused ? 'text-amber-300/90 font-bold' : 'text-red-300/80 font-medium'
+                  }`}>
+                    {isPaused ? '⏸ Cronómetro pausado' : '⏺ Grabando tiempo en vivo...'}
+                  </span>
                 </div>
-                <span className="text-[10px] text-red-300/80 font-medium block">
-                  Grabando tiempo en vivo...
-                </span>
+              </div>
+
+              {/* Lado derecho: Acciones explícitas con texto */}
+              <div className="flex items-center gap-2 self-start sm:self-center">
+                <button
+                  type="button"
+                  onClick={isPaused ? handleResume : handlePause}
+                  disabled={isSaving}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isPaused
+                      ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-700/50'
+                      : 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border-amber-700/50'
+                  }`}
+                  title={isPaused ? "Reanudar conteo" : "Pausar temporalmente el conteo"}
+                >
+                  {isPaused ? (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Reanudar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="w-3.5 h-3.5 fill-current" />
+                      <span>Pausar</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-300 text-xs font-bold border border-red-800/40 transition-all flex items-center gap-1.5 cursor-pointer"
+                  title="Detener cronómetro y registrar las horas en la tarea"
+                >
+                  <Square className="w-3 h-3 fill-current" />
+                  <span>{isSaving ? 'Guardando...' : 'Parar y Registrar'}</span>
+                </button>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleStop}
-              disabled={isSaving}
-              className="px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-300 text-xs font-bold border border-red-800/40 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>{isSaving ? 'Guardando...' : 'Parar y Registrar'}</span>
-            </button>
           </div>
         ) : (
           /* Estado INACTIVO: Botón Play para iniciar cronómetro */
