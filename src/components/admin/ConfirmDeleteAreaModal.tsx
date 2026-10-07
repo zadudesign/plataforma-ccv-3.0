@@ -73,11 +73,11 @@ export const ConfirmDeleteAreaModal: React.FC<ConfirmDeleteAreaModalProps> = ({
           <div>
             <p className="font-bold">Mecanismo de Protección Jerárquica:</p>
             <p className="mt-1 text-amber-800">
-              La eliminación de esta unidad se realizará de manera <strong>controlada</strong>. Si posee subáreas derivadas, estas serán reasignadas automáticamente{' '}
+              La eliminación de esta unidad se realizará de manera <strong>controlada</strong>. Si posee áreas derivadas, estas serán reasignadas automáticamente{' '}
               {area.area_padre_nombre ? (
-                <>al área padre <strong>({area.area_padre_nombre})</strong>.</>
+                <>al departamento padre <strong>({area.area_padre_nombre})</strong>.</>
               ) : (
-                <>como <strong>Áreas Principales</strong> independientes.</>
+                <>como <strong>Departamentos</strong> independientes.</>
               )}
             </p>
           </div>
@@ -93,7 +93,7 @@ export const ConfirmDeleteAreaModal: React.FC<ConfirmDeleteAreaModalProps> = ({
               <GitMerge className="w-4 h-4 text-sage-600 shrink-0" />
               <div>
                 <span className="text-xs font-black text-charcoal-900">{subareas.length}</span>
-                <p className="text-[11px] text-charcoal-500">Subáreas derivadas</p>
+                <p className="text-[11px] text-charcoal-500">Áreas derivadas</p>
               </div>
             </div>
 
@@ -126,7 +126,7 @@ export const ConfirmDeleteAreaModal: React.FC<ConfirmDeleteAreaModalProps> = ({
         {/* Subareas List if any */}
         {subareas.length > 0 && (
           <div className="p-3 bg-cream-100/60 rounded-2xl border border-stone-200/80 text-xs">
-            <span className="font-bold text-charcoal-800">Subáreas que serán reasignadas:</span>
+            <span className="font-bold text-charcoal-800">Áreas que serán reasignadas:</span>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               {subareas.map(sub => (
                 <span key={sub.id} className="px-2.5 py-0.5 rounded-full bg-white text-charcoal-900 font-extrabold border border-stone-200 text-[10px]">

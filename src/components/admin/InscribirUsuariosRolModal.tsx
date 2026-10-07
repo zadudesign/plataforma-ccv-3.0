@@ -170,7 +170,7 @@ export const InscribirUsuariosRolModal: React.FC<InscribirUsuariosRolModalProps>
                 <Building2 className="w-3.5 h-3.5 text-sage-600" />
                 Unidad: <span className="font-bold text-charcoal-800">{area.nombre}</span>
                 {area.area_padre_nombre && (
-                  <span className="text-charcoal-400"> (Subárea de {area.area_padre_nombre})</span>
+                  <span className="text-charcoal-400"> (Área de {area.area_padre_nombre})</span>
                 )}
               </p>
             </div>

@@ -592,13 +592,13 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                     {/* Contenido del Área: Proyectos directos y Sub-áreas */}
                     {isAreaOpen && (
                       <div className="p-4 bg-stone-50/40 space-y-4">
-                        {/* 1. Proyectos asignados directamente al Área Principal */}
+                        {/* 1. Proyectos asignados directamente al Departamento */}
                         {grupo.proyectosDirectos.length > 0 && (
                           <div className="space-y-2.5">
                             {grupo.subareas.length > 0 && (
                               <div className="flex items-center gap-2 px-1">
                                 <span className="text-xs font-extrabold uppercase tracking-wider text-charcoal-700 bg-white px-2.5 py-1 rounded-lg border border-stone-200 shadow-2xs">
-                                  Proyectos Directos del Área ({grupo.proyectosDirectos.length})
+                                  Proyectos Directos del Departamento ({grupo.proyectosDirectos.length})
                                 </span>
                               </div>
                             )}
@@ -608,13 +608,13 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                           </div>
                         )}
 
-                        {/* 2. Sub-áreas pertenecientes a esta Área Principal */}
+                        {/* 2. Áreas pertenecientes a este Departamento */}
                         {grupo.subareas.length > 0 && (
                           <div className="space-y-3.5">
                             {grupo.proyectosDirectos.length > 0 && (
                               <div className="flex items-center gap-2 pt-2 px-1 border-t border-stone-200/80">
                                 <span className="text-xs font-extrabold uppercase tracking-wider text-purple-900 bg-purple-100/80 px-2.5 py-1 rounded-lg border border-purple-200 shadow-2xs">
-                                  Sub-áreas Asignadas ({grupo.subareas.length})
+                                  Áreas del Departamento ({grupo.subareas.length})
                                 </span>
                               </div>
                             )}
@@ -632,7 +632,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                   key={sub.subareaId} 
                                   className={`bg-white rounded-xl border border-stone-200/90 shadow-2xs overflow-hidden border-l-4 ${subTheme.borderLeft}`}
                                 >
-                                  {/* Header de la Sub-área */}
+                                  {/* Header del Área */}
                                   <div 
                                     className={`p-3.5 bg-gradient-to-r ${subTheme.bgLight} via-white to-white flex items-center justify-between border-b border-stone-100 transition-colors cursor-pointer`}
                                     onClick={() => toggleSubareaProyecto(sub.subareaId)}
@@ -643,9 +643,9 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
                                       </div>
                                       <div className="min-w-0">
                                         <h5 className="font-extrabold text-charcoal-900 text-xs flex items-center gap-1.5 truncate">
-                                          Sub-área: {sub.subareaNombre}
+                                          Área: {sub.subareaNombre}
                                           <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                                            Sub-área
+                                            Área
                                           </span>
                                         </h5>
                                         <div className="flex items-center gap-2 flex-wrap mt-0.5">

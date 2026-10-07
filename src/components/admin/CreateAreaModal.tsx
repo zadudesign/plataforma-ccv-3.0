@@ -78,10 +78,10 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
           </div>
           <div>
             <h3 className="text-lg font-black text-charcoal-900">
-              Crear Nueva Área o Subárea
+              Crear Nuevo Departamento o Área
             </h3>
             <p className="text-xs text-charcoal-500">
-              Registra una unidad o sub-equipo en la cadena organizacional.
+              Registra un departamento o área dependiente en la cadena organizacional.
             </p>
           </div>
         </div>
@@ -96,7 +96,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-charcoal-700 mb-1">
-              Nombre de la Nueva Área / Subárea <span className="text-rose-500">*</span>
+              Nombre del Departamento / Área <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -110,14 +110,14 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
           <div>
             <label className="block text-xs font-bold text-charcoal-700 mb-1 flex items-center gap-1.5">
               <GitMerge className="w-3.5 h-3.5 text-sage-600" />
-              Área Padre (Opcional - Para Subáreas)
+              Departamento Padre (Opcional - Si es un Área dependiente)
             </label>
             <select
               value={parentId}
               onChange={e => handleParentChange(e.target.value)}
               className="w-full px-4 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-bold text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
             >
-              <option value="">-- Ninguna (Área Principal / Raíz) --</option>
+              <option value="">-- Ninguno (Departamento Principal / Raíz) --</option>
               {areas.map(a => (
                 <option key={a.id} value={a.id}>
                   {a.nombre} (Nivel {a.nivel}){a.area_padre_nombre ? ` — Padre: ${a.area_padre_nombre}` : ''}
@@ -125,7 +125,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
               ))}
             </select>
             <p className="text-[11px] text-charcoal-400 mt-1">
-              Si seleccionas un área padre, esta nueva unidad operará como subárea dentro de la jerarquía.
+              Si seleccionas un departamento padre, esta nueva unidad operará como un área dentro de la jerarquía de dicho departamento.
             </p>
           </div>
 
@@ -147,7 +147,7 @@ export const CreateAreaModal: React.FC<CreateAreaModalProps> = ({
               ))}
             </select>
             <p className="text-[11px] text-charcoal-400 mt-1">
-              El usuario asignado como Jefe tendrá supervisión y visibilidad sobre los proyectos y tareas adscritos a este departamento.
+              El usuario asignado como Responsable tendrá supervisión y visibilidad sobre los proyectos y tareas adscritos a esta unidad.
             </p>
           </div>
 

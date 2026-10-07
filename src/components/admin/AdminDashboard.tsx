@@ -116,11 +116,11 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
                 <h4 className="font-extrabold text-charcoal-900 text-base">{area.nombre}</h4>
                 {depth === 0 ? (
                   <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-800 uppercase tracking-wide">
-                    Área Principal
+                    Departamento
                   </span>
                 ) : (
                   <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-cream-200 text-charcoal-700 uppercase tracking-wide">
-                    Subárea de {area.area_padre_nombre || 'Área Superior'}
+                    Área de {area.area_padre_nombre || 'Departamento Superior'}
                   </span>
                 )}
                 {area.jefe_nombre && (
@@ -140,7 +140,7 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
               <button
                 onClick={() => onOpenInscribirUsuariosRol(area)}
                 className="px-3 py-1.5 bg-sage-50 hover:bg-sage-100 text-sage-800 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 border border-sage-200 shadow-2xs hover:shadow-xs"
-                title="Inscribir o asignar usuarios a los roles adscritos de este área para darles acceso a tareas"
+                title="Inscribir o asignar usuarios a los roles adscritos de esta unidad para darles acceso a tareas"
               >
                 <UserPlus className="w-3.5 h-3.5 text-sage-600" /> Inscribir Usuarios
               </button>
@@ -148,16 +148,16 @@ const AreaHierarchyNode: React.FC<AreaHierarchyNodeProps> = ({
             <button
               onClick={() => onOpenCreateRole(area.id)}
               className="px-3 py-1.5 bg-cream-100 hover:bg-cream-200 text-charcoal-800 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 border border-stone-200"
-              title="Agregar nuevo rol adscrito a este área"
+              title="Agregar nuevo rol adscrito a esta unidad"
             >
               <Plus className="w-3.5 h-3.5 text-sage-600" /> Nuevo Rol
             </button>
             <button
               onClick={() => onOpenCreateSubarea(area.id)}
               className="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow-xs transition-all flex items-center gap-1.5"
-              title="Crear una subárea dependiente de esta unidad"
+              title="Crear un área dependiente de este departamento"
             >
-              <Plus className="w-3.5 h-3.5" /> Nueva Subárea
+              <Plus className="w-3.5 h-3.5" /> Nueva Área
             </button>
             <button
               onClick={() => onOpenDeleteArea(area)}
@@ -2257,17 +2257,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div>
               <h3 className="text-lg font-bold text-charcoal-900 mb-1 flex items-center gap-2">
                 <GitMerge className="w-5 h-5 text-sage-600" />
-                Organigrama de Áreas Jerárquicas y Subáreas
+                Organigrama de Departamentos y Áreas
               </h3>
               <p className="text-xs text-charcoal-500">
-                La regla de visibilidad descendente (RLS) permite que las áreas padre tengan supervisión total de las tareas e información creadas en sus subáreas derivadas.
+                La regla de visibilidad descendente (RLS) permite que los departamentos tengan supervisión total de las tareas e información creadas en sus áreas derivadas.
               </p>
             </div>
             <button
               onClick={() => setIsCreateAreaModalOpen(true)}
               className="flex items-center gap-1.5 px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white text-xs font-bold rounded-full shadow transition-all shrink-0 self-start sm:self-auto"
             >
-              <Plus className="w-4 h-4" /> Crear Nueva Área / Subárea
+              <Plus className="w-4 h-4" /> Crear Departamento o Área
             </button>
           </div>
 
