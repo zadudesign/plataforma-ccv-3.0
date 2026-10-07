@@ -468,42 +468,30 @@ export default function Home() {
     });
   }, [usuarioActual, nivelArea, roles, areas, facultades, programas, cursos, proyectos, tareas, comentarios]);
 
-  // Verificar si el rol o usuario actual tiene tareas asignadas específicamente para la Parrilla de Publicaciones
+  // Verificar si el usuario actual tiene tareas o publicaciones asignadas directamente para la Parrilla
   const tieneTareasParrilla = React.useMemo(() => {
     if (!usuarioActual) return false;
     if (isAdmin()) return true;
 
-    const rolNombre = usuarioActual.rol_nombre || roles.find(r => r.id === usuarioActual.rol_id)?.nombre || '';
-
-    // 1. Tareas CCV vinculadas o identificadas como parte de la Parrilla ([Parrilla] o en área CMU)
+    // 1. Tareas CCV vinculadas o identificadas como parte de la Parrilla ([Parrilla])
     const tareasDeParrilla = tareas.filter(t => 
       t.titulo.toLowerCase().includes('[parrilla]') ||
-      t.titulo.toLowerCase().includes('parrilla') ||
-      (t.area_nombre && t.area_nombre.toLowerCase().includes('cmu'))
+      t.titulo.toLowerCase().includes('parrilla')
     );
 
-    // 1.a Asignación directa en tareas de parrilla
+    // 1.a Asignación directa al usuario como responsable principal o secundario en tareas de parrilla
     const tieneTareaDirecta = tareasDeParrilla.some(t =>
       t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id
     );
     if (tieneTareaDirecta) return true;
 
-    // 1.b Asignación por rol en tareas de parrilla
-    if (rolNombre) {
-      const tieneTareaPorRol = tareasDeParrilla.some(t =>
-        (t.rol_destino && isRoleMatch(t.rol_destino, rolNombre)) ||
-        (t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre))
-      );
-      if (tieneTareaPorRol) return true;
-    }
-
-    // 2. Publicaciones en la Parrilla donde el usuario es el responsable asignado
+    // 2. Publicaciones en la Parrilla donde el usuario es el responsable asignado directamente
     const tienePublicacionDirecta = publicacionesParrilla.some(p =>
       p.responsable_id === usuarioActual.id
     );
     if (tienePublicacionDirecta) return true;
 
-    // 2.b Publicaciones asociadas a tareas donde el usuario o su rol es responsable
+    // 2.b Publicaciones asociadas a tareas donde el usuario es responsable directo
     const idsTareasVinculadas = new Set(
       publicacionesParrilla.map(p => p.tarea_vinculada_id).filter(Boolean)
     );
@@ -511,18 +499,14 @@ export default function Home() {
       const tieneTareaVinculada = tareas.some(t =>
         idsTareasVinculadas.has(t.id) && (
           t.responsable_id === usuarioActual.id ||
-          t.responsable_secundario_id === usuarioActual.id ||
-          (rolNombre && (
-            (t.rol_destino && isRoleMatch(t.rol_destino, rolNombre)) ||
-            (t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre))
-          ))
+          t.responsable_secundario_id === usuarioActual.id
         )
       );
       if (tieneTareaVinculada) return true;
     }
 
     return false;
-  }, [usuarioActual, isAdmin, tareas, roles, publicacionesParrilla]);
+  }, [usuarioActual, isAdmin, tareas, publicacionesParrilla]);
 
   // Redirigir a 'dashboard' si se intenta acceder a la Parrilla sin tener tareas de parrilla asignadas ni ser Admin
   useEffect(() => {
