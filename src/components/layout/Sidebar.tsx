@@ -21,14 +21,14 @@ interface SidebarProps {
   vistaActual: VistaNavegacion;
   setVistaActual: (vista: VistaNavegacion) => void;
   tareasPendientesCount?: number;
-  tieneTareasAsignadas?: boolean;
+  tieneTareasParrilla?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   vistaActual, 
   setVistaActual, 
   tareasPendientesCount = 0,
-  tieneTareasAsignadas = false
+  tieneTareasParrilla = false
 }) => {
   const { usuarioActual, roles, isAdmin, isRealAdmin, setIsDevSimulatorOpen, logout, hasPermission } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -59,12 +59,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     label: string; 
     icon: React.ReactNode; 
     requiresAdmin?: boolean;
-    requiresAssignedTask?: boolean;
+    requiresParrillaTasks?: boolean;
   }[] = [
     { id: 'dashboard', label: 'Métricas Institucionales', icon: <LayoutGrid className="w-5 h-5" /> },
     { id: 'calendar', label: 'Calendario de Entregas & Vencimientos', icon: <Calendar className="w-5 h-5" /> },
     { id: 'kanban', label: 'Tablero Kanban de Producción', icon: <Kanban className="w-5 h-5" /> },
-    { id: 'parrilla', label: 'Parrilla de Contenidos & Calendario Editorial (CMU)', icon: <CalendarDays className="w-5 h-5" />, requiresAssignedTask: true },
+    { id: 'parrilla', label: 'Parrilla de Contenidos & Calendario Editorial (CMU)', icon: <CalendarDays className="w-5 h-5" />, requiresParrillaTasks: true },
     { id: 'productivity', label: 'Panel de Productividad y Control de Entregas', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'academic', label: 'Estructura Académica e Institucional', icon: <FolderTree className="w-5 h-5" /> },
     { id: 'admin', label: 'Panel de Administración RBAC & Asignaciones', icon: <ShieldCheck className="w-5 h-5" />, requiresAdmin: true },
@@ -72,10 +72,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Filter items based on user role:
   // - Admin section is exclusive to Admin (or user management permission)
-  // - Parrilla is exclusive to roles/users with assigned tasks (and Admin)
+  // - Parrilla is exclusive to roles/users with assigned tasks in Parrilla (and Admin)
   const navItems = allNavItems.filter(item => {
     if (item.requiresAdmin && !isAdmin() && !hasPermission('usuario:gestionar')) return false;
-    if (item.requiresAssignedTask && !isAdmin() && !tieneTareasAsignadas) return false;
+    if (item.requiresParrillaTasks && !isAdmin() && !tieneTareasParrilla) return false;
     return true;
   });
 

@@ -28,12 +28,13 @@ import {
   fetchComentariosDB, 
   addComentarioDB,
   addRegistroHorasDB,
-  deleteTareaDB
+  deleteTareaDB,
+  fetchPublicacionesParrillaDB
 } from '@/lib/supabaseService';
 import { CourseProjectProgressModal } from '@/components/academic/CourseProjectProgressModal';
 import { ProductivityDashboard } from '@/components/productivity/ProductivityDashboard';
 import { ContentPlannerView } from '@/components/planner/ContentPlannerView';
-import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial } from '@/types';
+import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, CursoVirtual, ProyectoEspecial, PublicacionParrilla } from '@/types';
 import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
 import { getEntitiesVisibleByRole, canUserEditTask, isRoleMatch } from '@/lib/roleVisibilityUtils';
 import { redondearHoras } from '@/lib/progressUtils';
@@ -64,6 +65,7 @@ export default function Home() {
   // Data state
   const [tareas, setTareas] = useState<TareaCCV[]>([]);
   const [comentarios, setComentarios] = useState<TareaComentario[]>([]);
+  const [publicacionesParrilla, setPublicacionesParrilla] = useState<PublicacionParrilla[]>([]);
   
   // Modal states
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaCCV | null>(null);
@@ -107,13 +109,17 @@ export default function Home() {
     });
   };
 
-  // Cargar tareas iniciales exclusivamente desde Supabase DB
+  // Cargar tareas iniciales y publicaciones de la parrilla desde Supabase DB
   useEffect(() => {
-    const loadTareas = async () => {
-      const dbTareas = await fetchTareasDB();
+    const loadData = async () => {
+      const [dbTareas, dbPubs] = await Promise.all([
+        fetchTareasDB(),
+        fetchPublicacionesParrillaDB()
+      ]);
       setTareas(ordenarTareasPorVencimiento(dbTareas || []));
+      setPublicacionesParrilla(dbPubs || []);
     };
-    loadTareas();
+    loadData();
   }, []);
 
   // Sincronizar y purgar tareas en memoria si un curso o proyecto es eliminado
@@ -462,41 +468,68 @@ export default function Home() {
     });
   }, [usuarioActual, nivelArea, roles, areas, facultades, programas, cursos, proyectos, tareas, comentarios]);
 
-  // Verificar si el rol o usuario actual tiene al menos una tarea asignada (requerido para ver la Parrilla de Publicaciones)
-  const tieneTareasAsignadas = React.useMemo(() => {
+  // Verificar si el rol o usuario actual tiene tareas asignadas específicamente para la Parrilla de Publicaciones
+  const tieneTareasParrilla = React.useMemo(() => {
     if (!usuarioActual) return false;
     if (isAdmin()) return true;
 
-    // 1. Tareas asignadas directamente al usuario como responsable principal o secundario
-    const tieneDirectas = tareas.some(
-      t => t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id
-    );
-    if (tieneDirectas) return true;
-
-    // 2. Tareas asignadas al rol del usuario como rol destino
     const rolNombre = usuarioActual.rol_nombre || roles.find(r => r.id === usuarioActual.rol_id)?.nombre || '';
+
+    // 1. Tareas CCV vinculadas o identificadas como parte de la Parrilla ([Parrilla] o en área CMU)
+    const tareasDeParrilla = tareas.filter(t => 
+      t.titulo.toLowerCase().includes('[parrilla]') ||
+      t.titulo.toLowerCase().includes('parrilla') ||
+      (t.area_nombre && t.area_nombre.toLowerCase().includes('cmu'))
+    );
+
+    // 1.a Asignación directa en tareas de parrilla
+    const tieneTareaDirecta = tareasDeParrilla.some(t =>
+      t.responsable_id === usuarioActual.id || t.responsable_secundario_id === usuarioActual.id
+    );
+    if (tieneTareaDirecta) return true;
+
+    // 1.b Asignación por rol en tareas de parrilla
     if (rolNombre) {
-      const tienePorRol = tareas.some(
-        t => (t.rol_destino && isRoleMatch(t.rol_destino, rolNombre)) ||
-             (t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre))
+      const tieneTareaPorRol = tareasDeParrilla.some(t =>
+        (t.rol_destino && isRoleMatch(t.rol_destino, rolNombre)) ||
+        (t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre))
       );
-      if (tienePorRol) return true;
+      if (tieneTareaPorRol) return true;
     }
 
-    // 3. Tareas en su ámbito visible (ej. jefes o líderes con entregables asignados bajo su supervisión)
-    if (tareasVisiblesPorRol.length > 0) {
-      return true;
+    // 2. Publicaciones en la Parrilla donde el usuario es el responsable asignado
+    const tienePublicacionDirecta = publicacionesParrilla.some(p =>
+      p.responsable_id === usuarioActual.id
+    );
+    if (tienePublicacionDirecta) return true;
+
+    // 2.b Publicaciones asociadas a tareas donde el usuario o su rol es responsable
+    const idsTareasVinculadas = new Set(
+      publicacionesParrilla.map(p => p.tarea_vinculada_id).filter(Boolean)
+    );
+    if (idsTareasVinculadas.size > 0) {
+      const tieneTareaVinculada = tareas.some(t =>
+        idsTareasVinculadas.has(t.id) && (
+          t.responsable_id === usuarioActual.id ||
+          t.responsable_secundario_id === usuarioActual.id ||
+          (rolNombre && (
+            (t.rol_destino && isRoleMatch(t.rol_destino, rolNombre)) ||
+            (t.rol_destino_secundario && isRoleMatch(t.rol_destino_secundario, rolNombre))
+          ))
+        )
+      );
+      if (tieneTareaVinculada) return true;
     }
 
     return false;
-  }, [usuarioActual, isAdmin, tareas, roles, tareasVisiblesPorRol]);
+  }, [usuarioActual, isAdmin, tareas, roles, publicacionesParrilla]);
 
-  // Redirigir a 'dashboard' si se intenta acceder a la Parrilla sin tener tareas asignadas ni ser Admin
+  // Redirigir a 'dashboard' si se intenta acceder a la Parrilla sin tener tareas de parrilla asignadas ni ser Admin
   useEffect(() => {
-    if (vistaActual === 'parrilla' && !isAdmin() && !tieneTareasAsignadas) {
+    if (vistaActual === 'parrilla' && !isAdmin() && !tieneTareasParrilla) {
       setVistaActual('dashboard');
     }
-  }, [vistaActual, isAdmin, tieneTareasAsignadas]);
+  }, [vistaActual, isAdmin, tieneTareasParrilla]);
 
   // Si no hay sesión iniciada, mostrar la Landing Institucional CCV con acceso al Login
   if (!usuarioActual) {
@@ -522,7 +555,7 @@ export default function Home() {
           vistaActual={vistaActual} 
           setVistaActual={setVistaActual} 
           tareasPendientesCount={tareasPendientesCount}
-          tieneTareasAsignadas={tieneTareasAsignadas}
+          tieneTareasParrilla={tieneTareasParrilla}
         />
 
         {/* Main App Container */}
@@ -603,7 +636,7 @@ export default function Home() {
           />
         )}
 
-        {vistaActual === 'parrilla' && (isAdmin() || tieneTareasAsignadas) && (
+        {vistaActual === 'parrilla' && (isAdmin() || tieneTareasParrilla) && (
           <ContentPlannerView
             cursos={cursosVisiblesPorRol}
             proyectos={proyectosVisiblesPorRol}
