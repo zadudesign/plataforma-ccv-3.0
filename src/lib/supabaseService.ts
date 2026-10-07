@@ -653,7 +653,7 @@ export async function createProyectoDB(proyecto: Omit<ProyectoEspecial, 'id'>): 
     if (proyecto.link_onedrive !== undefined) payload.link_onedrive = proyecto.link_onedrive || null;
 
     let { data, error } = await supabase.from('proyectos').insert(payload).select().single();
-    if (error && error.code === 'PGRST204') {
+    if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.code === '42703')) {
       let modified = false;
       if (error.message.includes('lider_secundario_id')) {
         delete payload.lider_secundario_id;
@@ -661,6 +661,10 @@ export async function createProyectoDB(proyecto: Omit<ProyectoEspecial, 'id'>): 
       }
       if (error.message.includes('link_onedrive')) {
         delete payload.link_onedrive;
+        modified = true;
+      }
+      if (error.message.includes('area_id')) {
+        delete payload.area_id;
         modified = true;
       }
       if (modified) {

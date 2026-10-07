@@ -116,7 +116,7 @@ interface AuthContextType {
   editarCurso: (id: string, datos: Partial<CursoVirtual>) => void;
   eliminarCurso: (id: string) => void;
 
-  crearProyecto: (datos: Omit<ProyectoEspecial, 'id'>) => void;
+  crearProyecto: (datos: Omit<ProyectoEspecial, 'id'>) => Promise<ProyectoEspecial>;
   editarProyecto: (id: string, datos: Partial<ProyectoEspecial>) => void;
   eliminarProyecto: (id: string) => void;
 
@@ -940,7 +940,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCursos(prev => [nuevo, ...prev]);
   };
 
-  const crearProyecto = async (datos: Omit<ProyectoEspecial, 'id'>) => {
+  const crearProyecto = async (datos: Omit<ProyectoEspecial, 'id'>): Promise<ProyectoEspecial> => {
     const dbItem = await createProyectoDB(datos);
     const lid = datos.lider_id ? usuarios.find(u => u.id === datos.lider_id) : undefined;
     const lidSec = datos.lider_secundario_id ? usuarios.find(u => u.id === datos.lider_secundario_id) : undefined;
@@ -953,6 +953,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: dbItem?.created_at || new Date().toISOString()
     };
     setProyectos(prev => [nuevo, ...prev]);
+    return nuevo;
   };
 
   const eliminarPrograma = async (id: string) => {

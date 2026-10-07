@@ -104,6 +104,13 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   const [fechaVencimiento, setFechaVencimiento] = useState('');
   const [horaVencimiento, setHoraVencimiento] = useState('18:00');
   
+  // Estados para nuevo proyecto en aprobación (Permite al Admin editar nombre y asignar área)
+  const [esNuevoProyectoAprobacion, setEsNuevoProyectoAprobacion] = useState(false);
+  const [nuevoProyectoNombreAdmin, setNuevoProyectoNombreAdmin] = useState('');
+  const [nuevoProyectoDescAdmin, setNuevoProyectoDescAdmin] = useState('');
+  const [nuevoProyectoAreaIdAdmin, setNuevoProyectoAreaIdAdmin] = useState(areas[0]?.id || '');
+  const [nuevoProyectoLinkAdmin, setNuevoProyectoLinkAdmin] = useState('');
+
   // Estado para rechazo y feedback
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -176,20 +183,39 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
 
     if (s.es_nuevo_proyecto) {
       setTipoTarea('Proyecto');
-      const nombreProp = (s.nuevo_proyecto_nombre || s.proyecto_nombre || '').toLowerCase();
-      const matchPry = proyectos.find(p => p.nombre.toLowerCase() === nombreProp);
+      setEsNuevoProyectoAprobacion(true);
+      setNuevoProyectoNombreAdmin(s.nuevo_proyecto_nombre || s.proyecto_nombre || '');
+      setNuevoProyectoDescAdmin(s.nuevo_proyecto_descripcion || '');
+      setNuevoProyectoLinkAdmin(s.nuevo_proyecto_link || '');
+
+      // Buscar área por origen_id o origen_nombre o la primera área
+      const areaOrigen = areas.find(a => 
+        (s.origen_id && a.id === s.origen_id) || 
+        a.nombre.toLowerCase() === (s.origen_nombre || '').toLowerCase()
+      );
+      setNuevoProyectoAreaIdAdmin(areaOrigen ? areaOrigen.id : (areas[0]?.id || ''));
+
+      const matchPry = proyectos.find(p => p.nombre.toLowerCase() === (s.nuevo_proyecto_nombre || s.proyecto_nombre || '').toLowerCase());
       if (matchPry) {
         setProyectoId(matchPry.id);
       }
-    } else if (s.proyecto_id && proyectos.some(p => p.id === s.proyecto_id)) {
-      setTipoTarea('Proyecto');
-      setProyectoId(s.proyecto_id);
-    } else if (cursos.length > 0) {
-      setTipoTarea('Curso Virtual');
-      setCursoId(cursos[0].id);
-    } else if (proyectos.length > 0) {
-      setTipoTarea('Proyecto');
-      setProyectoId(proyectos[0].id);
+    } else {
+      setEsNuevoProyectoAprobacion(false);
+      setNuevoProyectoNombreAdmin('');
+      setNuevoProyectoDescAdmin('');
+      setNuevoProyectoLinkAdmin('');
+      setNuevoProyectoAreaIdAdmin(areas[0]?.id || '');
+
+      if (s.proyecto_id && proyectos.some(p => p.id === s.proyecto_id)) {
+        setTipoTarea('Proyecto');
+        setProyectoId(s.proyecto_id);
+      } else if (cursos.length > 0) {
+        setTipoTarea('Curso Virtual');
+        setCursoId(cursos[0].id);
+      } else if (proyectos.length > 0) {
+        setTipoTarea('Proyecto');
+        setProyectoId(proyectos[0].id);
+      }
     }
 
     if (proyectos.length > 0 && !proyectoId && !s.proyecto_id && !s.es_nuevo_proyecto) {
@@ -258,38 +284,37 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
     let proyObj = proyectos.find(p => p.id === activeProyectoId);
     let finalProyectoId = activeProyectoId;
     let finalProyectoNombre = proyObj?.nombre;
+    let finalAreaId = respArea?.id || undefined;
+    let finalAreaNombre = respArea?.nombre || resp?.area_nombre || undefined;
 
-    // Si la solicitud requiere crear un nuevo proyecto y se aprueba como tipo Proyecto:
-    if (tipoTarea === 'Proyecto' && solicitudSeleccionada.es_nuevo_proyecto) {
-      const nombrePropuesto = (solicitudSeleccionada.nuevo_proyecto_nombre || solicitudSeleccionada.proyecto_nombre || '').trim();
-      const existePry = proyectos.find(p => p.id === activeProyectoId || p.nombre.toLowerCase() === nombrePropuesto.toLowerCase());
+    // Si la solicitud requiere crear un nuevo proyecto y se aprueba como tipo Proyecto con creación activa:
+    if (tipoTarea === 'Proyecto' && esNuevoProyectoAprobacion) {
+      const nombreFinalProyecto = nuevoProyectoNombreAdmin.trim();
+      if (!nombreFinalProyecto) {
+        setFeedbackMsg({ tipo: 'error', texto: 'Por favor asigna un nombre para el nuevo proyecto.' });
+        setIsProcessing(false);
+        return;
+      }
 
-      if (!existePry && nombrePropuesto) {
-        const nuevoPry = await createProyectoDB({
-          nombre: nombrePropuesto,
-          descripcion: solicitudSeleccionada.nuevo_proyecto_descripcion || `Proyecto institucional generado desde solicitud ${solicitudSeleccionada.id}`,
-          area_id: respArea?.id || solicitudSeleccionada.origen_id || undefined,
-          lider_id: activeResponsableId || undefined,
-          link_onedrive: solicitudSeleccionada.nuevo_proyecto_link || undefined,
-          estado: 'En Proceso'
-        });
-        if (nuevoPry) {
-          finalProyectoId = nuevoPry.id;
-          finalProyectoNombre = nuevoPry.nombre;
-          if (crearProyecto) {
-            crearProyecto({
-              nombre: nuevoPry.nombre,
-              descripcion: nuevoPry.descripcion,
-              area_id: nuevoPry.area_id,
-              lider_id: nuevoPry.lider_id,
-              link_onedrive: nuevoPry.link_onedrive,
-              estado: nuevoPry.estado
-            });
-          }
+      const areaSeleccionada = areas.find(a => a.id === nuevoProyectoAreaIdAdmin);
+
+      // Crear el nuevo proyecto formalmente
+      const nuevoPry = await crearProyecto({
+        nombre: nombreFinalProyecto,
+        descripcion: nuevoProyectoDescAdmin.trim() || `Proyecto institucional generado desde solicitud ${solicitudSeleccionada.id}`,
+        area_id: nuevoProyectoAreaIdAdmin || undefined,
+        lider_id: activeResponsableId || undefined,
+        link_onedrive: nuevoProyectoLinkAdmin.trim() || solicitudSeleccionada.nuevo_proyecto_link || undefined,
+        estado: 'En Proceso'
+      });
+
+      if (nuevoPry) {
+        finalProyectoId = nuevoPry.id;
+        finalProyectoNombre = nuevoPry.nombre;
+        if (areaSeleccionada) {
+          finalAreaId = areaSeleccionada.id;
+          finalAreaNombre = areaSeleccionada.nombre;
         }
-      } else if (existePry) {
-        finalProyectoId = existePry.id;
-        finalProyectoNombre = existePry.nombre;
       }
     }
 
@@ -303,8 +328,8 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       descripcion: descFinal,
       tipo_tarea: tipoTarea,
       categoria_proyecto: tipoTarea === 'Proyecto' ? categoriaProyecto : undefined,
-      area_id: respArea?.id || undefined,
-      area_nombre: respArea?.nombre || resp?.area_nombre || undefined,
+      area_id: finalAreaId,
+      area_nombre: finalAreaNombre,
       curso_id: tipoTarea === 'Curso Virtual' ? activeCursoId : undefined,
       curso_nombre: tipoTarea === 'Curso Virtual' ? cursoObj?.nombre : undefined,
       proyecto_id: tipoTarea === 'Proyecto' ? finalProyectoId : undefined,
@@ -337,11 +362,16 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       if (onTareaCreada) {
         onTareaCreada(res.data);
       }
-      setFeedbackMsg({ tipo: 'success', texto: '¡Solicitud aprobada y convertida en tarea de producción formal!' });
+      setFeedbackMsg({
+        tipo: 'success',
+        texto: (tipoTarea === 'Proyecto' && esNuevoProyectoAprobacion)
+          ? `¡Solicitud aprobada! Se creó el nuevo proyecto "${finalProyectoNombre}" (Área: ${finalAreaNombre || 'Asignada'}) y su tarea formal en la plataforma.`
+          : '¡Solicitud aprobada y convertida en tarea de producción formal!'
+      });
       setTimeout(() => {
         setModoAccion(null);
         setSolicitudSeleccionada(null);
-      }, 1500);
+      }, 2000);
     } else {
       setFeedbackMsg({ tipo: 'error', texto: res.error || 'No se pudo crear la tarea formal.' });
     }
@@ -875,31 +905,198 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
                   </select>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <SearchableProjectSelect
-                      proyectos={proyectos}
-                      value={activeProyectoId}
-                      onChange={(id) => setProyectoId(id)}
-                      label="Proyecto Asociado"
-                      accentColor="sage"
-                    />
+                <div className="space-y-3">
+                  {/* Selector Toggle Segmentado: Proyecto Existente vs Crear Nuevo Proyecto */}
+                  <div className="flex items-center gap-1.5 p-1 bg-stone-100 rounded-xl border border-stone-200/80">
+                    <button
+                      type="button"
+                      onClick={() => setEsNuevoProyectoAprobacion(false)}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        !esNuevoProyectoAprobacion
+                          ? 'bg-white text-charcoal-900 shadow-xs border border-stone-200/60'
+                          : 'text-charcoal-500 hover:text-charcoal-800'
+                      }`}
+                    >
+                      <FolderKanban className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Vincular a Proyecto Existente</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEsNuevoProyectoAprobacion(true);
+                        if (!nuevoProyectoNombreAdmin) {
+                          setNuevoProyectoNombreAdmin(solicitudSeleccionada.nuevo_proyecto_nombre || solicitudSeleccionada.proyecto_nombre || solicitudSeleccionada.titulo);
+                        }
+                      }}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        esNuevoProyectoAprobacion
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-indigo-700 hover:text-indigo-900 font-extrabold'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>✨ Crear Nuevo Proyecto</span>
+                    </button>
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-charcoal-800 mb-1">Tipo de Tarea / Especialidad</label>
-                    <select
-                      value={categoriaProyecto}
-                      onChange={(e) => setCategoriaProyecto(e.target.value as CategoriaTareaProyecto)}
-                      className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold bg-sage-50/50"
-                    >
-                      {tarifasProyecto.map(t => (
-                        <option key={t.categoria} value={t.categoria}>
-                          {t.categoria} (${t.tarifa_hora.toLocaleString('es-CO')} COP / 1 hr)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* Modo de Creación de Nuevo Proyecto Configurable por Admin */}
+                  {esNuevoProyectoAprobacion ? (
+                    <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-3.5 shadow-2xs animate-in fade-in">
+                      <div className="flex items-center justify-between pb-2 border-b border-indigo-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                            <Sparkles className="w-4 h-4 text-amber-300" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-indigo-950 block">
+                              Configuración del Nuevo Proyecto
+                            </span>
+                            <span className="text-[10px] text-indigo-700 font-medium">
+                              Puedes editar el nombre y asignar el área institucional a la que pertenecerá
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-200/80 text-indigo-900 font-black text-[10px] border border-indigo-300/60">
+                          Nuevo Proyecto
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* Nombre del Proyecto (Editable por Admin) */}
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-indigo-950 mb-1">
+                            Nombre Oficial del Proyecto <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={nuevoProyectoNombreAdmin}
+                            onChange={(e) => setNuevoProyectoNombreAdmin(e.target.value)}
+                            placeholder="Nombre oficial del proyecto..."
+                            className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                          />
+                          <p className="text-[10px] text-indigo-600 mt-1 font-medium">
+                            Puedes renombrarlo para que concuerde con el estándar institucional.
+                          </p>
+                        </div>
+
+                        {/* Asignación de Área (Editable por Admin) */}
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-indigo-950 mb-1 flex items-center gap-1">
+                            <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Área / Dependencia Asignada <span className="text-rose-500">*</span></span>
+                          </label>
+                          <select
+                            value={nuevoProyectoAreaIdAdmin}
+                            onChange={(e) => setNuevoProyectoAreaIdAdmin(e.target.value)}
+                            className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs cursor-pointer"
+                          >
+                            {areas.map(a => (
+                              <option key={a.id} value={a.id}>
+                                {a.nombre} {a.nivel ? `(Nivel ${a.nivel})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-indigo-600 mt-1 font-medium">
+                            Determina en qué departamento o área quedará registrado este proyecto.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Descripción y Especialidad de la Tarea en el proyecto */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Objetivo o Alcance del Proyecto
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoProyectoDescAdmin}
+                            onChange={(e) => setNuevoProyectoDescAdmin(e.target.value)}
+                            placeholder="Breve propósito del proyecto..."
+                            className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Especialidad de la Tarea Inicial
+                          </label>
+                          <select
+                            value={categoriaProyecto}
+                            onChange={(e) => setCategoriaProyecto(e.target.value as CategoriaTareaProyecto)}
+                            className="w-full p-2.5 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-900 text-xs font-bold bg-white"
+                          >
+                            {tarifasProyecto.map(t => (
+                              <option key={t.categoria} value={t.categoria}>
+                                {t.categoria} (${t.tarifa_hora.toLocaleString('es-CO')} COP / 1 hr)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Enlace o Carpeta del Proyecto */}
+                      <div className="pt-1">
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                          <LinkIcon className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Carpeta o Recursos del Proyecto en la Nube (OneDrive / SharePoint / Drive)</span>
+                        </label>
+                        <input
+                          type="url"
+                          value={nuevoProyectoLinkAdmin}
+                          onChange={(e) => setNuevoProyectoLinkAdmin(e.target.value)}
+                          placeholder="https://onedrive.live.com/... o carpeta compartida"
+                          className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Selector de Proyecto Existente */
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <SearchableProjectSelect
+                            proyectos={proyectos}
+                            value={activeProyectoId}
+                            onChange={(id) => setProyectoId(id)}
+                            label="Proyecto Asociado"
+                            accentColor="sage"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-charcoal-800 mb-1">Tipo de Tarea / Especialidad</label>
+                          <select
+                            value={categoriaProyecto}
+                            onChange={(e) => setCategoriaProyecto(e.target.value as CategoriaTareaProyecto)}
+                            className="w-full p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-sage-500 focus:outline-none text-charcoal-900 text-xs font-bold bg-sage-50/50"
+                          >
+                            {tarifasProyecto.map(t => (
+                              <option key={t.categoria} value={t.categoria}>
+                                {t.categoria} (${t.tarifa_hora.toLocaleString('es-CO')} COP / 1 hr)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {solicitudSeleccionada.es_nuevo_proyecto && (
+                        <div className="flex items-center justify-between p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-900">
+                          <span className="font-medium text-[11px]">Esta solicitud propuso la creación de un nuevo proyecto.</span>
+                          <button
+                            type="button"
+                            onClick={() => setEsNuevoProyectoAprobacion(true)}
+                            className="font-black text-indigo-700 hover:text-indigo-900 flex items-center gap-1 hover:underline cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Crear como nuevo proyecto</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
