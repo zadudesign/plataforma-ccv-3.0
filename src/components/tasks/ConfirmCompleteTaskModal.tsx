@@ -82,21 +82,35 @@ export const ConfirmCompleteTaskModal: React.FC<ConfirmCompleteTaskModalProps> =
         </div>
 
         {/* Warning / Desbloqueo en Cascada */}
-        <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900">
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-extrabold leading-tight">
-              Efecto en la secuencia del curso:
-            </p>
-            <p className="text-[11px] leading-relaxed text-amber-800">
-              Al marcar esta tarea como completada, el motor evaluará las dependencias y 
-              <strong> desbloqueará automáticamente las siguientes tareas</strong> de la ruta de producción.
-            </p>
+        {((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)) <= 0 ? (
+          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-xs text-rose-900">
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-extrabold leading-tight">
+                Acción no permitida: Sin tiempo registrado
+              </p>
+              <p className="text-[11px] leading-relaxed text-rose-800">
+                Esta tarea tiene <strong>0 horas registradas</strong>. Antes de poder darla por completada, debes registrar tiempo de trabajo en el temporizador o sumar horas.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-extrabold leading-tight">
+                Efecto en la secuencia del curso:
+              </p>
+              <p className="text-[11px] leading-relaxed text-amber-800">
+                Al marcar esta tarea como completada, el motor evaluará las dependencias y 
+                <strong> desbloqueará automáticamente las siguientes tareas</strong> de la ruta de producción.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Lista de posibles tareas desbloqueadas si se proporcionan */}
-        {tareasDependientes.length > 0 && (
+        {tareasDependientes.length > 0 && ((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)) > 0 && (
           <div className="space-y-1.5">
             <span className="text-[11px] font-bold text-charcoal-600 flex items-center gap-1">
               <Unlock className="w-3.5 h-3.5 text-sky-600" /> 
@@ -128,8 +142,8 @@ export const ConfirmCompleteTaskModal: React.FC<ConfirmCompleteTaskModalProps> =
           <button
             type="button"
             onClick={onConfirm}
-            disabled={isLoading}
-            className="px-5 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+            disabled={isLoading || ((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)) <= 0}
+            className="px-5 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>Guardando...</>

@@ -257,6 +257,13 @@ export default function Home() {
       return;
     }
 
+    // Validación de tiempo registrado: No permitir completar si el tiempo acumulado es 0
+    const tiempoTotal = (targetTarea?.tiempo_invertido || 0) + (targetTarea?.tiempo_invertido_secundario || 0);
+    if (nuevoEstado === 'Completada' && targetTarea?.estado !== 'Completada' && tiempoTotal <= 0) {
+      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Por favor registra las horas trabajadas antes de completarla.');
+      return;
+    }
+
     if (!hasPermission('registro:editar')) {
       alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de tareas.`);
       return;
@@ -343,6 +350,12 @@ export default function Home() {
 
     if (datosEditados.estado === 'Completada' && tareaExistente?.estado !== 'Completada' && !hasPermission('tarea:aprobar')) {
       alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+      return false;
+    }
+
+    const totalTiempo = (tareaExistente?.tiempo_invertido || 0) + (tareaExistente?.tiempo_invertido_secundario || 0) + (datosEditados.tiempo_invertido || 0);
+    if (datosEditados.estado === 'Completada' && tareaExistente?.estado !== 'Completada' && totalTiempo <= 0) {
+      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Por favor registra las horas trabajadas antes de completarla.');
       return false;
     }
 

@@ -99,6 +99,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
       return;
     }
+
+    // Validación de tiempo registrado
+    const tiempoTotal = (tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0);
+    if (est === 'Completada' && tarea.estado !== 'Completada' && tiempoTotal <= 0) {
+      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas en el temporizador o añade tiempo antes de completarla.');
+      return;
+    }
+
     if (est !== tarea.estado && !hasPermission('registro:editar')) {
       alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de la tarea.`);
       return;
@@ -424,10 +432,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </div>
             )}
 
+            {/* Aviso si la tarea aún no tiene tiempo registrado */}
+            {((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)) <= 0 && tarea.estado !== 'Completada' && (
+              <div className="p-3 bg-amber-50 border border-amber-200/90 rounded-xl text-xs text-amber-900 flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Para marcar esta tarea como <strong>Completada</strong>, es obligatorio registrar tiempo previamente en el temporizador o añadir horas trabajadas.</span>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               {(['Pendiente', 'En Proceso', 'En Revisión', 'Completada'] as EstadoTarea[]).map((est) => {
                 const isActive = tarea.estado === est;
                 const esBloqueada = tarea.tipo_tarea === 'Curso Virtual' && tarea.estado_bloqueo === 'BLOQUEADA' && est !== 'Pendiente';
+                const totalHoras = (tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0);
+                const esInhabilitadaPorTiempo = est === 'Completada' && tarea.estado !== 'Completada' && totalHoras <= 0;
+                const isDisabled = esBloqueada || esInhabilitadaPorTiempo;
+
                 const getActiveBtnStyle = (estado: EstadoTarea) => {
                   switch (estado) {
                     case 'Pendiente': return 'bg-rose-600 text-white ring-2 ring-rose-300';
@@ -441,16 +461,24 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <button
                     key={est}
                     onClick={() => handleCambiarEstado(est)}
-                    disabled={esBloqueada}
-                    className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all ${
-                      esBloqueada
+                    disabled={isDisabled}
+                    title={
+                      esInhabilitadaPorTiempo 
+                        ? 'Requiere registrar tiempo antes de poder marcar como Completada' 
+                        : esBloqueada 
+                        ? 'Tarea bloqueada por dependencias' 
+                        : `Cambiar estado a ${est}`
+                    }
+                    className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                      isDisabled
                         ? 'opacity-40 bg-stone-200 text-stone-500 border border-stone-300 cursor-not-allowed'
                         : isActive
                         ? `${getActiveBtnStyle(est)} shadow-md scale-105 cursor-pointer`
                         : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200 border border-stone-200 cursor-pointer'
                     }`}
                   >
-                    {est}
+                    {esInhabilitadaPorTiempo && <Clock className="w-3 h-3 text-stone-400" />}
+                    <span>{est}</span>
                   </button>
                 );
               })}

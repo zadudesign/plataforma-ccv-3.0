@@ -375,6 +375,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   };
 
   const handleSolicitarCambioEstado = (t: TareaCCV, nuevoEstado: EstadoTarea) => {
+    const tiempoTotal = (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0);
+    if (nuevoEstado === 'Completada' && t.estado !== 'Completada' && tiempoTotal <= 0) {
+      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Por favor registra las horas trabajadas antes de completarla.');
+      return;
+    }
     if (esCurso && nuevoEstado === 'Completada' && t.estado !== 'Completada') {
       setTareaParaConfirmar(t);
     } else {
@@ -1220,9 +1225,20 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 {/* Estado Selector */}
                 <div>
                   <h4 className="text-xs font-bold text-charcoal-500 uppercase tracking-wider mb-2">Cambiar Estado de la Tarea</h4>
+
+                  {((tareaSeleccionadaLocal.tiempo_invertido || 0) + (tareaSeleccionadaLocal.tiempo_invertido_secundario || 0)) <= 0 && tareaSeleccionadaLocal.estado !== 'Completada' && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200/90 rounded-xl text-xs text-amber-900 flex items-center gap-2 mb-3">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Para marcar esta tarea como <strong>Completada</strong>, es obligatorio registrar tiempo previamente.</span>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-2">
                     {(['Pendiente', 'En Proceso', 'En Revisión', 'Completada'] as EstadoTarea[]).map((est) => {
                       const isActive = tareaSeleccionadaLocal.estado === est;
+                      const totalHoras = (tareaSeleccionadaLocal.tiempo_invertido || 0) + (tareaSeleccionadaLocal.tiempo_invertido_secundario || 0);
+                      const esInhabilitadaPorTiempo = est === 'Completada' && tareaSeleccionadaLocal.estado !== 'Completada' && totalHoras <= 0;
+
                       const getActiveBtnStyle = (estado: EstadoTarea) => {
                         switch (estado) {
                           case 'Pendiente': return 'bg-rose-600 text-white ring-2 ring-rose-300';
@@ -1236,18 +1252,23 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                         <button
                           key={est}
                           onClick={() => {
-                            if (onUpdateStatus) {
-                              onUpdateStatus(tareaSeleccionadaLocal.id, est);
+                            handleSolicitarCambioEstado(tareaSeleccionadaLocal, est);
+                            if (!esInhabilitadaPorTiempo && (!esCurso || est !== 'Completada')) {
                               setTareaSeleccionadaLocal({ ...tareaSeleccionadaLocal, estado: est });
                             }
                           }}
-                          className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all ${
-                            isActive
-                              ? `${getActiveBtnStyle(est)} shadow-md scale-105`
-                              : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200 border border-stone-200'
+                          disabled={esInhabilitadaPorTiempo}
+                          title={esInhabilitadaPorTiempo ? 'Requiere registrar tiempo antes de completar' : `Cambiar a ${est}`}
+                          className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                            esInhabilitadaPorTiempo
+                              ? 'opacity-40 bg-stone-200 text-stone-500 border border-stone-300 cursor-not-allowed'
+                              : isActive
+                              ? `${getActiveBtnStyle(est)} shadow-md scale-105 cursor-pointer`
+                              : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200 border border-stone-200 cursor-pointer'
                           }`}
                         >
-                          {est}
+                          {esInhabilitadaPorTiempo && <Clock className="w-3 h-3 text-stone-400" />}
+                          <span>{est}</span>
                         </button>
                       );
                     })}
@@ -1324,6 +1345,12 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
           onClose={() => setTareaParaConfirmar(null)}
           onConfirm={() => {
             if (tareaParaConfirmar && onUpdateStatus) {
+              const tiempoTotal = (tareaParaConfirmar.tiempo_invertido || 0) + (tareaParaConfirmar.tiempo_invertido_secundario || 0);
+              if (tiempoTotal <= 0) {
+                alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado.');
+                setTareaParaConfirmar(null);
+                return;
+              }
               onUpdateStatus(tareaParaConfirmar.id, 'Completada');
               if (tareaSeleccionadaLocal && tareaSeleccionadaLocal.id === tareaParaConfirmar.id) {
                 setTareaSeleccionadaLocal({ ...tareaSeleccionadaLocal, estado: 'Completada', estado_bloqueo: 'COMPLETADA' });

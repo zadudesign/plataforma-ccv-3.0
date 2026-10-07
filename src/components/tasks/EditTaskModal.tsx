@@ -125,6 +125,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       return;
     }
 
+    if (estado === 'Completada' && tarea.estado !== 'Completada' && totalHorasInvertidas <= 0) {
+      setErrorMsg('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas antes de completarla.');
+      return;
+    }
+
     setIsSaving(true);
     setErrorMsg(null);
 
@@ -413,8 +418,18 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 <option value="Pendiente">Pendiente</option>
                 <option value="En Proceso">En Proceso</option>
                 <option value="En Revisión">En Revisión</option>
-                <option value="Completada">Completada</option>
+                <option 
+                  value="Completada" 
+                  disabled={totalHorasInvertidas <= 0 && tarea.estado !== 'Completada'}
+                >
+                  Completada {totalHorasInvertidas <= 0 && tarea.estado !== 'Completada' ? '🔒 (Requiere tiempo)' : ''}
+                </option>
               </select>
+              {totalHorasInvertidas <= 0 && tarea.estado !== 'Completada' && (
+                <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                  Requiere registrar tiempo antes de completar.
+                </p>
+              )}
             </div>
 
             <div>

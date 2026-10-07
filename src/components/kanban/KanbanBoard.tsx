@@ -716,10 +716,23 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                             alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar tareas.`);
                                             return;
                                           }
+                                          const tiempoTotal = (tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0);
+                                          if (next === 'Completada' && tiempoTotal <= 0) {
+                                            alert('No es posible mover esta tarea a "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas antes de completarla.');
+                                            return;
+                                          }
                                           onUpdateStatus(tarea.id, next);
                                         }}
-                                        className="w-5 h-5 rounded-full bg-charcoal-900 hover:bg-sage-700 text-white flex items-center justify-center text-[10px] shadow-2xs transition-colors"
-                                        title="Avanzar etapa"
+                                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-2xs transition-colors ${
+                                          col.estado === 'En Revisión' && ((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)) <= 0
+                                            ? 'bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200'
+                                            : 'bg-charcoal-900 hover:bg-sage-700 text-white'
+                                        }`}
+                                        title={
+                                          col.estado === 'En Revisión' && ((tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0)) <= 0
+                                            ? 'No se puede completar: requiere registrar tiempo previamente'
+                                            : 'Avanzar etapa'
+                                        }
                                       >
                                         <ArrowRight className="w-2.5 h-2.5" />
                                       </button>
