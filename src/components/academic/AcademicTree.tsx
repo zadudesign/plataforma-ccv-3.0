@@ -53,7 +53,7 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   onOpenProgreso,
 }) => {
   const { actualizarIdentidadFacultad, actualizarIdentidadArea, isAdmin, eliminarCurso, eliminarPrograma } = useAuth();
-  const [proyectosAbiertos, setProyectosAbiertos] = useState(false);
+  const [proyectosAbiertos, setProyectosAbiertos] = useState(true);
   const [areasProyectosAbiertas, setAreasProyectosAbiertas] = useState<Record<string, boolean>>({});
   const [facultadesAbiertas, setFacultadesAbiertas] = useState<Record<string, boolean>>({});
 
@@ -62,17 +62,23 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
   const [departamentoParaIdentidad, setDepartamentoParaIdentidad] = useState<Area | null>(null);
 
   const toggleFacultad = (id: string) => {
-    setFacultadesAbiertas(prev => ({ 
-      ...prev, 
-      [id]: !prev[id] 
-    }));
+    setFacultadesAbiertas(prev => {
+      const actual = prev[id] !== undefined ? prev[id] : true;
+      return { 
+        ...prev, 
+        [id]: !actual 
+      };
+    });
   };
 
   const toggleAreaProyecto = (areaId: string) => {
-    setAreasProyectosAbiertas(prev => ({ 
-      ...prev, 
-      [areaId]: !prev[areaId] 
-    }));
+    setAreasProyectosAbiertas(prev => {
+      const actual = prev[areaId] !== undefined ? prev[areaId] : true;
+      return { 
+        ...prev, 
+        [areaId]: !actual 
+      };
+    });
   };
 
   // Agrupar proyectos por Departamento y calcular costos/horas departamentales
@@ -266,7 +272,9 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
               </div>
             ) : (
               proyectosPorDepartamento.map(grupo => {
-                const isAreaOpen = areasProyectosAbiertas[grupo.departamentoId] === true; // Plegado por defecto
+                const isAreaOpen = areasProyectosAbiertas[grupo.departamentoId] !== undefined 
+                  ? areasProyectosAbiertas[grupo.departamentoId] 
+                  : true; // Expandido por defecto
                 const deptColor = grupo.areaObj?.color || 'amber';
                 const deptIcono = grupo.areaObj?.icono || 'FolderKanban';
                 const theme = getFacultyTheme(deptColor);
@@ -484,7 +492,9 @@ export const AcademicTree: React.FC<AcademicTreeProps> = ({
         ) : (
           facultades.map((facultad) => {
             const progsFacultad = programas.filter(p => p.facultad_id === facultad.id);
-            const isOpen = facultadesAbiertas[facultad.id] === true; // Plegado por defecto
+            const isOpen = facultadesAbiertas[facultad.id] !== undefined 
+              ? facultadesAbiertas[facultad.id] 
+              : true; // Expandido por defecto
             const theme = getFacultyTheme(facultad.color);
             const iconoFacultad = facultad.icono || 'Building2';
 
