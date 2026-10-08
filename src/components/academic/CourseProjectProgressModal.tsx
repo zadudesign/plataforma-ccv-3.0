@@ -455,10 +455,10 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs font-bold px-3 py-0.5 rounded-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 hover:text-blue-900 transition-colors flex items-center gap-1.5 shadow-2xs group"
-                        title="Abrir carpeta de recursos en OneDrive"
+                        title="Abrir carpeta de recursos"
                       >
                         <FolderOpen className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-                        <span>Carpeta OneDrive</span>
+                        <span>Carpeta Recursos</span>
                         <ExternalLink className="w-3 h-3 text-blue-400 group-hover:text-blue-600" />
                       </a>
                     )}

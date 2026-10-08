@@ -564,12 +564,12 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                 </div>
               </div>
 
-              {/* Enlace a Carpeta de Recursos en OneDrive */}
+              {/* Enlace a Carpeta de Recursos */}
               <div>
                 <label className="block text-xs font-bold text-charcoal-700 uppercase tracking-wider mb-1 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <FolderOpen className="w-3.5 h-3.5 text-blue-600" />
-                    Carpeta de Recursos OneDrive
+                    Carpeta de Recursos
                   </span>
                   {linkOnedrive.trim() && (
                     <a
@@ -587,12 +587,12 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     type="url"
                     value={linkOnedrive}
                     onChange={e => setLinkOnedrive(e.target.value)}
-                    placeholder="https://uned-my.sharepoint.com/... o https://onedrive.live.com/..."
+                    placeholder="https://... (OneDrive, SharePoint, Google Drive o carpeta compartida)"
                     className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs font-medium text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500 placeholder:text-stone-400"
                   />
                 </div>
                 <p className="text-[11px] text-charcoal-500 mt-1 leading-snug">
-                  Pega aquí el enlace a la carpeta compartida en OneDrive para subir y consultar toda la documentación necesaria del proyecto.
+                  Pega aquí el enlace a la carpeta compartida para subir y consultar toda la documentación necesaria del proyecto.
                 </p>
               </div>
             </>
