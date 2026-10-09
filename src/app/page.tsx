@@ -38,6 +38,7 @@ import { VistaNavegacion, PestanaAdmin, TareaCCV, TareaComentario, EstadoTarea, 
 import { simularDesbloqueoEnCascada } from '@/lib/courseTemplateUtils';
 import { getEntitiesVisibleByRole, canUserEditTask, isRoleMatch } from '@/lib/roleVisibilityUtils';
 import { redondearHoras } from '@/lib/progressUtils';
+import { INITIAL_TAREAS } from '@/lib/mockData';
 import { ShieldAlert } from 'lucide-react';
 
 export default function Home() {
@@ -109,14 +110,14 @@ export default function Home() {
     });
   };
 
-  // Cargar tareas iniciales y publicaciones de la parrilla desde Supabase DB
+  // Cargar tareas iniciales y publicaciones de la parrilla desde Supabase DB o Fallback Local
   useEffect(() => {
     const loadData = async () => {
       const [dbTareas, dbPubs] = await Promise.all([
         fetchTareasDB(),
         fetchPublicacionesParrillaDB()
       ]);
-      setTareas(ordenarTareasPorVencimiento(dbTareas || []));
+      setTareas(ordenarTareasPorVencimiento(dbTareas && dbTareas.length > 0 ? dbTareas : INITIAL_TAREAS));
       setPublicacionesParrilla(dbPubs || []);
     };
     loadData();
