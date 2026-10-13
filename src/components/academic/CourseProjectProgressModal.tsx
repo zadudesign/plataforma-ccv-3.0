@@ -303,9 +303,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
     }
   };
 
-  // Comentarios de la tarea seleccionada en vista detalle
+  // Comentarios de la tarea seleccionada en vista detalle (excluyendo registros de tiempo automáticos)
   const comentariosTarea = tareaSeleccionadaLocal 
-    ? comentarios.filter(c => c.tarea_id === tareaSeleccionadaLocal.id) 
+    ? comentarios
+        .filter(c => c.tarea_id === tareaSeleccionadaLocal.id)
+        .filter(c => !c.comentario.startsWith('⏱️') && !c.comentario.includes('Registro de Avance') && !c.comentario.includes('Imputación Horaria'))
     : [];
 
   // Validaciones del Motor de Plantilla para Cursos

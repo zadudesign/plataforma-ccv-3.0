@@ -151,7 +151,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const rolPrincipal = getNombreRol(tarea.rol_destino, tarea.responsable_id);
   const rolSecundario = getNombreRol(tarea.rol_destino_secundario, tarea.responsable_secundario_id);
 
-  const comentariosTarea = comentarios.filter(c => c.tarea_id === tarea.id);
+  const comentariosTarea = comentarios
+    .filter(c => c.tarea_id === tarea.id)
+    .filter(c => !c.comentario.startsWith('⏱️') && !c.comentario.includes('Registro de Avance') && !c.comentario.includes('Imputación Horaria'));
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -568,7 +570,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </h4>
 
             <div className="space-y-3 max-h-56 overflow-y-auto pr-1 mb-4 scrollbar-thin">
-              {comentariosTarea.map((com) => {
+              {comentariosTarea.length === 0 ? (
+                <div className="text-center py-6 px-4 bg-stone-50/70 border border-stone-200/60 rounded-2xl text-charcoal-400">
+                  <MessageSquare className="w-6 h-6 mx-auto mb-1.5 opacity-40 text-stone-400" />
+                  <p className="text-xs font-medium">Aún no hay comentarios en esta tarea.</p>
+                  <p className="text-[10px] text-stone-400">Escribe una observación o retroalimentación didáctica abajo.</p>
+                </div>
+              ) : (
+                comentariosTarea.map((com) => {
                 const isLogAvance = com.comentario.startsWith('⏱️');
                 return (
                   <div 

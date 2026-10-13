@@ -179,7 +179,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   // 4. ACTIVIDAD RECIENTE (Excluyendo tareas completadas y tareas bloqueadas)
   const tareasActivas = tareas.filter(t => t.estado !== 'Completada' && t.estado_bloqueo !== 'BLOQUEADA');
   const ultimasTareas = [...tareasActivas].slice(-5).reverse();
-  const ultimosComentarios = [...comentarios].slice(-5).reverse();
+  const comentariosReales = comentarios.filter(
+    c => !c.comentario.startsWith('⏱️') && !c.comentario.includes('Registro de Avance') && !c.comentario.includes('Imputación Horaria')
+  );
+  const ultimosComentarios = [...comentariosReales].slice(-5).reverse();
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -603,7 +606,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <h4 className="text-base font-extrabold text-charcoal-900">Últimos Comentarios & Feed</h4>
               </div>
               <span className="text-xs text-amber-700 font-bold bg-amber-50 px-2.5 py-0.5 rounded-full">
-                {comentarios.length} Comentarios
+                {comentariosReales.length} Comentarios
               </span>
             </div>
 

@@ -277,7 +277,7 @@ export const LogHoursModal: React.FC<LogHoursModalProps> = ({
               className="w-full px-3.5 py-2.5 bg-cream-50 border border-stone-200 rounded-2xl text-xs text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-sage-500"
             />
             <p className="text-[10px] text-charcoal-400 mt-1">
-              Esta nota se publicará automáticamente en la sección de <strong className="text-charcoal-600">Discusión & Comentarios</strong> de la tarea.
+              Esta nota quedará guardada en el historial de auditoría de avance de la tarea.
             </p>
           </div>
 
