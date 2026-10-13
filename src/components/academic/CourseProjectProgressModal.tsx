@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   CheckCircle2, 
@@ -28,7 +28,8 @@ import {
   ShieldAlert,
   AlertTriangle,
   Trash2,
-  Pencil
+  Pencil,
+  Search
 } from 'lucide-react';
 import { CursoVirtual, ProyectoEspecial, TareaCCV, EstadoTarea, TareaComentario } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -79,7 +80,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
     if (!hasPermission('registro:editar')) return false;
     return isAdmin() || canUserEditTask(usuarioActual, t, proyectos, areas, roles, nivelArea, rolesPermisosMap);
   };
-  const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea'>('resumen');
+  const [pestanaModal, setPestanaModal] = useState<'resumen' | 'detalle_tarea' | 'comentarios'>('resumen');
   const [tareaSeleccionadaLocal, setTareaSeleccionadaLocal] = useState<TareaCCV | null>(null);
   const [tareaAEliminar, setTareaAEliminar] = useState<TareaCCV | null>(null);
   const [tareaAEditar, setTareaAEditar] = useState<TareaCCV | null>(null);
@@ -310,6 +311,34 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
         .filter(c => !c.comentario.startsWith('⏱️') && !c.comentario.includes('Registro de Avance') && !c.comentario.includes('Imputación Horaria'))
     : [];
 
+  // Obtener todos los IDs de las tareas pertenecientes a este proyecto/curso
+  const idsTareasProyecto = useMemo(() => new Set(todasTareasEntidad.map(t => t.id)), [todasTareasEntidad]);
+
+  // Comentarios de todas las tareas pertenecientes al proyecto (excluyendo registros automáticos de tiempo)
+  const comentariosProyecto = useMemo(() => {
+    return comentarios
+      .filter(c => idsTareasProyecto.has(c.tarea_id))
+      .filter(c => !c.comentario.startsWith('⏱️') && !c.comentario.includes('Registro de Avance') && !c.comentario.includes('Imputación Horaria'))
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  }, [comentarios, idsTareasProyecto]);
+
+  // Filtros y estados de la pestaña de comentarios del proyecto
+  const [filtroTareaComentario, setFiltroTareaComentario] = useState<string>('todas');
+  const [busquedaComentario, setBusquedaComentario] = useState<string>('');
+  const [tareaDestinoNuevoComentario, setTareaDestinoNuevoComentario] = useState<string>('');
+  const [nuevoComentarioProyecto, setNuevoComentarioProyecto] = useState<string>('');
+  const [isEnviandoComentarioProyecto, setIsEnviandoComentarioProyecto] = useState<boolean>(false);
+
+  const comentariosFiltradosProyecto = useMemo(() => {
+    return comentariosProyecto.filter(c => {
+      const matchTarea = filtroTareaComentario === 'todas' || c.tarea_id === filtroTareaComentario;
+      const matchBusqueda = !busquedaComentario.trim() || 
+        c.comentario.toLowerCase().includes(busquedaComentario.trim().toLowerCase()) ||
+        c.usuario_nombre.toLowerCase().includes(busquedaComentario.trim().toLowerCase());
+      return matchTarea && matchBusqueda;
+    });
+  }, [comentariosProyecto, filtroTareaComentario, busquedaComentario]);
+
   // Validaciones del Motor de Plantilla para Cursos
   const validacionPlantilla = esCurso && curso ? validarRequisitosCargaPlantilla(curso, tareasEntidad) : null;
   const yaTienePlantilla = tareasEntidad.some(t => !!t.plantilla_origen_id);
@@ -489,10 +518,10 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
           </div>
 
           {/* Modal Header Tabs Navigation */}
-          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-stone-200/60">
+          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-stone-200/60 flex-wrap">
             <button
               onClick={() => setPestanaModal('resumen')}
-              className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+              className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer ${
                 pestanaModal === 'resumen'
                   ? `${theme.bgPrimary} text-white shadow-sm`
                   : 'bg-white border border-stone-200 text-charcoal-600 hover:bg-cream-100'
@@ -502,10 +531,22 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
               Resumen y Avance ({porcentaje}%)
             </button>
 
+            <button
+              onClick={() => setPestanaModal('comentarios')}
+              className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer ${
+                pestanaModal === 'comentarios'
+                  ? `${theme.bgPrimary} text-white shadow-sm`
+                  : 'bg-white border border-stone-200 text-charcoal-600 hover:bg-cream-100'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              Comentarios ({comentariosProyecto.length})
+            </button>
+
             {tareaSeleccionadaLocal && (
               <button
                 onClick={() => setPestanaModal('detalle_tarea')}
-                className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer ${
                   pestanaModal === 'detalle_tarea'
                     ? 'bg-sage-600 text-white shadow-sm'
                     : 'bg-white border border-stone-200 text-charcoal-600 hover:bg-cream-100'
@@ -1037,6 +1078,179 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                     <AlertCircle className="w-8 h-8 text-charcoal-400 mx-auto" />
                     <p className="text-xs font-bold text-charcoal-700">No se encontraron tareas con este filtro.</p>
                   </div>
+                )}
+              </div>
+            </div>
+          ) : pestanaModal === 'comentarios' ? (
+            /* ================================================================ */
+            /* PESTAÑA: COMENTARIOS Y OBSERVACIONES DEL PROYECTO / CURSO       */
+            /* ================================================================ */
+            <div className="space-y-6 animate-fadeIn">
+              {/* Tarjeta de Encabezado y Filtros */}
+              <div className="p-5 bg-cream-50/80 rounded-3xl border border-stone-200/90 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20 shadow-2xs shrink-0">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-extrabold text-charcoal-900 tracking-tight">
+                        Discusión & Observaciones de {esCurso ? 'Curso' : 'Proyecto'}
+                      </h4>
+                      <p className="text-xs text-charcoal-500">
+                        Historial consolidado de notas y retroalimentación didáctica de las tareas de <strong className="text-charcoal-700">{entidad.nombre}</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="self-start sm:self-center px-3 py-1 rounded-full text-xs font-black bg-white border border-stone-200 text-charcoal-700 shadow-2xs">
+                    {comentariosProyecto.length} Comentarios
+                  </span>
+                </div>
+
+                {/* Filtro por tarea y buscador */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="relative">
+                    <select
+                      value={filtroTareaComentario}
+                      onChange={(e) => setFiltroTareaComentario(e.target.value)}
+                      className="w-full py-2 px-3 pr-8 bg-white rounded-xl text-xs font-bold border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-charcoal-800 shadow-2xs cursor-pointer"
+                    >
+                      <option value="todas">Todas las tareas de la iniciativa ({tareasEntidad.length})</option>
+                      {tareasEntidad.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.titulo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar por comentario o autor..."
+                      value={busquedaComentario}
+                      onChange={(e) => setBusquedaComentario(e.target.value)}
+                      className="w-full py-2 pl-8 pr-3 bg-white rounded-xl text-xs border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-charcoal-900 shadow-2xs"
+                    />
+                    <Search className="w-3.5 h-3.5 text-charcoal-400 absolute left-2.5 top-2.5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulario para publicar una nueva observación */}
+              {onAddComentario && tareasEntidad.length > 0 && (
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!nuevoComentarioProyecto.trim()) return;
+                    const targetTareaId = tareaDestinoNuevoComentario || tareasEntidad[0]?.id;
+                    if (!targetTareaId) return;
+                    setIsEnviandoComentarioProyecto(true);
+                    try {
+                      await onAddComentario(targetTareaId, nuevoComentarioProyecto.trim());
+                      setNuevoComentarioProyecto('');
+                    } finally {
+                      setIsEnviandoComentarioProyecto(false);
+                    }
+                  }}
+                  className="p-4 sm:p-5 bg-white rounded-3xl border border-stone-200/90 shadow-sm space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label className="text-xs font-bold text-charcoal-700 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Send className="w-3.5 h-3.5 text-amber-600" />
+                      Asociar comentario a la tarea:
+                    </label>
+                    <select
+                      value={tareaDestinoNuevoComentario || (tareasEntidad[0]?.id ?? '')}
+                      onChange={(e) => setTareaDestinoNuevoComentario(e.target.value)}
+                      className="py-1 px-3 max-w-full sm:max-w-xs bg-cream-50 rounded-xl text-xs font-bold border border-stone-200 text-charcoal-800 truncate focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs cursor-pointer"
+                    >
+                      {tareasEntidad.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.titulo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Escribe una observación pedagógica o nota colaborativa..."
+                      value={nuevoComentarioProyecto}
+                      onChange={(e) => setNuevoComentarioProyecto(e.target.value)}
+                      className="flex-1 py-2.5 px-4 bg-cream-50/70 rounded-full text-xs border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-charcoal-900 shadow-inner"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!nuevoComentarioProyecto.trim() || isEnviandoComentarioProyecto}
+                      className="px-5 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{isEnviandoComentarioProyecto ? 'Publicando...' : 'Publicar'}</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Feed de Comentarios */}
+              <div className="space-y-3">
+                {comentariosFiltradosProyecto.length === 0 ? (
+                  <div className="text-center py-12 px-4 bg-stone-50/70 border border-stone-200/70 rounded-3xl text-charcoal-400 space-y-2">
+                    <MessageSquare className="w-8 h-8 mx-auto opacity-30 text-stone-400" />
+                    <h5 className="text-sm font-bold text-charcoal-700">Sin observaciones en este filtro</h5>
+                    <p className="text-xs text-charcoal-400 max-w-sm mx-auto">
+                      {busquedaComentario || filtroTareaComentario !== 'todas'
+                        ? 'No se encontraron comentarios que coincidan con la búsqueda o tarea seleccionada.'
+                        : 'Aún no se han registrado observaciones en las tareas de esta iniciativa. Puedes redactar la primera en el formulario de arriba.'}
+                    </p>
+                  </div>
+                ) : (
+                  comentariosFiltradosProyecto.map((com) => {
+                    const tareaAsociada = tareas.find(t => t.id === com.tarea_id);
+                    return (
+                      <div
+                        key={com.id}
+                        className="p-4 bg-white hover:bg-cream-50/60 rounded-2xl border border-stone-200 shadow-2xs transition-all flex items-start gap-3.5"
+                      >
+                        <img
+                          src={com.usuario_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                          alt={com.usuario_nombre}
+                          className="w-9 h-9 rounded-full object-cover mt-0.5 border border-stone-200 shadow-2xs shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-charcoal-900 text-xs">
+                                {com.usuario_nombre}
+                              </span>
+                              {tareaAsociada && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTareaSeleccionadaLocal(tareaAsociada);
+                                    setPestanaModal('detalle_tarea');
+                                  }}
+                                  className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-charcoal-700 hover:text-charcoal-900 text-[10px] font-bold border border-stone-200 transition-colors flex items-center gap-1 cursor-pointer truncate max-w-[220px]"
+                                  title={`Ver detalle de tarea: ${tareaAsociada.titulo}`}
+                                >
+                                  <Layers className="w-2.5 h-2.5 text-stone-500 shrink-0" />
+                                  <span className="truncate">{tareaAsociada.titulo}</span>
+                                </button>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-charcoal-400 font-mono shrink-0">
+                              {com.created_at}
+                            </span>
+                          </div>
+                          <p className="text-xs text-charcoal-700 leading-relaxed whitespace-pre-wrap">
+                            {com.comentario}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>
