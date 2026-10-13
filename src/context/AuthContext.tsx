@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Usuario, Rol, Area, PermisoDef, NivelArea, Facultad, Programa, CursoVirtual, ProyectoEspecial, ConfiguracionTarifa, CategoriaTareaProyecto, SolicitudTareaCCV, EstadoSolicitudTarea, TareaCCV, PlantillaTareaCurso } from '@/types';
 import { 
   INITIAL_PERMISOS, 
@@ -25,6 +25,7 @@ import {
   fetchProyectos,
   isGuid,
   updateUsuarioDB,
+  registrarUltimaConexionDB,
   deleteUsuarioDB,
   createAreaDB,
   updateAreaIdentidadDB,
@@ -99,6 +100,7 @@ interface AuthContextType {
   logout: () => void;
   crearUsuario: (nuevo: Omit<Usuario, 'id'> & { password?: string }) => Promise<{ success: boolean; error?: string }>;
   actualizarUsuario: (id: string, datos: Partial<Usuario>) => void;
+  recargarUsuarios: () => Promise<void>;
   eliminarUsuario: (id: string) => void;
   actualizarPermisosRol: (rolId: string, permisos: string[]) => Promise<{ success: boolean; error?: string; remote?: boolean }>;
   crearRol: (nombre: string, areaId: string, permisos?: string[]) => void;
@@ -293,7 +295,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         if (usuarioEncontrado) {
-          establecerUsuarioAutenticado(usuarioEncontrado);
+          const nowIso = new Date().toISOString();
+          const usrConConexion = { ...usuarioEncontrado, ultima_conexion: nowIso };
+          establecerUsuarioAutenticado(usrConConexion);
+          setUsuarios(prev => prev.map(u => u.id === usrConConexion.id ? usrConConexion : u));
+          if (isGuid(usrConConexion.id)) {
+            registrarUltimaConexionDB(usrConConexion.id).then();
+          }
         }
         // Recargar plantilla de tareas ahora que la sesión está formalmente verificada
         fetchPlantillaTareasCursoDB().then(fresh => {
@@ -362,6 +370,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (usr) {
       setUsuarioActual({ ...usr, ultima_conexion: ahora });
     }
+    if (isGuid(usuarioId)) {
+      registrarUltimaConexionDB(usuarioId).then();
+    }
   };
 
   const loginConSupabase = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -401,7 +412,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUsuarios(prev => prev.map(u => u.id === usr.id ? userWithConnection : u));
           establecerUsuarioAutenticado(userWithConnection);
           if (isGuid(usr.id)) {
-            supabase.from('usuarios').update({ ultima_conexion: nowIso }).eq('id', usr.id).then();
+            registrarUltimaConexionDB(usr.id).then();
           }
         } else {
           // Consultar perfil de usuario individual en Supabase
@@ -428,7 +439,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             establecerUsuarioAutenticado(parsedUser);
             if (isGuid(dbUser.id)) {
-              supabase.from('usuarios').update({ ultima_conexion: nowIso }).eq('id', dbUser.id).then();
+              registrarUltimaConexionDB(dbUser.id).then();
             }
           } else {
             establecerUsuarioAutenticado({
@@ -733,6 +744,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Error sincronizando usuario con Supabase:', e);
     }
   };
+
+  const recargarUsuarios = async () => {
+    try {
+      const freshUsers = await fetchUsuarios();
+      if (freshUsers.length > 0) {
+        setUsuarios(freshUsers);
+      }
+    } catch (err) {
+      console.warn('Error al recargar usuarios:', err);
+    }
+  };
+
+  // --- HEARTBEAT & MONITOR DE ACTIVIDAD EN TIEMPO REAL ---
+  // Registra la última actividad en la plataforma throttled (cada 2 minutos) ante interacciones del usuario
+  const ultimaActividadRegistradaRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (!usuarioActual?.id) return;
+    const currentUserId = usuarioActual.id;
+
+    const registrarActividad = () => {
+      const ahora = Date.now();
+      // Throttle de 2 minutos (120,000 ms) para no sobrecargar Supabase
+      if (ahora - ultimaActividadRegistradaRef.current > 120000) {
+        ultimaActividadRegistradaRef.current = ahora;
+        const nowIso = new Date().toISOString();
+
+        setUsuarioActual(prev => (prev && prev.id === currentUserId ? { ...prev, ultima_conexion: nowIso } : prev));
+        setUsuarios(prev => prev.map(u => u.id === currentUserId ? { ...u, ultima_conexion: nowIso } : u));
+
+        if (isGuid(currentUserId)) {
+          registrarUltimaConexionDB(currentUserId).then();
+        }
+      }
+    };
+
+    const eventos = ['mousedown', 'keydown', 'scroll', 'touchstart', 'focus'];
+    const handleEvent = () => registrarActividad();
+
+    eventos.forEach(ev => window.addEventListener(ev, handleEvent, { passive: true }));
+
+    // Verificación periódica cada 2 minutos si la pestaña está activa
+    const intervalo = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        registrarActividad();
+      }
+    }, 120000);
+
+    return () => {
+      eventos.forEach(ev => window.removeEventListener(ev, handleEvent));
+      clearInterval(intervalo);
+    };
+  }, [usuarioActual?.id]);
 
   const eliminarUsuario = async (id: string) => {
     setUsuarios(prev => prev.filter(u => u.id !== id));
@@ -1435,6 +1499,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         crearUsuario,
         actualizarUsuario,
+        recargarUsuarios,
         eliminarUsuario,
         actualizarPermisosRol,
         crearRol,

@@ -392,6 +392,29 @@ export async function updateUsuarioDB(id: string, datos: Partial<Usuario>): Prom
   }
 }
 
+/**
+ * Registra en Supabase la última conexión/actividad del usuario en tiempo real.
+ */
+export async function registrarUltimaConexionDB(usuarioId: string): Promise<boolean> {
+  try {
+    if (!isGuid(usuarioId)) return false;
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase
+      .from('usuarios')
+      .update({ ultima_conexion: nowIso })
+      .eq('id', usuarioId);
+
+    if (error) {
+      console.warn('Aviso al registrar última conexión en Supabase:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Excepción al registrar última conexión en Supabase:', err);
+    return false;
+  }
+}
+
 export async function deleteUsuarioDB(id: string): Promise<boolean> {
   try {
     if (!isGuid(id)) return false;

@@ -502,6 +502,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     usuarioActual,
     crearUsuario,
     actualizarUsuario,
+    recargarUsuarios,
     eliminarUsuario,
     actualizarPermisosRol,
     crearRol,
@@ -555,6 +556,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setCategoriaActiva(getCategoriaFromPestana(pestanaInicial));
     }
   }, [pestanaInicial]);
+
+  // Actualizar automáticamente la lista de usuarios y su última conexión al estar en la pestaña 'usuarios'
+  useEffect(() => {
+    if (pestana === 'usuarios') {
+      recargarUsuarios();
+      const interval = setInterval(() => {
+        recargarUsuarios();
+      }, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [pestana]);
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('todos');
   const [filtroArea, setFiltroArea] = useState<string>('todos');
@@ -1106,6 +1118,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Sparkles className="w-3.5 h-3.5" /> Cambiar Perfil Activo
                 </button>
               )}
+              <button
+                onClick={() => recargarUsuarios()}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-cream-100 hover:bg-cream-200 text-charcoal-800 text-xs font-bold rounded-full border border-stone-200 shadow-2xs transition-all"
+                title="Consultar y actualizar la última conexión de los usuarios"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-sage-600" /> Refrescar Conexiones
+              </button>
               <button
                 onClick={handleOpenCreateUser}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-sage-600 text-white text-xs font-bold hover:bg-sage-700 shadow-sm shrink-0 transition-all"
