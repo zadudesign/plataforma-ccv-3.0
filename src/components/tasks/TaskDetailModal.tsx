@@ -611,7 +611,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
 
             {/* Comment Form */}
