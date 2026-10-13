@@ -203,6 +203,35 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Solicitar Tarea</span>
             </button>
           ) : null}
+
+          {/* Foto de Perfil del Usuario en el Encabezado */}
+          <div 
+            className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 bg-white hover:bg-slate-50/80 rounded-full border border-slate-200/90 shadow-2xs transition-all duration-200 select-none shrink-0"
+            title={`${usuarioActual.nombre_completo} • ${usuarioActual.rol_nombre || 'Docente'} (${usuarioActual.email || ''})`}
+          >
+            <div className="relative shrink-0">
+              <img
+                src={usuarioActual.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                alt={usuarioActual.nombre_completo}
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+                }}
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-sky-500/20 shadow-2xs"
+              />
+              <span 
+                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" 
+                title="Sesión activa"
+              />
+            </div>
+            <div className="hidden sm:flex flex-col text-left leading-none pr-0.5">
+              <span className="text-xs font-bold text-slate-800 tracking-tight max-w-[110px] md:max-w-[130px] lg:max-w-[160px] truncate">
+                {usuarioActual.nombre_completo}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 mt-0.5 truncate max-w-[110px] md:max-w-[130px] lg:max-w-[160px]">
+                {usuarioActual.rol_nombre || 'Docente'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </header>

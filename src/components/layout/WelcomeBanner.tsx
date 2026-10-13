@@ -30,9 +30,32 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ usuarioActual: pro
           <span>Work Management Platform</span>
         </div>
 
-        <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-          ¡Hola, {usuarioActual?.nombre_completo || 'Usuario'}!
-        </h2>
+        <div className="flex items-center gap-3.5 sm:gap-4 pt-1">
+          {/* Avatar del usuario con borde y status */}
+          <div className="relative shrink-0">
+            <img 
+              src={usuarioActual?.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} 
+              alt={usuarioActual?.nombre_completo || 'Usuario'} 
+              onError={(e) => {
+                e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+              }}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover ring-2 ring-sky-400/40 shadow-md border border-white/10" 
+            />
+            <span 
+              className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 shadow-xs" 
+              title="Sesión activa"
+            />
+          </div>
+
+          <div>
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              ¡Hola, {usuarioActual?.nombre_completo || 'Usuario'}!
+            </h2>
+            <p className="text-xs text-sky-200/80 font-medium">
+              Bienvenido a tu panel de gestión
+            </p>
+          </div>
+        </div>
 
         {/* Rol y Área Asignada */}
         <div className="flex flex-wrap items-center gap-2.5 pt-0.5 pb-1">
