@@ -650,11 +650,16 @@ export async function createProyectoDB(proyecto: Omit<ProyectoEspecial, 'id'>): 
     if (proyecto.area_id && isGuid(proyecto.area_id)) payload.area_id = proyecto.area_id;
     if (proyecto.lider_id && isGuid(proyecto.lider_id)) payload.lider_id = proyecto.lider_id;
     if (proyecto.lider_secundario_id && isGuid(proyecto.lider_secundario_id)) payload.lider_secundario_id = proyecto.lider_secundario_id;
+    if (Array.isArray(proyecto.lideres_adicionales_ids)) payload.lideres_adicionales_ids = proyecto.lideres_adicionales_ids.filter(isGuid);
     if (proyecto.link_onedrive !== undefined) payload.link_onedrive = proyecto.link_onedrive || null;
 
     let { data, error } = await supabase.from('proyectos').insert(payload).select().single();
     if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.code === '42703')) {
       let modified = false;
+      if (error.message.includes('lideres_adicionales_ids')) {
+        delete payload.lideres_adicionales_ids;
+        modified = true;
+      }
       if (error.message.includes('lider_secundario_id')) {
         delete payload.lider_secundario_id;
         modified = true;
@@ -915,12 +920,17 @@ export async function updateProyectoFullDB(id: string, datos: Partial<ProyectoEs
     if (datos.area_id !== undefined) payload.area_id = isGuid(datos.area_id) ? datos.area_id : null;
     if (datos.lider_id !== undefined) payload.lider_id = isGuid(datos.lider_id) ? datos.lider_id : null;
     if (datos.lider_secundario_id !== undefined) payload.lider_secundario_id = isGuid(datos.lider_secundario_id) ? datos.lider_secundario_id : null;
+    if (datos.lideres_adicionales_ids !== undefined) payload.lideres_adicionales_ids = Array.isArray(datos.lideres_adicionales_ids) ? datos.lideres_adicionales_ids.filter(isGuid) : [];
     if (datos.link_onedrive !== undefined) payload.link_onedrive = datos.link_onedrive || null;
     if (datos.estado) payload.estado = datos.estado;
 
     let { error } = await supabase.from('proyectos').update(payload).eq('id', id);
-    if (error && error.code === 'PGRST204') {
+    if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.code === '42703')) {
       let modified = false;
+      if (error.message.includes('lideres_adicionales_ids')) {
+        delete payload.lideres_adicionales_ids;
+        modified = true;
+      }
       if (error.message.includes('lider_secundario_id')) {
         delete payload.lider_secundario_id;
         modified = true;

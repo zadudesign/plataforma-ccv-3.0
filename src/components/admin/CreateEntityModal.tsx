@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Building2, GraduationCap, BookOpen, Layers, CheckCircle2, AlertCircle, FolderOpen, ExternalLink } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Building2, GraduationCap, BookOpen, Layers, CheckCircle2, AlertCircle, FolderOpen, ExternalLink, ShieldCheck } from 'lucide-react';
 import { Facultad, Programa, CursoVirtual, ProyectoEspecial, Area, Usuario } from '@/types';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { useAuth } from '@/context/AuthContext';
+import { getUsuariosCandidatosParaArea } from '@/lib/roleVisibilityUtils';
 
 export type TipoEntidad = 'facultad' | 'programa' | 'curso' | 'proyecto';
 
@@ -78,6 +80,13 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   const [liderId, setLiderId] = useState((initialData as ProyectoEspecial)?.lider_id || '');
   const [liderSecundarioId, setLiderSecundarioId] = useState((initialData as ProyectoEspecial)?.lider_secundario_id || '');
   const [linkOnedrive, setLinkOnedrive] = useState((initialData as ProyectoEspecial)?.link_onedrive || '');
+
+  const { roles } = useAuth();
+
+  const candidatosLideres = useMemo(() => {
+    if (tipo !== 'proyecto') return usuarios;
+    return getUsuariosCandidatosParaArea(areaId, areas, roles, usuarios);
+  }, [tipo, areaId, areas, roles, usuarios]);
   const [estadoProyecto, setEstadoProyecto] = useState<'Planificación' | 'En Proceso' | 'Completado' | 'Pausado'>(
     (initialData as ProyectoEspecial)?.estado || 'En Proceso'
   );
@@ -537,11 +546,16 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     className="w-full px-3 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900"
                   >
                     <option value="">-- Sin Asignar --</option>
-                    {usuarios.map(u => (
+                    {candidatosLideres.map(u => (
                       <option key={u.id} value={u.id}>
                         {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'General'})
                       </option>
                     ))}
+                    {liderId && !candidatosLideres.some(u => u.id === liderId) && (
+                      <option value={liderId}>
+                        {usuarios.find(u => u.id === liderId)?.nombre_completo || 'Líder Asignado'} (Previo)
+                      </option>
+                    )}
                   </select>
                 </div>
 
@@ -555,14 +569,22 @@ export const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                     className="w-full px-3 py-2 bg-cream-50 border border-stone-200 rounded-xl text-xs font-bold text-charcoal-900"
                   >
                     <option value="">-- Sin Segundo Responsable --</option>
-                    {usuarios.filter(u => u.id !== liderId).map(u => (
+                    {candidatosLideres.filter(u => u.id !== liderId).map(u => (
                       <option key={u.id} value={u.id}>
                         {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'General'})
                       </option>
                     ))}
+                    {liderSecundarioId && !candidatosLideres.some(u => u.id === liderSecundarioId) && (
+                      <option value={liderSecundarioId}>
+                        {usuarios.find(u => u.id === liderSecundarioId)?.nombre_completo || 'Co-Líder Asignado'} (Previo)
+                      </option>
+                    )}
                   </select>
                 </div>
               </div>
+              <p className="text-[10px] text-charcoal-500 italic">
+                * Se muestran únicamente los colaboradores adscritos al área/departamento seleccionado.
+              </p>
 
               {/* Enlace a Carpeta de Recursos */}
               <div>

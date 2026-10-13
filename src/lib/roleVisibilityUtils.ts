@@ -234,6 +234,85 @@ export function getSupervisedAreasForUser(
 }
 
 /**
+ * Obtiene la lista de usuarios formalmente adscritos a un Área o Departamento institucional.
+ * Considera:
+ * - Usuarios cuyo rol pertenezca al área, sus sub-áreas o su departamento padre.
+ * - Usuarios cuya asignación directa de área coincida por ID o Nombre.
+ * - Administradores del sistema (facultados para supervisar o intervenir).
+ */
+export function getUsuariosCandidatosParaArea(
+  areaIdOrName: string | undefined,
+  areas: Area[],
+  roles: Rol[],
+  usuarios: Usuario[]
+): Usuario[] {
+  if (!areaIdOrName) return usuarios;
+
+  const areaTarget = areas.find(
+    a => a.id === areaIdOrName || a.nombre.toLowerCase() === areaIdOrName.toLowerCase()
+  );
+
+  if (!areaTarget) {
+    return usuarios.filter(u => 
+      u.area_nombre?.toLowerCase() === areaIdOrName.toLowerCase() ||
+      isRoleMatch(u.rol_nombre, 'Administrador')
+    );
+  }
+
+  // 1. Recopilar IDs y nombres de la familia jerárquica del área
+  const areaIdsFamilia = new Set<string>([areaTarget.id]);
+  const areaNombresFamilia = new Set<string>([areaTarget.nombre.toLowerCase()]);
+
+  // Si tiene parent_id, incluir el departamento padre
+  if (areaTarget.parent_id) {
+    const parentArea = areas.find(a => a.id === areaTarget.parent_id || a.nombre === areaTarget.parent_id);
+    if (parentArea) {
+      areaIdsFamilia.add(parentArea.id);
+      areaNombresFamilia.add(parentArea.nombre.toLowerCase());
+    }
+  }
+
+  // Incluir sub-áreas dependientes recursivamente
+  const agregarSubareas = (currentId: string) => {
+    areas
+      .filter(a => (a.parent_id === currentId || a.parent_id === areaTarget.nombre) && !areaIdsFamilia.has(a.id))
+      .forEach(sub => {
+        areaIdsFamilia.add(sub.id);
+        areaNombresFamilia.add(sub.nombre.toLowerCase());
+        agregarSubareas(sub.id);
+      });
+  };
+  agregarSubareas(areaTarget.id);
+
+  // 2. Roles que pertenecen a cualquiera de estas áreas
+  const rolesEnFamiliaIds = new Set<string>();
+  roles.forEach(r => {
+    if (r.area_id && areaIdsFamilia.has(r.area_id)) {
+      rolesEnFamiliaIds.add(r.id);
+    } else if (r.area_nombre && areaNombresFamilia.has(r.area_nombre.toLowerCase())) {
+      rolesEnFamiliaIds.add(r.id);
+    }
+  });
+
+  // 3. Filtrar usuarios
+  return usuarios.filter(u => {
+    if (isRoleMatch(u.rol_nombre, 'Administrador')) return true;
+    if (u.rol_id && rolesEnFamiliaIds.has(u.rol_id)) return true;
+    if (u.area_id && areaIdsFamilia.has(u.area_id)) return true;
+    if (u.area_nombre && areaNombresFamilia.has(u.area_nombre.toLowerCase())) return true;
+
+    for (const nom of areaNombresFamilia) {
+      if (u.area_nombre && (u.area_nombre.toLowerCase().includes(nom) || nom.includes(u.area_nombre.toLowerCase()))) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+}
+
+
+/**
  * Obtiene el conjunto de IDs y nombres de áreas accesibles para un colaborador según su área o sub-área asignada.
  * Respeta el aislamiento jerárquico:
  * - Un usuario adscrito a una sub-área sólo accede a esa sub-área y subdivisiones inferiores.
@@ -400,7 +479,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
 
   // 4. Detección de Proyectos asignados directamente (Líder / Co-Líder)
   const proyectosAsignadosDirectamente = proyectos.filter(
-    p => p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id
+    p => p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id || (p.lideres_adicionales_ids && p.lideres_adicionales_ids.includes(usuarioActual.id))
   );
   const idsProyectosAsignadosDirectamente = new Set(proyectosAsignadosDirectamente.map(p => p.id));
 
@@ -496,7 +575,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
         }
         if (t.proyecto_id) {
           const p = proyectos.find(item => item.id === t.proyecto_id);
-          if (p && ((p.area_id && idsFacultadesDecano.has(p.area_id)) || p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id)) {
+          if (p && ((p.area_id && idsFacultadesDecano.has(p.area_id)) || p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id || (p.lideres_adicionales_ids && p.lideres_adicionales_ids.includes(usuarioActual.id)))) {
             return true;
           }
         }
@@ -593,7 +672,7 @@ export function getEntitiesVisibleByRole(params: FilterEntitiesParams): Filtered
     }
 
     // Líder o Co-Líder asignado
-    if (p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id) {
+    if (p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id || (p.lideres_adicionales_ids && p.lideres_adicionales_ids.includes(usuarioActual.id))) {
       return true;
     }
 
@@ -699,7 +778,7 @@ export function canUserEditTask(
     if (!proy) return false;
 
     // A. Líder o co-líder del proyecto asignado
-    if (proy.lider_id === usuarioActual.id || proy.lider_secundario_id === usuarioActual.id) {
+    if (proy.lider_id === usuarioActual.id || proy.lider_secundario_id === usuarioActual.id || (proy.lideres_adicionales_ids && proy.lideres_adicionales_ids.includes(usuarioActual.id))) {
       return true;
     }
 

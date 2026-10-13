@@ -37,10 +37,12 @@ import {
   ListTodo,
   FolderOpen,
   ExternalLink,
-  UserPlus
+  UserPlus,
+  X
 } from 'lucide-react';
 import { Area, Rol, Usuario, Facultad, Programa, CursoVirtual, ProyectoEspecial, CategoriaTareaProyecto, PestanaAdmin, CategoriaAdmin, TareaCCV } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { getUsuariosCandidatosParaArea } from '@/lib/roleVisibilityUtils';
 import { UserFormModal } from './UserFormModal';
 import { RolePermissionsModal } from './RolePermissionsModal';
 import { AdminResetPasswordModal } from './AdminResetPasswordModal';
@@ -51,6 +53,7 @@ import { ConfirmDeleteAreaModal } from './ConfirmDeleteAreaModal';
 import { SolicitudesInboxTab } from './SolicitudesInboxTab';
 import { PlantillaCursosTab } from './PlantillaCursosTab';
 import { InscribirUsuariosRolModal } from './InscribirUsuariosRolModal';
+import { AsignarLiderLoteModal } from './AsignarLiderLoteModal';
 
 interface AreaHierarchyNodeProps {
   area: Area;
@@ -530,6 +533,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     asignarEvaluadorCurso,
     asignarLiderProyecto,
     asignarCoLiderProyecto,
+    agregarCoLiderProyecto,
+    removerCoLiderProyecto,
+    asignarLiderEnLoteArea,
     tarifasProyecto,
     actualizarTarifaProyecto,
     solicitudesTareas,
@@ -580,6 +586,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [defaultAreaIdForRoleModal, setDefaultAreaIdForRoleModal] = useState<string | undefined>(undefined);
   const [areaAEliminar, setAreaAEliminar] = useState<Area | null>(null);
   const [areaRolInscribir, setAreaRolInscribir] = useState<{ area: Area; rol?: Rol } | null>(null);
+  const [areaParaAsignacionEnLote, setAreaParaAsignacionEnLote] = useState<Area | null>(null);
   const [filtroAreaAsignaciones, setFiltroAreaAsignaciones] = useState<string>('todas');
 
   const handleOpenInscribirUsuariosRol = (area: Area, rol?: Rol) => {
@@ -2047,9 +2054,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             {proyectosDeEstaArea.length} {proyectosDeEstaArea.length === 1 ? 'Proyecto' : 'Proyectos'}
                           </span>
                         </div>
-                        <span className="text-[11px] text-charcoal-500 font-medium">
-                          Área Padre: <strong className="text-charcoal-700">{area.area_padre_nombre || 'Principal'}</strong>
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {proyectosDeEstaArea.length > 0 && (
+                            <button
+                              onClick={() => setAreaParaAsignacionEnLote(area)}
+                              className="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-900 text-[11px] font-bold rounded-full transition-all flex items-center gap-1.5 border border-purple-300 shadow-2xs hover:shadow-xs cursor-pointer"
+                              title="Asignar un líder o co-líder a todos los proyectos de este departamento/área en lote"
+                            >
+                              <Users className="w-3.5 h-3.5 text-purple-700" />
+                              <span>Asignar Líder en Lote ({proyectosDeEstaArea.length})</span>
+                            </button>
+                          )}
+                          <span className="text-[11px] text-charcoal-500 font-medium">
+                            Área Padre: <strong className="text-charcoal-700">{area.area_padre_nombre || 'Principal'}</strong>
+                          </span>
+                        </div>
                       </div>
 
                       {/* Grid de Proyectos de esta Área */}
@@ -2057,97 +2076,173 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <p className="text-xs text-charcoal-400 italic py-2">No hay proyectos registrados adscritos a este área.</p>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {proyectosDeEstaArea.map(pry => (
-                            <div key={pry.id} className="p-4 bg-white rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3 shadow-2xs hover:border-sage-300 transition-all">
-                              <div>
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h5 className="font-extrabold text-charcoal-900 text-xs sm:text-sm">{pry.nombre}</h5>
-                                    <p className="text-xs text-charcoal-600 mt-1 line-clamp-2">{pry.descripcion}</p>
-                                    <div className="flex flex-wrap gap-2 text-xs text-charcoal-500 mt-1.5">
-                                      <span>Líder: <strong className="text-sage-700 font-bold">{pry.lider_nombre || 'Sin Asignar'}</strong></span>
-                                      {pry.lider_secundario_nombre && (
-                                        <span>• Co-Líder: <strong className="text-blue-700 font-bold">{pry.lider_secundario_nombre}</strong></span>
+                          {proyectosDeEstaArea.map(pry => {
+                            const candidatosProyecto = getUsuariosCandidatosParaArea(pry.area_id || area.id, areas, roles, usuarios);
+                            
+                            // Lista unificada de co-líderes
+                            const coLideresIds = [
+                              ...(pry.lider_secundario_id ? [pry.lider_secundario_id] : []),
+                              ...(pry.lideres_adicionales_ids || [])
+                            ].filter((id, index, arr) => arr.indexOf(id) === index);
+
+                            const coLideresAsignados = coLideresIds.map(id => {
+                              const usr = usuarios.find(u => u.id === id);
+                              return {
+                                id,
+                                nombre: usr ? usr.nombre_completo : (pry.lider_secundario_id === id ? (pry.lider_secundario_nombre || 'Co-Líder') : 'Co-Líder'),
+                                rol: usr?.rol_nombre || 'Colaborador'
+                              };
+                            });
+
+                            const coLideresIdsSet = new Set(coLideresIds);
+                            const candidatosParaCoLider = candidatosProyecto.filter(
+                              u => u.id !== pry.lider_id && !coLideresIdsSet.has(u.id)
+                            );
+
+                            return (
+                              <div key={pry.id} className="p-4 bg-white rounded-2xl border border-stone-200 flex flex-col justify-between space-y-3 shadow-2xs hover:border-sage-300 transition-all">
+                                <div>
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <h5 className="font-extrabold text-charcoal-900 text-xs sm:text-sm">{pry.nombre}</h5>
+                                      <p className="text-xs text-charcoal-600 mt-1 line-clamp-2">{pry.descripcion}</p>
+                                      
+                                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-charcoal-500 mt-2">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sage-50 border border-sage-200 text-sage-900 text-[11px] font-bold">
+                                          <UserCheck className="w-3 h-3 text-sage-700" />
+                                          Líder: <strong className="text-sage-800">{pry.lider_nombre || 'Sin Asignar'}</strong>
+                                        </span>
+                                        {coLideresAsignados.length > 0 && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-900 text-[11px] font-bold">
+                                            <Users className="w-3 h-3 text-blue-700" />
+                                            {coLideresAsignados.length} {coLideresAsignados.length === 1 ? 'Co-Líder' : 'Co-Líderes'}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {pry.link_onedrive ? (
+                                        <div className="mt-2">
+                                          <a
+                                            href={pry.link_onedrive}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-xl border border-blue-200 transition-all shadow-2xs group"
+                                            title="Abrir carpeta de recursos"
+                                          >
+                                            <FolderOpen className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                                            <span>Carpeta Recursos</span>
+                                            <ExternalLink className="w-3 h-3 text-blue-400 group-hover:text-blue-600" />
+                                          </a>
+                                        </div>
+                                      ) : (
+                                        <div className="mt-1.5 text-[11px] text-stone-400 italic flex items-center gap-1">
+                                          <FolderOpen className="w-3 h-3" />
+                                          <span>Sin carpeta de recursos vinculada</span>
+                                        </div>
                                       )}
                                     </div>
-                                    {pry.link_onedrive ? (
-                                      <div className="mt-2">
-                                        <a
-                                          href={pry.link_onedrive}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-xl border border-blue-200 transition-all shadow-2xs group"
-                                          title="Abrir carpeta de recursos"
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
+                                        {pry.estado}
+                                      </span>
+                                      <button
+                                        onClick={() => setEntityToEdit({ tipo: 'proyecto', data: pry })}
+                                        title="Editar Proyecto"
+                                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-cream-50 transition-all"
+                                      >
+                                        <Edit className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => { if (window.confirm(`¿Eliminar el proyecto "${pry.nombre}"?`)) eliminarProyecto(pry.id); }}
+                                        title="Eliminar Proyecto"
+                                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-stone-100 space-y-2.5">
+                                  {/* Líder Principal filtrado por área */}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <label className="text-[9px] font-bold uppercase text-charcoal-500 flex items-center gap-1">
+                                        <UserCheck className="w-3 h-3 text-sage-600" /> Líder Principal:
+                                      </label>
+                                      <span className="text-[9px] text-charcoal-400 italic">Adscritos a {area.nombre}</span>
+                                    </div>
+                                    <select
+                                      value={pry.lider_id || ''}
+                                      onChange={e => asignarLiderProyecto(pry.id, e.target.value)}
+                                      className="w-full px-2 py-1 bg-cream-50 border border-stone-200 rounded-lg text-[11px] font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
+                                    >
+                                      <option value="">-- Sin Asignar --</option>
+                                      {candidatosProyecto.map(u => (
+                                        <option key={u.id} value={u.id}>
+                                          {u.nombre_completo} ({u.rol_nombre || u.area_nombre || 'General'})
+                                        </option>
+                                      ))}
+                                      {pry.lider_id && !candidatosProyecto.some(u => u.id === pry.lider_id) && (
+                                        <option value={pry.lider_id}>
+                                          {pry.lider_nombre || 'Líder Asignado'} (Previo)
+                                        </option>
+                                      )}
+                                    </select>
+                                  </div>
+
+                                  {/* Co-Líderes Dinámicos (Multi-co-líder con chips interactivos) */}
+                                  <div>
+                                    <label className="block text-[9px] font-bold uppercase text-charcoal-500 mb-1 flex items-center gap-1">
+                                      <Users className="w-3 h-3 text-blue-600" /> Equipo de Co-Líderes ({coLideresAsignados.length}):
+                                    </label>
+                                    
+                                    <div className="flex flex-wrap items-center gap-1.5 min-h-[26px]">
+                                      {coLideresAsignados.map(colid => (
+                                        <span 
+                                          key={colid.id} 
+                                          className="inline-flex items-center gap-1.5 pl-2 pr-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 shadow-2xs transition-all"
                                         >
-                                          <FolderOpen className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-                                          <span>Carpeta Recursos</span>
-                                          <ExternalLink className="w-3 h-3 text-blue-400 group-hover:text-blue-600" />
-                                        </a>
-                                      </div>
-                                    ) : (
-                                      <div className="mt-1.5 text-[11px] text-stone-400 italic flex items-center gap-1">
-                                        <FolderOpen className="w-3 h-3" />
-                                        <span>Sin carpeta de recursos vinculada</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sage-100 text-sage-800 border border-sage-200">
-                                      {pry.estado}
-                                    </span>
-                                    <button
-                                      onClick={() => setEntityToEdit({ tipo: 'proyecto', data: pry })}
-                                      title="Editar Proyecto"
-                                      className="p-1.5 rounded-lg text-charcoal-400 hover:text-sage-700 hover:bg-cream-50 transition-all"
-                                    >
-                                      <Edit className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => { if (window.confirm(`¿Eliminar el proyecto "${pry.nombre}"?`)) eliminarProyecto(pry.id); }}
-                                      title="Eliminar Proyecto"
-                                      className="p-1.5 rounded-lg text-charcoal-400 hover:text-coral-600 hover:bg-cream-50 transition-all"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                          <span>👤 {colid.nombre}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => removerCoLiderProyecto(pry.id, colid.id)}
+                                            className="p-0.5 text-blue-400 hover:text-rose-600 hover:bg-white rounded-full transition-colors cursor-pointer"
+                                            title={`Remover a ${colid.nombre} como co-líder`}
+                                          >
+                                            <X className="w-2.5 h-2.5" />
+                                          </button>
+                                        </span>
+                                      ))}
+
+                                      {candidatosParaCoLider.length > 0 && (
+                                        <select
+                                          value=""
+                                          onChange={e => {
+                                            if (e.target.value) {
+                                              agregarCoLiderProyecto(pry.id, e.target.value);
+                                            }
+                                          }}
+                                          className="px-2 py-0.5 bg-white hover:bg-stone-50 border border-dashed border-stone-300 rounded-full text-[10px] font-extrabold text-charcoal-700 cursor-pointer shadow-2xs transition-all"
+                                        >
+                                          <option value="">+ Agregar Co-Líder</option>
+                                          {candidatosParaCoLider.map(u => (
+                                            <option key={u.id} value={u.id}>
+                                              {u.nombre_completo} ({u.rol_nombre || 'Colaborador'})
+                                            </option>
+                                          ))}
+                                        </select>
+                                      )}
+
+                                      {coLideresAsignados.length === 0 && candidatosParaCoLider.length === 0 && (
+                                        <span className="text-[10px] text-charcoal-400 italic">Sin co-líderes adicionales disponibles en este área</span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-
-                              <div className="pt-2 border-t border-stone-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div>
-                                  <label className="block text-[9px] font-bold uppercase text-charcoal-500 mb-0.5">Líder Principal:</label>
-                                  <select
-                                    value={pry.lider_id || ''}
-                                    onChange={e => asignarLiderProyecto(pry.id, e.target.value)}
-                                    className="w-full px-2 py-1 bg-cream-50 border border-stone-200 rounded-lg text-[11px] font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
-                                  >
-                                    <option value="">-- Sin Asignar --</option>
-                                    {usuarios.map(u => (
-                                      <option key={u.id} value={u.id}>
-                                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre})
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label className="block text-[9px] font-bold uppercase text-charcoal-500 mb-0.5">Co-Líder (Opcional):</label>
-                                  <select
-                                    value={pry.lider_secundario_id || ''}
-                                    onChange={e => asignarCoLiderProyecto(pry.id, e.target.value)}
-                                    className="w-full px-2 py-1 bg-cream-50 border border-stone-200 rounded-lg text-[11px] font-bold text-charcoal-900 focus:ring-2 focus:ring-sage-500"
-                                  >
-                                    <option value="">-- Sin Co-Líder --</option>
-                                    {usuarios.filter(u => u.id !== pry.lider_id).map(u => (
-                                      <option key={u.id} value={u.id}>
-                                        {u.nombre_completo} ({u.rol_nombre || u.area_nombre})
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -2496,6 +2591,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             setAreaRolInscribir(null);
             handleOpenCreateRoleForArea(areaId);
           }}
+        />
+      )}
+
+      {areaParaAsignacionEnLote && (
+        <AsignarLiderLoteModal
+          area={areaParaAsignacionEnLote}
+          allAreas={areas}
+          roles={roles}
+          usuarios={usuarios}
+          proyectos={proyectos}
+          onClose={() => setAreaParaAsignacionEnLote(null)}
+          onConfirmAsignacionEnLote={asignarLiderEnLoteArea}
         />
       )}
     </div>

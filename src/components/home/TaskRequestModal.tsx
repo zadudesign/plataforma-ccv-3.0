@@ -118,8 +118,8 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
     );
 
     return listaProyectos.filter(p => {
-      // 1. Asignado directamente al proyecto como Líder o Co-líder
-      const esLiderOAsignado = p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id;
+      // 1. Asignado directamente al proyecto como Líder, Co-líder o Líder adicional
+      const esLiderOAsignado = p.lider_id === usuarioActual.id || p.lider_secundario_id === usuarioActual.id || (p.lideres_adicionales_ids && p.lideres_adicionales_ids.includes(usuarioActual.id));
       // 2. Tiene alguna tarea activa asignada en dicho proyecto
       const tieneTareaActiva = proyectosConTareaActivaIds.has(p.id);
       // 3. Administrador tiene acceso a seleccionar cualquier proyecto

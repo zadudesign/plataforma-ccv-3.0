@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS public.proyectos (
     area_id UUID REFERENCES public.areas(id) ON DELETE SET NULL,
     lider_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
     lider_secundario_id UUID REFERENCES public.usuarios(id) ON DELETE SET NULL,
+    lideres_adicionales_ids UUID[] DEFAULT '{}',
     link_onedrive TEXT,
     estado TEXT DEFAULT 'En Proceso', -- 'Planificación', 'En Proceso', 'Completado', 'Pausado'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -133,6 +133,9 @@ interface AuthContextType {
   asignarEvaluadorCurso: (cursoId: string, evaluadorId: string) => void;
   asignarLiderProyecto: (proyectoId: string, liderId: string) => void;
   asignarCoLiderProyecto: (proyectoId: string, liderSecundarioId: string) => void;
+  agregarCoLiderProyecto: (proyectoId: string, usuarioId: string) => Promise<void>;
+  removerCoLiderProyecto: (proyectoId: string, usuarioId: string) => Promise<void>;
+  asignarLiderEnLoteArea: (areaId: string, usuarioId: string, tipo: 'lider' | 'co_lider') => Promise<number>;
 
   // Solicitudes de Tareas Externas / Públicas
   solicitudesTareas: SolicitudTareaCCV[];
@@ -1102,6 +1105,134 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await updateProyectoFullDB(proyectoId, { lider_secundario_id: liderSecundarioId });
   };
 
+  const agregarCoLiderProyecto = async (proyectoId: string, usuarioId: string) => {
+    const proy = proyectos.find(p => p.id === proyectoId);
+    if (!proy || !usuarioId) return;
+
+    let nuevoLiderSecundarioId = proy.lider_secundario_id;
+    let nuevosAdicionales = [...(proy.lideres_adicionales_ids || [])];
+
+    if (!nuevoLiderSecundarioId) {
+      nuevoLiderSecundarioId = usuarioId;
+    } else if (nuevoLiderSecundarioId !== usuarioId && !nuevosAdicionales.includes(usuarioId)) {
+      nuevosAdicionales.push(usuarioId);
+    }
+
+    const lidSec = nuevoLiderSecundarioId ? usuarios.find(u => u.id === nuevoLiderSecundarioId) : undefined;
+
+    setProyectos(prev => prev.map(p => p.id === proyectoId ? {
+      ...p,
+      lider_secundario_id: nuevoLiderSecundarioId,
+      lider_secundario_nombre: lidSec?.nombre_completo || p.lider_secundario_nombre,
+      lideres_adicionales_ids: nuevosAdicionales
+    } : p));
+
+    await updateProyectoFullDB(proyectoId, {
+      lider_secundario_id: nuevoLiderSecundarioId,
+      lideres_adicionales_ids: nuevosAdicionales
+    });
+  };
+
+  const removerCoLiderProyecto = async (proyectoId: string, usuarioId: string) => {
+    const proy = proyectos.find(p => p.id === proyectoId);
+    if (!proy) return;
+
+    let nuevoLiderSecundarioId = proy.lider_secundario_id;
+    let nuevosAdicionales = [...(proy.lideres_adicionales_ids || [])];
+
+    if (nuevoLiderSecundarioId === usuarioId) {
+      if (nuevosAdicionales.length > 0) {
+        nuevoLiderSecundarioId = nuevosAdicionales.shift();
+      } else {
+        nuevoLiderSecundarioId = undefined;
+      }
+    } else {
+      nuevosAdicionales = nuevosAdicionales.filter(id => id !== usuarioId);
+    }
+
+    const lidSec = nuevoLiderSecundarioId ? usuarios.find(u => u.id === nuevoLiderSecundarioId) : undefined;
+
+    setProyectos(prev => prev.map(p => p.id === proyectoId ? {
+      ...p,
+      lider_secundario_id: nuevoLiderSecundarioId,
+      lider_secundario_nombre: lidSec ? lidSec.nombre_completo : undefined,
+      lideres_adicionales_ids: nuevosAdicionales
+    } : p));
+
+    await updateProyectoFullDB(proyectoId, {
+      lider_secundario_id: nuevoLiderSecundarioId || null as any,
+      lideres_adicionales_ids: nuevosAdicionales
+    });
+  };
+
+  const asignarLiderEnLoteArea = async (areaId: string, usuarioId: string, tipo: 'lider' | 'co_lider'): Promise<number> => {
+    const targetArea = areas.find(a => a.id === areaId || a.nombre.toLowerCase() === areaId.toLowerCase());
+    const areaIdOrNombre = targetArea ? targetArea.id : areaId;
+    const areaNombreLower = targetArea ? targetArea.nombre.toLowerCase() : areaId.toLowerCase();
+
+    // Identificar proyectos adscritos a esta área
+    const proyectosAfectados = proyectos.filter(
+      p => p.area_id === areaIdOrNombre || p.area_id === targetArea?.nombre || (p.area_id && p.area_id.toLowerCase() === areaNombreLower)
+    );
+
+    if (proyectosAfectados.length === 0) return 0;
+
+    const usr = usuarios.find(u => u.id === usuarioId);
+    const usrNombre = usr ? usr.nombre_completo : 'Sin Asignar';
+
+    setProyectos(prev => prev.map(p => {
+      const match = p.area_id === areaIdOrNombre || p.area_id === targetArea?.nombre || (p.area_id && p.area_id.toLowerCase() === areaNombreLower);
+      if (!match) return p;
+
+      if (tipo === 'lider') {
+        return {
+          ...p,
+          lider_id: usuarioId,
+          lider_nombre: usrNombre
+        };
+      } else {
+        let nuevoLiderSecundarioId = p.lider_secundario_id;
+        let nuevosAdicionales = [...(p.lideres_adicionales_ids || [])];
+        if (!nuevoLiderSecundarioId) {
+          nuevoLiderSecundarioId = usuarioId;
+        } else if (nuevoLiderSecundarioId !== usuarioId && !nuevosAdicionales.includes(usuarioId)) {
+          nuevosAdicionales.push(usuarioId);
+        }
+        const lidSec = nuevoLiderSecundarioId ? usuarios.find(u => u.id === nuevoLiderSecundarioId) : undefined;
+        return {
+          ...p,
+          lider_secundario_id: nuevoLiderSecundarioId,
+          lider_secundario_nombre: lidSec?.nombre_completo || p.lider_secundario_nombre,
+          lideres_adicionales_ids: nuevosAdicionales
+        };
+      }
+    }));
+
+    // Sincronizar en base de datos para cada proyecto
+    await Promise.all(
+      proyectosAfectados.map(async p => {
+        if (tipo === 'lider') {
+          return updateProyectoFullDB(p.id, { lider_id: usuarioId });
+        } else {
+          let nuevoLiderSecundarioId = p.lider_secundario_id;
+          let nuevosAdicionales = [...(p.lideres_adicionales_ids || [])];
+          if (!nuevoLiderSecundarioId) {
+            nuevoLiderSecundarioId = usuarioId;
+          } else if (nuevoLiderSecundarioId !== usuarioId && !nuevosAdicionales.includes(usuarioId)) {
+            nuevosAdicionales.push(usuarioId);
+          }
+          return updateProyectoFullDB(p.id, {
+            lider_secundario_id: nuevoLiderSecundarioId,
+            lideres_adicionales_ids: nuevosAdicionales
+          });
+        }
+      })
+    );
+
+    return proyectosAfectados.length;
+  };
+
+
   const actualizarTarifaProyecto = (categoria: CategoriaTareaProyecto, nuevaTarifa: number) => {
     setTarifasProyecto(prev => prev.map(t => t.categoria === categoria ? { ...t, tarifa_hora: nuevaTarifa } : t));
   };
@@ -1330,7 +1461,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         asignarDocenteCurso,
         asignarEvaluadorCurso,
         asignarLiderProyecto,
-        asignarCoLiderProyecto
+        asignarCoLiderProyecto,
+        agregarCoLiderProyecto,
+        removerCoLiderProyecto,
+        asignarLiderEnLoteArea
       }}
     >
       {children}
