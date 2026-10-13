@@ -77,13 +77,10 @@ export default function Home() {
   const [entidadProgresoSeleccionada, setEntidadProgresoSeleccionada] = useState<{ entidad: CursoVirtual | ProyectoEspecial; tipo: 'curso' | 'proyecto' } | null>(null);
   const [pestanaAdminInicial, setPestanaAdminInicial] = useState<PestanaAdmin>('usuarios');
 
-  // Por defecto al ingresar a cada perfil se ingresa directamente al Dashboard como página principal y se requiere firma si está pendiente
+  // Por defecto al ingresar a cada perfil se ingresa directamente al Dashboard como página principal
   useEffect(() => {
     if (usuarioActual) {
       setVistaActual('dashboard');
-      if (!usuarioActual.firma_digital || usuarioActual.firma_digital.trim() === '') {
-        setIsSignatureModalOpen(true);
-      }
     }
   }, [usuarioActual?.id]);
 
