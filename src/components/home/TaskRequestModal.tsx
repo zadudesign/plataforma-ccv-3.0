@@ -26,6 +26,7 @@ import { PrioridadSolicitud, TareaCCV, ProyectoEspecial } from '@/types';
 import { fetchTareasDB } from '@/lib/supabaseService';
 
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { useToast } from '@/context/ToastContext';
 
 interface TaskRequestModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
   proyectos: proyectosProps
 }) => {
   const { usuarioActual, roles, areas, proyectos: authProyectos, isAdmin, enviarSolicitudTarea } = useAuth();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(false);
 
@@ -258,11 +260,14 @@ export const TaskRequestModal: React.FC<TaskRequestModalProps> = ({
         setRadicadoExitoso(radicadoCode);
         setRadicadoProyectoNombre(proyNombreFinal);
         setRadicadoEsNuevoProyecto(esNuevo);
+        toast.success(`Solicitud radicada con éxito (${radicadoCode})`);
       } else {
         setErrorMsg(result.error || 'Ocurrió un error al registrar la solicitud en la base de datos.');
+        toast.error(result.error || 'Error al registrar la solicitud.');
       }
     } catch (err: any) {
       setErrorMsg(err?.message || 'Error de conexión al procesar la solicitud.');
+      toast.error(err?.message || 'Error de conexión al procesar la solicitud.');
     } finally {
       setLoading(false);
     }

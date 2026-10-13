@@ -35,6 +35,7 @@ import { ConfirmCompleteTaskModal } from './ConfirmCompleteTaskModal';
 import { ConfirmDeleteTaskModal } from './ConfirmDeleteTaskModal';
 import { EditTaskModal } from './EditTaskModal';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { useToast } from '@/context/ToastContext';
 
 interface TaskDetailModalProps {
   tarea: TareaCCV | null;
@@ -64,6 +65,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onEditTask,
 }) => {
   const { roles, usuarios, areas, cursos, proyectos, nivelArea, isAdmin, eliminarTarea, editarTarea, hasPermission, rolesPermisosMap } = useAuth();
+  const toast = useToast();
   const canEdit = hasPermission('registro:editar') && (isAdmin() || (tarea ? canUserEditTask(usuarioActual, tarea, proyectos, areas, roles, nivelArea, rolesPermisosMap) : false));
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [confirmarCompletadaOpen, setConfirmarCompletadaOpen] = useState(false);
@@ -87,6 +89,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     try {
       await onUpdateFechaCompletada(tarea.id, fechaCompletadaLocal);
       setSavedSuccessFecha(true);
+      toast.success('Fecha de finalización guardada correctamente.', 'Fecha Actualizada');
       setTimeout(() => setSavedSuccessFecha(false), 3000);
     } finally {
       setIsSavingFecha(false);
@@ -96,23 +99,23 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const handleCambiarEstado = (est: EstadoTarea) => {
     if (!tarea) return;
     if (est === 'Completada' && tarea.estado !== 'Completada' && !hasPermission('tarea:aprobar')) {
-      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+      toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`, 'Permiso Insuficiente');
       return;
     }
 
     // Validación de tiempo registrado
     const tiempoTotal = (tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0);
     if (est === 'Completada' && tarea.estado !== 'Completada' && tiempoTotal <= 0) {
-      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas en el temporizador o añade tiempo antes de completarla.');
+      toast.warning('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas en el temporizador antes de completarla.', 'Horas Requeridas');
       return;
     }
 
     if (est !== tarea.estado && !hasPermission('registro:editar')) {
-      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de la tarea.`);
+      toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de la tarea.`, 'Acceso Restringido');
       return;
     }
     if (tarea.tipo_tarea === 'Curso Virtual' && tarea.estado_bloqueo === 'BLOQUEADA' && est !== 'Pendiente') {
-      alert('Esta tarea está bloqueada en la secuencia del curso por dependencias previas no completadas.');
+      toast.warning('Esta tarea está bloqueada en la secuencia del curso por dependencias previas no completadas.', 'Secuencia Bloqueada');
       return;
     }
     if (tarea.tipo_tarea === 'Curso Virtual' && est === 'Completada' && tarea.estado !== 'Completada') {
@@ -652,7 +655,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         onClose={() => setConfirmarEliminarOpen(false)}
         onConfirm={async () => {
           if (!hasPermission('registro:eliminar') && !isAdmin()) {
-            alert('Solo los usuarios con el permiso "registro:eliminar" o Administradores pueden eliminar tareas.');
+            toast.error('Solo los usuarios con el permiso "registro:eliminar" o Administradores pueden eliminar tareas.', 'Acceso Restringido');
             return;
           }
           setIsDeleting(true);
@@ -662,11 +665,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               setConfirmarEliminarOpen(false);
               onClose();
             } else {
-              alert('No fue posible eliminar la tarea de la base de datos.');
+              toast.error('No fue posible eliminar la tarea de la base de datos.', 'Error al Eliminar');
             }
           } catch (err: any) {
             console.error('Error al eliminar tarea:', err);
-            alert(err?.message || 'Error al eliminar tarea');
+            toast.error(err?.message || 'Error al eliminar tarea', 'Error');
           } finally {
             setIsDeleting(false);
           }

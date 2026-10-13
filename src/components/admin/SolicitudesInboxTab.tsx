@@ -51,6 +51,7 @@ import { SearchableUserSelect } from '@/components/common/SearchableUserSelect';
 import { useAuth } from '@/context/AuthContext';
 import { createProyectoDB } from '@/lib/supabaseService';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { useToast } from '@/context/ToastContext';
 
 interface SolicitudesInboxTabProps {
   solicitudes: SolicitudTareaCCV[];
@@ -73,6 +74,7 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
   onNavigateKanban,
   onTareaCreada,
 }) => {
+  const toast = useToast();
   const { 
     actualizarEstadoSolicitud, 
     aprobarYConvertirSolicitud, 
@@ -275,12 +277,14 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
 
     if (ok) {
       setFeedbackMsg({ tipo: 'success', texto: 'Solicitud marcada como rechazada.' });
+      toast.info('Solicitud marcada como rechazada.');
       setTimeout(() => {
         setModoAccion(null);
         setSolicitudSeleccionada(null);
       }, 1000);
     } else {
       setFeedbackMsg({ tipo: 'error', texto: 'No se pudo actualizar el estado.' });
+      toast.error('No se pudo actualizar el estado.');
     }
   };
 
@@ -375,18 +379,24 @@ export const SolicitudesInboxTab: React.FC<SolicitudesInboxTabProps> = ({
       if (onTareaCreada) {
         onTareaCreada(res.data);
       }
+      const msgTexto = (tipoTarea === 'Proyecto' && esNuevoProyectoAprobacion)
+        ? `¡Solicitud aprobada! Se creó el nuevo proyecto "${finalProyectoNombre}" y su tarea formal.`
+        : '¡Solicitud aprobada y convertida en tarea formal!';
       setFeedbackMsg({
         tipo: 'success',
         texto: (tipoTarea === 'Proyecto' && esNuevoProyectoAprobacion)
           ? `¡Solicitud aprobada! Se creó el nuevo proyecto "${finalProyectoNombre}" (Área: ${finalAreaNombre || 'Asignada'}) y su tarea formal en la plataforma.`
           : '¡Solicitud aprobada y convertida en tarea de producción formal!'
       });
+      toast.success(msgTexto);
       setTimeout(() => {
         setModoAccion(null);
         setSolicitudSeleccionada(null);
       }, 2000);
     } else {
-      setFeedbackMsg({ tipo: 'error', texto: res.error || 'No se pudo crear la tarea formal.' });
+      const errorTexto = res.error || 'No se pudo crear la tarea formal.';
+      setFeedbackMsg({ tipo: 'error', texto: errorTexto });
+      toast.error(errorTexto);
     }
   };
 

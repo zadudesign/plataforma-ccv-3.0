@@ -16,6 +16,7 @@ import {
 import { Area, Rol, Usuario, ProyectoEspecial } from '@/types';
 import { getUsuariosCandidatosParaArea } from '@/lib/roleVisibilityUtils';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { useToast } from '@/context/ToastContext';
 
 interface AsignarLiderLoteModalProps {
   area: Area;
@@ -36,6 +37,7 @@ export const AsignarLiderLoteModal: React.FC<AsignarLiderLoteModalProps> = ({
   onClose,
   onConfirmAsignacionEnLote,
 }) => {
+  const toast = useToast();
   const [tipoLiderazgo, setTipoLiderazgo] = useState<'lider' | 'co_lider'>('lider');
   const [usuarioSeleccionadoId, setUsuarioSeleccionadoId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,19 +71,23 @@ export const AsignarLiderLoteModal: React.FC<AsignarLiderLoteModalProps> = ({
     setMensajeResultado(null);
     try {
       const cantidad = await onConfirmAsignacionEnLote(area.id, usuarioSeleccionadoId, tipoLiderazgo);
+      const textoExito = `Se asignó exitosamente a ${usuarioSeleccionado?.nombre_completo} como ${tipoLiderazgo === 'lider' ? 'Líder Principal' : 'Co-Líder'} en ${cantidad} ${cantidad === 1 ? 'proyecto' : 'proyectos'}.`;
       setMensajeResultado({
         exito: true,
-        texto: `Se asignó exitosamente a ${usuarioSeleccionado?.nombre_completo} como ${tipoLiderazgo === 'lider' ? 'Líder Principal' : 'Co-Líder'} en ${cantidad} ${cantidad === 1 ? 'proyecto' : 'proyectos'}.`
+        texto: textoExito
       });
+      toast.success(textoExito);
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (err) {
       console.error('Error en asignación en lote:', err);
+      const textoError = 'Ocurrió un error al procesar la asignación en lote. Intenta de nuevo.';
       setMensajeResultado({
         exito: false,
-        texto: 'Ocurrió un error al procesar la asignación en lote. Intenta de nuevo.'
+        texto: textoError
       });
+      toast.error(textoError);
     } finally {
       setIsSubmitting(false);
     }

@@ -23,6 +23,7 @@ import {
 import { PlantillaTareaCurso, Usuario } from '@/types';
 import { PlantillaTareaModal } from './PlantillaTareaModal';
 import { resolverFasePlantilla } from '@/lib/courseScheduleUtils';
+import { useToast } from '@/context/ToastContext';
 
 interface PlantillaCursosTabProps {
   plantillaTareas: PlantillaTareaCurso[];
@@ -41,6 +42,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
   onEliminarTarea,
   onCargarPlantilla
 }) => {
+  const toast = useToast();
   const [busqueda, setBusqueda] = useState('');
   const [filtroResponsable, setFiltroResponsable] = useState<string>('todos');
   const [filtroAlcance, setFiltroAlcance] = useState<'todos' | 'unidades' | 'transversal'>('todos');
@@ -63,6 +65,7 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
     setRefrescando(true);
     try {
       await onCargarPlantilla();
+      toast.info('Catálogo de plantilla actualizado.');
     } finally {
       setTimeout(() => setRefrescando(false), 500);
     }
@@ -181,14 +184,25 @@ export const PlantillaCursosTab: React.FC<PlantillaCursosTabProps> = ({
   };
 
   const handleToggleActiva = async (tarea: PlantillaTareaCurso) => {
-    await onEditarTarea(tarea.id, { activa: !tarea.activa });
+    const nuevoEstado = !tarea.activa;
+    const ok = await onEditarTarea(tarea.id, { activa: nuevoEstado });
+    if (ok) {
+      toast.success(nuevoEstado ? 'Tarea de plantilla activada.' : 'Tarea de plantilla desactivada.');
+    } else {
+      toast.error('No se pudo cambiar el estado de la tarea.');
+    }
   };
 
   const handleConfirmarEliminar = async () => {
     if (!tareaAEliminar) return;
     setEliminando(true);
-    await onEliminarTarea(tareaAEliminar.id);
+    const ok = await onEliminarTarea(tareaAEliminar.id);
     setEliminando(false);
+    if (ok) {
+      toast.success('Tarea eliminada de la plantilla.');
+    } else {
+      toast.error('No se pudo eliminar la tarea de la plantilla.');
+    }
     setTareaAEliminar(null);
   };
 

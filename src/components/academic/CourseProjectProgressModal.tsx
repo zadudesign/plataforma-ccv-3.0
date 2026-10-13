@@ -44,6 +44,7 @@ import { ScheduleCourseModal } from './ScheduleCourseModal';
 import { EditTaskModal } from '@/components/tasks/EditTaskModal';
 import { canUserEditTask } from '@/lib/roleVisibilityUtils';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { useToast } from '@/context/ToastContext';
 
 interface CourseProjectProgressModalProps {
   entidad: CursoVirtual | ProyectoEspecial;
@@ -75,6 +76,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   onEditTask,
 }) => {
   const { areas, facultades, programas, roles, usuarios, usuarioActual, nivelArea, isAdmin, inicializarTareasCurso, reajustarCronogramaCurso, plantillaTareas, forzarDesbloqueoAdmin, eliminarCurso, eliminarTarea, editarTarea, cursos, proyectos, hasPermission, rolesPermisosMap } = useAuth();
+  const toast = useToast();
   const canUserEdit = (t?: TareaCCV | null) => {
     if (!t) return false;
     if (!hasPermission('registro:editar')) return false;
@@ -362,23 +364,28 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
         const res = await inicializarTareasCurso(curso.id, fechaInicio, duracionDias);
         if (res.success) {
           setMensajePlantilla({ tipo: 'exito', texto: res.message });
+          toast.success(res.message);
           if (onRefreshTareas) await onRefreshTareas();
         } else {
           setMensajePlantilla({ tipo: 'error', texto: res.message });
+          toast.error(res.message);
           throw new Error(res.message);
         }
       } else {
         const res = await reajustarCronogramaCurso(curso.id, fechaInicio, duracionDias);
         if (res.success) {
           setMensajePlantilla({ tipo: 'exito', texto: res.message });
+          toast.success(res.message);
           if (onRefreshTareas) await onRefreshTareas();
         } else {
           setMensajePlantilla({ tipo: 'error', texto: res.message });
+          toast.error(res.message);
           throw new Error(res.message);
         }
       }
     } catch (err: any) {
       setMensajePlantilla({ tipo: 'error', texto: err?.message || 'Error al procesar el cronograma.' });
+      toast.error(err?.message || 'Error al procesar el cronograma.');
       throw err;
     } finally {
       setCargandoPlantilla(false);
@@ -391,15 +398,16 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
     try {
       const res = await forzarDesbloqueoAdmin(tareaId, usuarioActual.id);
       if (res.success) {
+        toast.success('Tarea desbloqueada manualmente por contingencia.');
         if (onRefreshTareas) await onRefreshTareas();
         if (onAddComentario) {
           onAddComentario(tareaId, `⚠️ Desbloqueada manualmente por contingencia por Admin: ${usuarioActual.nombre_completo}`);
         }
       } else {
-        alert(res.message);
+        toast.error(res.message);
       }
     } catch (err: any) {
-      alert(err?.message || 'Error al forzar el desbloqueo.');
+      toast.error(err?.message || 'Error al forzar el desbloqueo.');
     } finally {
       setForzandoId(null);
     }
@@ -408,7 +416,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
   const handleSolicitarCambioEstado = (t: TareaCCV, nuevoEstado: EstadoTarea) => {
     const tiempoTotal = (t.tiempo_invertido || 0) + (t.tiempo_invertido_secundario || 0);
     if (nuevoEstado === 'Completada' && t.estado !== 'Completada' && tiempoTotal <= 0) {
-      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Por favor registra las horas trabajadas antes de completarla.');
+      toast.warning('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas antes de completarla.');
       return;
     }
     if (esCurso && nuevoEstado === 'Completada' && t.estado !== 'Completada') {
@@ -1563,7 +1571,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
             if (tareaParaConfirmar && onUpdateStatus) {
               const tiempoTotal = (tareaParaConfirmar.tiempo_invertido || 0) + (tareaParaConfirmar.tiempo_invertido_secundario || 0);
               if (tiempoTotal <= 0) {
-                alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado.');
+                toast.warning('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado.');
                 setTareaParaConfirmar(null);
                 return;
               }
@@ -1595,7 +1603,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
           onConfirm={async () => {
             if (!tareaAEliminar) return;
             if (!isAdmin()) {
-              alert('Solo los administradores tienen permiso para eliminar tareas.');
+              toast.error('Solo los administradores tienen permiso para eliminar tareas.');
               return;
             }
             setIsDeletingTarea(true);
@@ -1604,6 +1612,7 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 ? await onDeleteTask(tareaAEliminar.id) 
                 : await eliminarTarea(tareaAEliminar.id);
               if (ok) {
+                toast.success('Tarea eliminada correctamente.');
                 if (tareaSeleccionadaLocal?.id === tareaAEliminar.id) {
                   setPestanaModal('resumen');
                   setTareaSeleccionadaLocal(null);
@@ -1611,11 +1620,11 @@ export const CourseProjectProgressModal: React.FC<CourseProjectProgressModalProp
                 setTareaAEliminar(null);
                 if (onRefreshTareas) await onRefreshTareas();
               } else {
-                alert('No fue posible eliminar la tarea de la base de datos.');
+                toast.error('No fue posible eliminar la tarea de la base de datos.');
               }
             } catch (err: any) {
               console.error('Error al eliminar tarea:', err);
-              alert(err?.message || 'Error al eliminar la tarea');
+              toast.error(err?.message || 'Error al eliminar la tarea');
             } finally {
               setIsDeletingTarea(false);
             }

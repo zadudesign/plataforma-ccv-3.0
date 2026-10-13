@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { useToast } from '@/context/ToastContext';
 
 interface DigitalSignatureModalProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ export const DigitalSignatureModal: React.FC<DigitalSignatureModalProps> = ({
   isMandatory = false
 }) => {
   const { usuarioActual, actualizarUsuario } = useAuth();
+  const toast = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
   useModalDismiss({
@@ -163,12 +165,14 @@ export const DigitalSignatureModal: React.FC<DigitalSignatureModalProps> = ({
     if (tab === 'draw') {
       if (!hasDrawn || !canvasRef.current) {
         setErrorMsg('Por favor realiza tu firma trazándola en el recuadro antes de guardar.');
+        toast.warning('Por favor realiza tu firma trazándola en el recuadro antes de guardar.');
         return;
       }
       finalDataUrl = canvasRef.current.toDataURL('image/png');
     } else {
       if (!uploadedFirmaUrl) {
         setErrorMsg('Por favor adjunta una imagen con tu firma digital.');
+        toast.warning('Por favor adjunta una imagen con tu firma digital.');
         return;
       }
       finalDataUrl = uploadedFirmaUrl;
@@ -176,6 +180,7 @@ export const DigitalSignatureModal: React.FC<DigitalSignatureModalProps> = ({
 
     if (!usuarioActual) {
       setErrorMsg('No hay sesión de usuario activa.');
+      toast.error('No hay sesión de usuario activa.');
       return;
     }
 
@@ -184,9 +189,11 @@ export const DigitalSignatureModal: React.FC<DigitalSignatureModalProps> = ({
       await actualizarUsuario(usuarioActual.id, {
         firma_digital: finalDataUrl
       });
+      toast.success('Firma digital registrada y guardada exitosamente.');
       onClose();
     } catch (err) {
       setErrorMsg('Error guardando la firma digital en Supabase.');
+      toast.error('Error guardando la firma digital en la base de datos.');
     } finally {
       setIsSaving(false);
     }

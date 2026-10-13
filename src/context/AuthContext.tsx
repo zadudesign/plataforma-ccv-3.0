@@ -65,6 +65,7 @@ import {
   updateTareaFullDB
 } from '@/lib/supabaseService';
 import { canUserEditTask } from '@/lib/roleVisibilityUtils';
+import { useToast } from '@/context/ToastContext';
 
 interface AuthContextType {
   usuarioActual: Usuario | null;
@@ -189,6 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
   const [usuarioReal, setUsuarioReal] = useState<Usuario | null>(null);
   const [isDevSimulatorOpenState, setIsDevSimulatorOpenState] = useState(false);
+  const toast = useToast();
 
   const establecerUsuarioAutenticado = (usr: Usuario | null) => {
     setUsuarioActual(usr);
@@ -1445,7 +1447,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (!tienePermiso) {
-        alert('Solo los administradores o los jefes de las áreas/sub-áreas correspondientes y líderes de proyecto tienen permiso para editar esta tarea.');
+        toast.warning('Solo los administradores o los jefes de las áreas/sub-áreas correspondientes y líderes de proyecto tienen permiso para editar esta tarea.');
         return false;
       }
     }

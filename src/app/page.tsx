@@ -40,8 +40,10 @@ import { getEntitiesVisibleByRole, canUserEditTask, isRoleMatch } from '@/lib/ro
 import { redondearHoras } from '@/lib/progressUtils';
 import { INITIAL_TAREAS } from '@/lib/mockData';
 import { ShieldAlert } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 
 export default function Home() {
+  const toast = useToast();
   const { 
     usuarioActual, 
     usuarios,
@@ -219,31 +221,33 @@ export default function Home() {
         tarifa_tarea: nuevaTarifaTarea
       } : null);
     }
+
+    toast.success(`Se registraron +${horasAñadir} hrs trabajadas al proyecto.`, '¡Tiempo Acumulado!');
   };
 
   // Handlers
   const handleUpdateStatus = async (tareaId: string, nuevoEstado: EstadoTarea) => {
     const targetTarea = tareas.find(t => t.id === tareaId);
     if (targetTarea && targetTarea.curso_id && targetTarea.estado_bloqueo === 'BLOQUEADA' && nuevoEstado !== 'Pendiente') {
-      alert('Esta tarea está bloqueada en la secuencia del curso por dependencias previas no completadas.');
+      toast.warning('Esta tarea está bloqueada en la secuencia del curso por dependencias previas no completadas.', 'Secuencia Bloqueada');
       return;
     }
 
     // Validación estricta de permisos RBAC
     if (nuevoEstado === 'Completada' && !hasPermission('tarea:aprobar')) {
-      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+      toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`, 'Permiso Insuficiente');
       return;
     }
 
     // Validación de tiempo registrado: No permitir completar si el tiempo acumulado es 0
     const tiempoTotal = (targetTarea?.tiempo_invertido || 0) + (targetTarea?.tiempo_invertido_secundario || 0);
     if (nuevoEstado === 'Completada' && targetTarea?.estado !== 'Completada' && tiempoTotal <= 0) {
-      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Por favor registra las horas trabajadas antes de completarla.');
+      toast.warning('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Registra horas antes de completarla.', 'Horas Requeridas');
       return;
     }
 
     if (!hasPermission('registro:editar')) {
-      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de tareas.`);
+      toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar el estado de tareas.`, 'Permiso Denegado');
       return;
     }
 
@@ -295,11 +299,17 @@ export default function Home() {
         };
       });
     }
+
+    if (nuevoEstado === 'Completada') {
+      toast.success('La tarea ha sido completada y sus dependencias actualizadas.', '¡Tarea Completada!');
+    } else {
+      toast.info(`La tarea se movió a "${nuevoEstado}".`, 'Estado Actualizado');
+    }
   };
 
   const handleEliminarTarea = async (tareaId: string): Promise<boolean> => {
     if (!hasPermission('registro:eliminar') && !isAdmin()) {
-      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:eliminar" para borrar tareas.`);
+      toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:eliminar" para borrar tareas.`, 'Acceso Restringido');
       return false;
     }
     const ok = await deleteTareaDB(tareaId);
@@ -308,6 +318,9 @@ export default function Home() {
       if (tareaSeleccionada?.id === tareaId) {
         setTareaSeleccionada(null);
       }
+      toast.success('La tarea fue eliminada correctamente de la plataforma.', 'Tarea Eliminada');
+    } else {
+      toast.error('No se pudo eliminar la tarea de la base de datos.', 'Error al Eliminar');
     }
     return ok;
   };
@@ -322,24 +335,24 @@ export default function Home() {
 
     // Validación estricta de permisos RBAC
     if (!hasPermission('registro:editar')) {
-      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para editar información de tareas.`);
+      toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para editar información de tareas.`, 'Acceso Restringido');
       return false;
     }
 
     if (datosEditados.estado === 'Completada' && tareaExistente?.estado !== 'Completada' && !hasPermission('tarea:aprobar')) {
-      alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+      toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`, 'Permiso Insuficiente');
       return false;
     }
 
     const totalTiempo = (tareaExistente?.tiempo_invertido || 0) + (tareaExistente?.tiempo_invertido_secundario || 0) + (datosEditados.tiempo_invertido || 0);
     if (datosEditados.estado === 'Completada' && tareaExistente?.estado !== 'Completada' && totalTiempo <= 0) {
-      alert('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Por favor registra las horas trabajadas antes de completarla.');
+      toast.warning('No es posible marcar esta tarea como "Completada" porque aún no tiene tiempo registrado. Por favor registra las horas trabajadas antes de completarla.', 'Horas Requeridas');
       return false;
     }
 
     const puedeEditar = isAdmin() || canUserEditTask(usuarioActual, tareaParaValidar, proyectos, areas, roles, nivelArea, rolesPermisosMap);
     if (!puedeEditar) {
-      alert('Solo los administradores o los jefes de las áreas/sub-áreas correspondientes y líderes de proyecto tienen permiso para editar esta tarea.');
+      toast.error('Solo los administradores o los jefes de las áreas/sub-áreas correspondientes y líderes de proyecto tienen permiso para editar esta tarea.', 'Permiso Insuficiente');
       return false;
     }
     const ok = await updateTareaFullDB(tareaId, datosEditados);
@@ -354,13 +367,16 @@ export default function Home() {
       if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
         setTareaSeleccionada(prev => prev ? { ...prev, ...datosEditados } : null);
       }
+      toast.success('Los cambios en la tarea fueron guardados con éxito.', 'Tarea Actualizada');
+    } else {
+      toast.error('No fue posible guardar las modificaciones en la base de datos.', 'Error al Guardar');
     }
     return ok;
   };
 
   const handleUpdateFechaCompletada = async (tareaId: string, nuevaFecha: string): Promise<boolean> => {
     if (!isAdmin()) {
-      alert('Solo los usuarios con rol de Administrador pueden modificar la fecha de finalización de una tarea.');
+      toast.warning('Solo los usuarios con rol de Administrador pueden modificar la fecha de finalización de una tarea.', 'Acceso Restringido');
       return false;
     }
 
@@ -379,6 +395,7 @@ export default function Home() {
     if (tareaSeleccionada && tareaSeleccionada.id === tareaId) {
       setTareaSeleccionada(prev => prev ? { ...prev, fecha_completada: nuevaFecha } : null);
     }
+    toast.success('Fecha de finalización actualizada exitosamente.', 'Fecha Modificada');
     return exito;
   };
 
@@ -395,14 +412,16 @@ export default function Home() {
       created_at: new Date().toISOString().replace('T', ' ').substring(0, 16)
     };
     setComentarios(prev => [nuevoComentarioObj, ...prev]);
+    toast.success('Tu observación ha sido agregada a la discusión.', 'Comentario Publicado');
   };
 
   const handleCreateTask = async (nuevaTarea: Omit<TareaCCV, 'id'>) => {
     const res = await createTareaDB(nuevaTarea);
     if (res.success && res.data) {
       setTareas(prev => ordenarTareasPorVencimiento([res.data!, ...prev]));
+      toast.success('La nueva tarea ha sido creada y asignada en el tablero.', '¡Tarea Creada!');
     } else {
-      alert(`⚠️ Error al guardar tarea en Supabase:\n\n${res.error || 'No se pudo conectar con la base de datos.'}\n\nRevisa que el archivo .env.local esté configurado o que se hayan ejecutado las tablas en Supabase.`);
+      toast.error(`Error al guardar tarea en Supabase: ${res.error || 'No se pudo conectar con la base de datos.'}`, 'Error de Conexión');
       const fallbackTarea: TareaCCV = { ...nuevaTarea, id: `t-${Date.now()}` };
       setTareas(prev => ordenarTareasPorVencimiento([fallbackTarea, ...prev]));
     }

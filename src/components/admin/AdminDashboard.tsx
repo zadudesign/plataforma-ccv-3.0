@@ -54,6 +54,7 @@ import { SolicitudesInboxTab } from './SolicitudesInboxTab';
 import { PlantillaCursosTab } from './PlantillaCursosTab';
 import { InscribirUsuariosRolModal } from './InscribirUsuariosRolModal';
 import { AsignarLiderLoteModal } from './AsignarLiderLoteModal';
+import { useToast } from '@/context/ToastContext';
 
 interface AreaHierarchyNodeProps {
   area: Area;
@@ -546,6 +547,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     editarPlantillaTarea,
     eliminarPlantillaTarea
   } = useAuth();
+  const toast = useToast();
 
   const [categoriaActiva, setCategoriaActiva] = useState<CategoriaAdmin>(() => getCategoriaFromPestana(pestanaInicial));
   const [pestana, setPestana] = useState<PestanaAdmin>(pestanaInicial);
@@ -615,6 +617,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       rol_nombre: targetRolNombre,
       area_nombre: targetAreaNombre
     });
+    toast.success('Usuario asignado al rol correctamente.');
   };
 
   const handleDesvincularUsuarioRol = async (usuarioId: string) => {
@@ -623,6 +626,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       rol_nombre: '',
       area_nombre: ''
     });
+    toast.success('Usuario desvinculado del rol.');
   };
 
   // Lógica de Clasificación & Filtro Jerárquico por Área para la pestaña Asignaciones
@@ -745,30 +749,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Handlers for assignments
   const handleAssignDecano = (facultadId: string, decanoId: string) => {
     asignarDecano(facultadId, decanoId);
+    toast.success('Decano asignado correctamente.');
   };
 
   const handleAssignCoordinador = (programaId: string, coordinadorId: string) => {
     asignarCoordinador(programaId, coordinadorId);
+    toast.success('Coordinador asignado correctamente.');
   };
 
   const handleAssignCursoDocente = (cursoId: string, docenteId: string) => {
     if (!docenteId) return;
     const cur = cursos.find(c => c.id === cursoId);
     if (cur && cur.evaluador_id && cur.evaluador_id === docenteId) {
-      alert('El Docente y el Par Evaluador deben ser personas distintas.');
+      toast.warning('El Docente y el Par Evaluador deben ser personas distintas.');
       return;
     }
     asignarDocenteCurso(cursoId, docenteId);
+    toast.success('Docente asignado correctamente.');
   };
 
   const handleAssignCursoEvaluador = (cursoId: string, evaluadorId: string) => {
     if (!evaluadorId) return;
     const cur = cursos.find(c => c.id === cursoId);
     if (cur && cur.docente_id && cur.docente_id === evaluadorId) {
-      alert('El Docente y el Par Evaluador deben ser personas distintas.');
+      toast.warning('El Docente y el Par Evaluador deben ser personas distintas.');
       return;
     }
     asignarEvaluadorCurso(cursoId, evaluadorId);
+    toast.success('Par Evaluador asignado correctamente.');
   };
 
   const handleOpenCreateUser = () => {
@@ -784,10 +792,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleSaveUser = async (datos: Omit<Usuario, 'id'> | Partial<Usuario>) => {
     if (usuarioEditar) {
       await actualizarUsuario(usuarioEditar.id, datos);
+      toast.success('Usuario actualizado correctamente.');
     } else {
       const res = await crearUsuario(datos as Omit<Usuario, 'id'>);
       if (res && !res.success && res.error) {
-        alert(`Error al registrar usuario: ${res.error}`);
+        toast.error(`Error al registrar usuario: ${res.error}`);
+      } else {
+        toast.success('Usuario registrado exitosamente.');
       }
     }
   };

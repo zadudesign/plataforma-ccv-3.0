@@ -26,6 +26,7 @@ import {
 import { TareaCCV, EstadoTarea, Area } from '@/types';
 import { isRoleMatch } from '@/lib/roleVisibilityUtils';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 
 interface KanbanBoardProps {
   tareas: TareaCCV[];
@@ -41,6 +42,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onOpenCreateTask,
 }) => {
   const { roles, areas, proyectos, usuarioActual, hasPermission } = useAuth();
+  const toast = useToast();
 
   // Diccionario de mapeo rápido id -> nombre para resolver roles si vienen como UUID
   const rolesIdMap = useMemo(() => {
@@ -692,7 +694,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                       <button
                                         onClick={() => {
                                           if (!hasPermission('registro:editar')) {
-                                            alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar tareas.`);
+                                            toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar tareas.`, 'Permiso Insuficiente');
                                             return;
                                           }
                                           const prev: EstadoTarea = col.estado === 'Completada' ? 'En Revisión' : col.estado === 'En Revisión' ? 'En Proceso' : 'Pendiente';
@@ -709,16 +711,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                         onClick={() => {
                                           const next: EstadoTarea = col.estado === 'Pendiente' ? 'En Proceso' : col.estado === 'En Proceso' ? 'En Revisión' : 'Completada';
                                           if (next === 'Completada' && !hasPermission('tarea:aprobar')) {
-                                            alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`);
+                                            toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "tarea:aprobar" para marcar tareas como completadas.`, 'Permiso Insuficiente');
                                             return;
                                           }
                                           if (!hasPermission('registro:editar')) {
-                                            alert(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar tareas.`);
+                                            toast.error(`Acceso denegado: El rol "${usuarioActual?.rol_nombre || 'actual'}" no tiene el permiso "registro:editar" para modificar tareas.`, 'Acceso Restringido');
                                             return;
                                           }
                                           const tiempoTotal = (tarea.tiempo_invertido || 0) + (tarea.tiempo_invertido_secundario || 0);
                                           if (next === 'Completada' && tiempoTotal <= 0) {
-                                            alert('No es posible mover esta tarea a "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas antes de completarla.');
+                                            toast.warning('No es posible mover esta tarea a "Completada" porque aún no tiene tiempo registrado. Registra las horas trabajadas antes de completarla.', 'Horas Requeridas');
                                             return;
                                           }
                                           onUpdateStatus(tarea.id, next);
